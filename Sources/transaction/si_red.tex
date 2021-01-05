@@ -1,0 +1,150 @@
+%!TEX root = Thesis.tex
+
+
+
+\subsection{Reducing Snapshot Isolation to Serializability}\label{ssec:si}
+
+We extend the reduction of prefix consistency to serializability to the case of snapshot isolation. Compared to prefix consistency, snapshot isolation disallows transactions that read the same snapshot of the database to commit together if they write on a common variable (stated by the $\mathsf{Conflict}$ axiom). More precisely, for any pair of transactions $\tr_1$ and $\tr_2$ writing to a common variable, $\tr_1$ must observe the effects of $\tr_2$ or vice-versa. 
+%when one of these transactions reads a variable written by the other one. 
+We refine the definition of $\hist_{R|W}$ such that any ``serialization'' (i.e.., commit order satisfying $\mathsf{Serializability}$) disallows that the read transactions corresponding to two such transactions are ordered both before their write counterparts. We do this by introducing auxiliary variables that are read or written by these transactions. For instance, 
+Figure~\ref{si_red_example} shows this transformation on the two histories in Figure~\ref{si_red_example:1} and Figure~\ref{si_red_example:3}, which represent the anomalies known as ``lost update'' and ``write skew'', respectively. The former is not admitted by SI while the latter is admitted. Concerning ``lost update'', the read counterpart of the transaction on the left writes to a variable {\tt x12} that is read by its write counterpart, but also written by the write counterpart of the other transaction. This forbids that the latter is serialized in between the read and write counterparts of the transaction on the left. A similar scenario is imposed on the transaction on the right, which makes that the transformed history is not serializable. Concerning the ``write skew'' anomaly, the transformed history is exactly as for the PC reduction since the two transactions don't write on a common variable. It is clearly serializable.
+
+%\begin{theorem}
+% There is a polynomial time reduction from snapshot isolation verification problem to serialization verification problem - without increasing the width of the history.
+%\end{theorem}
+
+For a history $\hist = \tup{T, \wro, \so}$, the history $\hist_{R|W}^c = \tup{T', \wro', \so'}$ is defined as $\hist_{R|W}$ with the following additional construction: for every two transactions $\tr_1$ and $\tr_2 \in T$ that write on a common variable,
+% and $\hist_{R|W} = \tup{T', \wro', \so'}$, we define the history $\hist_{R|W}^c = \tup{T', \wro'', \so'}$ where 
+\begin{itemize}
+%\item for every variable $\xvar$ in the original history $\hist$, i.e., $\wro''[\xvar]=\wro'[\xvar]$,
+\item $R_{\tr_1}$ and $W_{\tr_2}$ (resp., $R_{\tr_2}$ and $W_{\tr_1}$) write on a variable $\xvar_{1,2}$ (resp., $\xvar_{2,1}$),
+\item the write transaction of $\tr_i$ reads $\xvar_{i,j}$ from the read transaction of $\tr_i$, for all $i\neq j\in\{1,2\}$, i.e., $\wro[\xvar_{1,2}]= \{\tup{R_{\tr_1}, W_{\tr_1}}\}$ and $\wro[\xvar_{2,1}]= \{\tup{R_{\tr_2}, W_{\tr_2}}\}$.
+\end{itemize}
+
+\begin{figure}
+  
+  
+    \begin{subfigure}{.24\textwidth}
+    \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+     semithick, transform shape]
+     % \node[draw, rounded corners=2mm] (t1) at (0, 1.2) {\begin{tabular}{l} \texttt{x = 1;} \end{tabular}};
+     \node[draw, rounded corners=2mm] (t2) at (-1.6, 0) {\begin{tabular}{l} \texttt{read(x); // 0} \\ \texttt{x = 1;} \end{tabular}};
+     \node[draw, rounded corners=2mm] (t3) at (1.6, 0) {\begin{tabular}{l} \texttt{read(x); // 0} \\ \texttt{x = 2;} \end{tabular}};
+     % \node[draw, rounded corners=2mm] (t3) at (0, -2.4) {\begin{tabular}{l} \texttt{read(x); // 2} \end{tabular}};
+    % \node[draw, rounded corners=2mm] (t3) at (1.7, -1.5) {\begin{tabular}{l} \texttt{read(y); // 1} \\ \texttt{y = 2;} \end{tabular}};
+    % \node[draw, rounded corners=2mm] (t3) at (1.5, 0) {\begin{tabular}{l} \texttt{read(x); // 2} \\ \texttt{read(y); // 1} \end{tabular}};
+    % \path (t1) edge node {} (t3);
+    % \path (t2) edge node {$\co$} (t3);
+    % \path (t1) edge node {} (t2); 
+    % \path (t3_1) edge node {$\po$} (t3_2);
+    \end{tikzpicture}  
+    }
+     \caption{Lost update}
+     \label{si_red_example:1}
+    \end{subfigure}
+%    \hspace{3mm}
+    \begin{subfigure}{.24\textwidth}
+    \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+     semithick, transform shape]
+     % \node[draw, rounded corners=2mm] (t1) at (0, 1.2) {\begin{tabular}{l} \texttt{x = 1;} \end{tabular}};
+     \node[draw, rounded corners=2mm] (t2r) at (-1.8, .9) {\begin{tabular}{l} \texttt{read(x); // 0} \\ \texttt{x12 = 1;} \end{tabular}};
+     \node[draw, rounded corners=2mm] (t2w) at (-1.8, -.9) {\begin{tabular}{l}  \texttt{x = 1;}  \\ \texttt{read(x12); // 1} \\ \texttt{x21 = 2;} \end{tabular}};
+     \node[draw, rounded corners=2mm] (t3r) at (1.8, .9) {\begin{tabular}{l} \texttt{read(x); // 0} \\ \texttt{x21 = 1;} \end{tabular}};
+     \node[draw, rounded corners=2mm] (t3w) at (1.8, -.9) {\begin{tabular}{l} \texttt{x = 2;}  \\ \texttt{read(x21); // 1} \\ \texttt{x12 = 2;}\end{tabular}};
+     % \node[draw, rounded corners=2mm] (t3) at (0, -2.4) {\begin{tabular}{l} \texttt{read(x); // 2} \end{tabular}};
+    % \node[draw, rounded corners=2mm] (t3) at (1.7, -1.5) {\begin{tabular}{l} \texttt{read(y); // 1} \\ \texttt{y = 2;} \end{tabular}};
+    % \node[draw, rounded corners=2mm] (t3) at (1.5, 0) {\begin{tabular}{l} \texttt{read(x); // 2} \\ \texttt{read(y); // 1} \end{tabular}};
+    % \path (t1) edge node {} (t3);
+    % \path (t2) edge node {$\co$} (t3);
+    % \path (t1) edge node {} (t2); 
+    % \path (t3_1) edge node {$\po$} (t3_2);
+    \path (t2r) edge node {$\so$} (t2w);
+    \path (t3r) edge node {$\so$} (t3w);
+    \end{tikzpicture}  
+    }
+     \caption{Lost update (transformed)}
+     \label{si_red_example:2}
+    \end{subfigure}
+%    \hspace{3mm}
+  \begin{subfigure}{.24\textwidth}
+  \resizebox{\textwidth}{!}{
+  \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+   semithick, transform shape]
+   % \node[draw, rounded corners=2mm] (t1) at (0, 0) {\begin{tabular}{l} \texttt{x = 1;} \\ \texttt{y = 1;}\end{tabular}};
+   \node[draw, rounded corners=2mm] (t2) at (-1.6, -1.5) {\begin{tabular}{l} \texttt{read(x); // 0} \\ \texttt{read(y); // 0} \\ \texttt{x = 1;} \end{tabular}};
+   \node[draw, rounded corners=2mm] (t3) at (1.6, -1.5) {\begin{tabular}{l} \texttt{read(x); // 0} \\ \texttt{read(y); // 0} \\ \texttt{y = 1;} \end{tabular}};
+  % \node[draw, rounded corners=2mm] (t3) at (1.7, -1.5) {\begin{tabular}{l} \texttt{read(y); // 1} \\ \texttt{y = 2;} \end{tabular}};
+  % \node[draw, rounded corners=2mm] (t3) at (1.5, 0) {\begin{tabular}{l} \texttt{read(x); // 2} \\ \texttt{read(y); // 1} \end{tabular}};
+  % \path (t1) edge node {} (t3);
+  % \path (t2) edge node {$\so$} (t3);
+  % \path (t1) edge node {} (t2);
+  % \path (t3_1) edge node {$\po$} (t3_2);
+  \end{tikzpicture}  
+  }
+   \caption{Write skew}
+   \label{si_red_example:3}
+  \end{subfigure}
+%  \hspace{3mm}
+  \begin{subfigure}{.24\textwidth}
+  \resizebox{\textwidth}{!}{
+  \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+   semithick, transform shape]
+   % \node[draw, rounded corners=2mm] (t1) at (0, 0) {\begin{tabular}{l} \texttt{x = 1;} \\ \texttt{y = 1;}\end{tabular}};
+   \node[draw, rounded corners=2mm] (t2r) at (-1.6, 0) {\begin{tabular}{l} \texttt{read(x); // 0} \\ \texttt{read(y); // 0} \end{tabular}};
+   \node[draw, rounded corners=2mm] (t2w) at (-1.6, -1.3) {\begin{tabular}{l} \texttt{x = 1;} \end{tabular}};
+   \node[draw, rounded corners=2mm] (t3r) at (1.6, 0) {\begin{tabular}{l} \texttt{read(x); // 0} \\ \texttt{read(y); // 0} \end{tabular}};
+   \node[draw, rounded corners=2mm] (t3w) at (1.6, -1.3) {\begin{tabular}{l} \texttt{y = 1;} \end{tabular}};
+  % \node[draw, rounded corners=2mm] (t3) at (1.7, -1.5) {\begin{tabular}{l} \texttt{read(y); // 1} \\ \texttt{y = 2;} \end{tabular}};
+  % \node[draw, rounded corners=2mm] (t3) at (1.5, 0) {\begin{tabular}{l} \texttt{read(x); // 2} \\ \texttt{read(y); // 1} \end{tabular}};
+  % \path (t1) edge node {} (t3);
+  % \path (t2) edge node {$\so$} (t3);
+  % \path (t1) edge node {} (t2);
+  % \path (t3_1) edge node {$\po$} (t3_2);
+  \path (t2r) edge node {$\so$} (t2w);
+  \path (t3r) edge node {$\so$} (t3w);
+  \end{tikzpicture}  
+  }
+   \caption{Write skew (transformed)}
+   \label{si_red_example:4}
+  \end{subfigure}
+%   \vspace{-3mm}
+  \caption{Reducing SI to SER.}
+  \label{si_red_example}
+%   \vspace{-3mm}
+\end{figure}
+
+
+%we create a new history $\hist' = \tup{\Tr', \wro', \so'}$,
+%\begin{itemize}
+% \item $\Tr' = \{R_\tr | \tr \in \Tr\} \cup \{W_\tr | \tr \in \Tr\}$
+% \item $W_{\tr}$ writes on $\xvar$ if $\tr$ writes on $\xvar$.
+% \item For each pair of unique transactions $(\tr_1, \tr_2) \in \Tr \times \Tr$, if $\tr_1, \tr_2$ write on overlapping variables, then $W_{\tr_1}, R_{\tr_2}$ write on a new variable $\xvar_{\tr_2\tr_1}$ $W_{\tr_2}$ reads it from $R_{\tr_2}$. $\wro[\xvar_{\tr_2\tr_1}] = \{\tup{R_{\tr_2}, W_{\tr_1}}\}$.
+% \item $\wro[\xvar]' = \{\tup{W_{\tr_1}, R_{\tr_2}} | \tup{\tr_1, \tr_2} \in \wro[\xvar]\}$
+% \item $\so' = \{\tup{R_\tr, W_\tr} | \tr \in \Tr\} \cup$
+%       
+%       $\{\tup{W_{\tr_1}, W_{\tr_2}}, \tup{W_{\tr_1}, R_{\tr_2}}, \tup{R_{\tr_1}, W_{\tr_2}}, \tup{R_{\tr_1}, R_{\tr_2}} | \tup{\tr_1,\tr_2} \in \so \}$ 
+%       
+%\end{itemize}
+%
+%Constructing $\Tr', \wro[\xvar]', \so'$ can be done in similar way from prefix consistency reduction. Here, we just need to do a iterations over pair of transaction to check for common write variables and add new $\wro$ relations.
+%
+%This reduction has exact same $\so'$ from prefix reductions. Therefore, $\so'$ does not have width more than that of $\so$.
+
+Note that $\hist_{R|W}$ and $\hist_{R|W}^c$ have the same width (the session order is defined exactly in the same way), which implies, by Lemma~\ref{lem:pc_width}, that $\hist$ and $\hist_{R|W}^c$ have the same width.
+
+The following result can be proved using similar reasoning as in the case of prefix consistency. % (see Appendix~\ref{app:si_red}).
+
+\begin{theorem}\label{th:si}
+A history $\hist$ satisfies snapshot isolation iff $\hist_{R|W}^c$ is serializable.
+\end{theorem}
+
+Note that $\hist_{R|W}^c$ and $\hist$ have the same width, and that $\hist_{R|W}^c$ can be constructed in linear time. Therefore, Theorem~\ref{th:si}, and Corollary~\ref{cor:ser} imply the following result.
+ 
+ \begin{corollary}\label{cor:si}
+For an arbitrary but fixed constant $k\in\mathbb{N}$, the problem of checking snapshot isolation for histories of width at most $k$ is polynomial time.
+ 
+ \end{corollary}
+
+

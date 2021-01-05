@@ -1,0 +1,15 @@
+\SetKwInOut{KwInput}{Input}
+\SetKwInOut{KwOutput}{Output}
+\KwIn{A differentiated history $\hist = \tup{\Op, \ro}$ and a datatype $T$.}
+\KwOut{$\mathit{true}$ iff $\hist$ satisfies the axioms of $T$.}
+\BlankLine
+$\rf$ $\leftarrow$ {\sf ComputeRF}($\hist$,\textsc{ReadFrom}[$T$],\textsc{Retval}[$T$] )\;
+\lIf{\emph{$\rf=\bot$}}{\Return{false}}
+$\hb \leftarrow (\ro\cup\rf)^+$\;
+\If{\emph{$\hb$} is cyclic or $\tup{\hist,\rf,\hb}\not\models \textsc{ReadFromMaximal}[T]\land \textsc{ReadAllMaximals}[T]$} {
+ \Return{false}\;
+}
+$\lin\leftarrow \hb$\;
+$\lin$ $\leftarrow$ {\sf LinClosure}($\hb$,\textsc{Lin}[$T$])\;
+\lIf{$\lin$ is cyclic} {\Return{false}}
+\Return{true}\;

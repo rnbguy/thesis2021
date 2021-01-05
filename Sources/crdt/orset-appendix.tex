@@ -1,0 +1,64 @@
+%!TEX root = Thesis.tex
+
+\section{A Polynomial Time Algorithm for Sets and Flags}
+\label{sec:ptime:sets:appendix}
+
+To represent the maximal $\hb$-predecessors, we use a mapping $u$, called \emph{read-from map}, that associates a set of operations {\sf add}($x$) and {\sf remove}($x$) on different replicas to each replica $i$ and element $x$. Note that two operations on the same replica are necessarily related by $\hb$ and cannot be both maximal. A pair of prefix-map $m$ and read-from map $u$ defines a partial read-from relation that associates all the operations in $u(x,i)$ to the last operation of $i$, i.e., ${\sf last}_i(m)$, if this is a {\sf contains}($x$) operation. For a given read-from relation $\rf$, $\tup{m,u}\subseteq \rf$ denotes the fact that this partial read-from relation is included in $\rf$. A prefix $m(i)$ is called valid in the context of a read-from map $u$ if it is admitted by the Add-Wins Set with a read-from relation $\rf$ such that $\tup{m,u}\subseteq \rf$. A pair $\tup{m,u}$ is called valid if $m(i)$ is valid for each replica $i$.
+Algorithm~\ref{orsetcrdtalgo:main} lists our algorithm for checking consistency of Add-Wins Set histories. As for replicated counters, it is defined as a recursive procedure $\mathsf{CheckAWSet}$ that searches for a sequence of valid extensions of a given prefix map and read-from map (initially, both of them are empty) until the prefix map becomes complete.
+%To progress on {\sf add} or {\sf remove} operation, the algorithm removes the old concurrent updates because they are not latest anymore and the current one as latest. Merging the prefixes are done as Counters. To merge the latest concurrent updates, for each values the algorithm sets it to the maximal updates in both of the replicas.
+
+\begin{algorithm}
+ {\footnotesize
+  \SetKwInOut{KwInput}{Input}
+  \SetKwInOut{KwOutput}{Output}
+  \KwIn{A history $\hist = (\Op, \ro)$, a prefix map $m$, a read-from map $u$, and a set $\mathit{seen}$ of invalid prefix map and read-from map pairs.}
+  \KwOut{$\mathit{true}$ iff there exists a read-from relation $\rf$ and a happens-before order $\hb$ such that $m\subseteq \hb$, $\tup{m,u}\subseteq \rf$, and $\tup{\hist,\rf,\hb}$ satisfies the replicated Add-Wins Set axioms.}
+  \BlankLine
+  \If{$m$ is complete}{
+   \Return{true}\;
+  }
+  \ForEach{replica $i$}{
+   \ForEach{replica $j \neq i$}{
+    $m'\leftarrow m[i \leftarrow m(i) \cup m(j)]$\;
+    $u'(x) \leftarrow u(x)[i \leftarrow (u(x, i) \setminus (m(j) \setminus u(x, j)) \cup (u(x,j) \setminus (m(i) \setminus u(x, i)))]$\;
+    \If{$\tup{m', u'}\not\in seen$ and \emph{$\mathsf{CheckAWSet}(\hist,m',u',\mathit{seen})$}}{
+     \Return{true}\;
+    }
+    $\mathit{seen}\leftarrow\mathit{seen}\cup\{\tup{m', u'}\}$\;
+   }
+   \If{$\exists o_1.\ \ro^1({\sf last}_i(m),o_1)$}{ %$\exists \op_1 \in (\Op|_{R_i} \setminus M[R_i])$ such that $\tup{\op_2, \op_1} \in \ro \Rightarrow \op_2 \in M[R_i]$
+    $u' \leftarrow u$\;
+    \eIf{$\mathsf{meth}(\op_1) = \mathsf{contains}$}{
+     \If{$\mathsf{ret}(\op_1) = \mathit{true} \Leftrightarrow \not\exists \op_2 \in u(\mathsf{arg}(\op_1),i)$ st. ${\sf meth}(\op_2) = {\sf add} \land {\sf arg}(\op_2) = \mathsf{arg}(\op_1)$}{
+      \Return{false}\;
+     }
+    }{
+     $u'(\mathsf{arg}(\op_1),i) \leftarrow \{\op_1\}$\;
+    }
+    $m'\leftarrow m[i \leftarrow m(i) \cup \{o_1\}]$\;
+    \If{$\tup{m', u'} \not\in seen$ and $\mathsf{CheckAWSet}(\hist, m', u', \mathit{seen})$}{
+     \Return{true}\;
+    }
+    $\mathit{seen}\leftarrow\mathit{seen}\cup\{\tup{m', u'}\}$\;
+   }
+  }
+  \Return{false}\;
+ }
+ \caption{The procedure $\mathsf{CheckAWSet}$ for checking consistency of Add-Wins Set.
+% $\ro^1$ denotes the immediate successor relation of $\ro$.
+% Also, for a mapping $f$, $f[a\leftarrow b]$ denotes the function $f'$ with $f'(x)=f(x)$ for all $x\neq a$, and $f'(a)=b$.
+}
+ \label{orsetcrdtalgo:main}
+\end{algorithm}
+
+
+%Algorithm~\ref{orsetcrdtalgo:main} lists our algorithm for checking consistency of replicated OR-Set histories. It is defined as a recursive procedure $\mathsf{checkORSet}$ that searches for a sequence of valid extensions of a given prefix map and a latest concurrent value update map (initially, both of them are empty) until the prefix map becomes complete. The axiom \textsc{RetvalSet} is enforced whenever extending the prefix map with a new {\sf contain} operation (when the last operation of a replica $i$ is ``advanced'' to a {\sf read} operation).
+The following theorem states the correctness of the algorithm.
+
+\begin{theorem}
+
+  $\mathsf{CheckAWSet}(\hist,\emptyset,\emptyset,\emptyset)$ returns $\mathit{true}$ iff the input history is consistent for the Add-Wins Set.
+
+\end{theorem}
+
+Theorem~\ref{thm:ptime:sets} in Section~\ref{sec:ptime:sets} follows from this result, so long as the number of replicas and set/flag elements are fixed.

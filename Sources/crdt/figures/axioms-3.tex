@@ -1,0 +1,6 @@
+\begin{align*}
+  & \text{\underline{\sc RetvalReg}} \\
+  & \forall o_1,v. {\sf meth}(o_1) = {\sf read} \land v\in {\sf ret}(o_1)
+  \implies \exists! o_2. \rf(o_2,o_1) \land {\sf meth}(o_2) = {\sf write}
+  \land {\sf arg}_2(o_2)=v
+\end{align*}

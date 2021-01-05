@@ -1,0 +1,213 @@
+%!TEX root = Thesis.tex
+
+\section{Proofs of Section~\ref{ssec:pc}}\label{app:pc_red}
+
+\begin{lemma}\label{lem:pc_width:app}
+The histories $\hist$ and $\hist_{R|W}$ have the same width.
+\end{lemma}
+\begin{proof}
+%Constructing $T', \wro[\xvar]', \so'$ can be done doing constant iterations on the corresponding objects in $\hist$.
+We show that if $\hist$ is of width $k$, then the session order $\so'$ of $\hist_{R|W}$ cannot contain an antichain of size $k+1$.
+Let $\{X^1_{\tr_1}, X^2_{\tr_2}, \ldots X^k_{\tr_k}, X^{k+1}_{\tr_{k+1}}\}$ with $X^i\in \{R,W\}$, for all $1\leq i\leq k+1$, be a set of $k+1$ transactions in $\hist_{R|W}$. Then,
+%Take any $(k+1)$ sized set of transactions in $T'$, $\tr'$, $\{X_{\tr_1}, X_{\tr_2}, \ldots X_{\tr_k}, X_{\tr_{(k+1)}}\}$. 
+\begin{itemize}
+ \item if $\tr_i = \tr_j=\tr$ for some $i \neq j$, then $X^i_{\tr_i}=R_{\tr}$ and $X^j_{\tr_j}=W_\tr$ or vice-versa. Since $\tup{R_{\tr}, W_{\tr}} \in \so'$, this set cannot be an antichain of $\so'$.
+ % that means, they are $W_{\tr}, R_{\tr} \in T'$ for some $\tr \in T$ and $\tup{R_{\tr}, W_{\tr}} \in \so'$. Therefore the set is not an antichain.
+ \item otherwise, by hypothesis, the set $\{\tr_1, \tr_2, \ldots, \tr_k, \tr_{k+1}\}$ is not an antichain of $\so$. Thus, there exists $i, j$ such that $\tup{\tr_i, \tr_j} \in \so$. By the definition of $\so'$, $\tup{X^i_{\tr_i}, X^j_{\tr_j}}\in\so'$, which implies that this set is not an antichain of $\so'$.
+\end{itemize}
+\end{proof}
+
+%\begin{lemma}\label{lem:co1:app}
+%The relation $\co'_1$ is acyclic.
+%\end{lemma}
+%\begin{proof}
+%% Now we will show $\co'_1$ is acyclic. To do that, first we show few properties of a minimal cycle in $\co'_1$ to ease our proofs. 
+%We first show that if $\co'_1$ were to be cyclic, then it contains a minimal cycle with one read transaction, and at least one but at most two write transactions. Then, we show that such cycles cannot exist. 
+% 
+% \begin{figure}[t]
+%  \centering
+%  \begin{subfigure}{.15\textwidth}
+%   \resizebox{\textwidth}{!}{
+%    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+%      semithick, transform shape]
+%     \node[transaction state] at (0,0)       (t_1)           {$W_{\tr_1}$};
+%     \node[transaction state] at (2,0)       (t_2)           {$W_{\tr_2}$};
+%     \path (t_1) edge[dashed, bend left=90] node {$\co'^+_1$} (t_2);
+%     \path (t_2) edge[dashed, color=red, bend left=90] node {$\co'^+_1$} (t_1);
+%     \path (t_1) edge[color=red] node[below] {$\co'_1$} (t_2);
+%    \end{tikzpicture}  
+%   }
+%   \caption{$\tup{W_{\tr_1}, W_{\tr_2}} \in \co'_1$}
+%   \label{ww_consecutive:a}
+%  \end{subfigure}
+%  \begin{subfigure}{.15\textwidth}
+%   \resizebox{\textwidth}{!}{
+%    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+%      semithick, transform shape]
+%     \node[transaction state] at (0,0)       (t_1)           {$W_{\tr_1}$};
+%     \node[transaction state] at (2,0)       (t_2)           {$W_{\tr_2}$};
+%     \path (t_1) edge[dashed, color=blue, bend left=90] node {$\co'^+_1$} (t_2);
+%     \path (t_2) edge[dashed, bend left=90] node {$\co'^+_1$} (t_1);
+%     \path (t_2) edge[color=blue] node[above] {$\co'_1$} (t_1);
+%    \end{tikzpicture}  
+%   }
+%   \caption{$\tup{W_{\tr_2}, W_{\tr_1}} \in \co'_1$}
+%   \label{ww_consecutive:b}
+%  \end{subfigure}
+%  \caption{Cycles with non-consecutive write transactions.}
+%  \label{ww_consecutive}
+% \end{figure}
+% 
+%Therefore, let us assume that $\co'_1$ is cyclic. Then,
+% \begin{itemize}
+%  \item Since $\tup{W_{\tr_1}, W_{\tr_2}} \in \co'_1$ implies $\tup{\tr_1, \tr_2} \in \co$, for every $\tr_1$ and $\tr_2$, a cycle in $\co'_1$ cannot contain only write transactions. Otherwise, it will imply a cycle in the original commit order $\co$. Therefore, a cycle in $\co'_1$ must contain at least one read transaction. 
+%  \item Assume that a cycle in $\co'_1$ contains two write transactions $W_{\tr_1}$ and $W_{\tr_2}$ which are not consecutive, like in Figure~\ref{ww_consecutive}.
+%%  In figure \ref{ww_consecutive}, we have a minimal cycle in $\co'_1$ in which there are two transactions $W_{\tr_1}$ and $W_{\tr_2}$ which are not consecutive. 
+%Since either $\tup{W_{\tr_1}, W_{\tr_2}}\in \co'_1$ or $\tup{W_{\tr_1}, W_{\tr_2}}\in \co'_1$, there exists a smaller cycle in $\co'_1$ where these two write transactions are consecutive. If $\tup{W_{\tr_1}, W_{\tr_2}}\in \co'_1$, then $\co'_1$ contains the smaller cycle on the lower part of the original cycle (Figure~\ref{ww_consecutive:a}), and if $\tup{W_{\tr_2}, W_{\tr_1}}\in \co'_1$, then $\co'_1$ contains the cycle on the upper part of the original cycle (Figure~\ref{ww_consecutive:b}). Thus, all the write transactions in a minimal cycle of $\co'_1$ must be consecutive. 
+%% So all $W_{\_}$ transactions in a minimal cycle in $\co'_1$ must be consecutive.
+%  \item If a minimal cycle were to contain three write transactions, then all of them cannot be consecutive unless they all three form a cycle, which is not possible. So a minimal cycle contains at most two write transactions.
+%  \item Since $\co'_1$ contains no direct relation between read transactions, it cannot contain a cycle with two consecutive read transactions, or only read transactions.
+%  %there is no relation of the form $\tup{R_{\_}, R_{\_}}$ in $\co'_1$. So there is no cycle with consecutive $R_{\_}$ transactions.
+%%  \item All these above properties togerther imply a minimal cycle in $\co'_1$ contains atleast one but atmost two $W_{\_}$ transactions and one $R_{\_}$ transaction.
+% \end{itemize}
+%This shows that a minimal cycle of $\co'_1$ would include a read transaction and a write transaction, and at most one more write transaction. We prove that such cycles are however impossible:
+% \begin{itemize}
+%  \item if the cycle is of size 2, then it contains two transactions $W_{\tr_1}$ and $R_{\tr_2}$ such that $\tup{W_{\tr_1}, R_{\tr_2}}\in\co'_1$ and $\tup{R_{\tr_2}, W_{\tr_1}}\in \co'_1$. Since all the $\tup{R_{\_}, W_{\_}}$ dependencies in $\co'_1$ are of the form $\tup{R_\tr, W_\tr}$, it follows that $\tr_1 = \tr_2$. Then, we have $\tup{W_{\tr_1}, R_{\tr_1}} \in \co'_1$ which implies $\tup{\tr_1, \tr_1} \in \wro \cup \so$, a contradiction.
+%  \item if the cycle is of size 3, then it contains three transactions $W_{\tr_1}$, $W_{\tr_2}$, and $R_{\tr_3}$ such that $\tup{W_{\tr_1}, W_{\tr_2}}\in \co'_1$,  $\tup{W_{\tr_2}, R_{\tr_3}}\in \co'_1$, and $\tup{R_{\tr_3}, W_{\tr_1}} \in \co'_1$. Using a similar argument as in the previous case, $\tup{R_{\tr_3}, W_{\tr_1}} \in \co'_1$ implies $\tr_3 = \tr_1$. Therefore, $\tup{\tr_1, \tr_2} \in \co$ and $\tup{\tr_2, \tr_1} \in \wro \cup \so$, which contradicts the fact that $\wro \cup \so\subseteq \co$.
+%  %  satisfies prefix consistency for $\hist$.
+% \end{itemize}
+% \end{proof}
+% 
+% 
+% \begin{lemma}\label{lem:co2:app}
+% The relation $\co'_2$ is acyclic.
+% \end{lemma}
+% \begin{proof}
+% Assume that $\co'_2$ is cyclic. Any minimal cycle in $\co'_2$ still satisfies the properties of minimal cycles of $\co'_1$ proved in Lemma~\ref{lem:co1} (because all write transactions are still totally ordered and $\co'_2$ doesn't relate directly read transactions). 
+% %- $\co'_2$ has relations of the form $\tup{R_{\_}, W_{\_}}$. 
+% So, a minimal cycle in $\co'_2$ contains a read transaction and a write transaction, and at most one more write transaction.
+% 
+% Since $\co'_1$ is acyclic, a cycle in $\co'_2$, and in particular a minimal one, must  necessarily contain a dependency from $\rwo(\co'_1)$. Note that a minimal cycle cannot contain two such dependencies since this would imply that it contains two non-consecutive write transactions. 
+%%  $\co'_1$ was acyclic. All the relations in $\co'_2$ are of the form $\tup{R_{\_}, W_{\_}}$. If $(\co'_1 \cup \co'_2)$ has a cycle, then the cycle must contain an relation from $\co'_2$. But two $\tup{R_{\_}, W_{\_}}$ in a cycle implies, two non-consecutive $W_{\_}$ in a cycle. So a simple cycle in $(\co'_1 \cup \co'_2)$ would contain only one relation of the form $\tup{R_{\_}, W_{\_}}$.
+%% 
+%The red edges in Figure~\ref{pc_p_proof:2a} show a minimal cycle of $\co'_2$ satisfying all the properties mentioned above. This cycle contains a dependency $\tup{R_{\tr_3}, W_{\tr_2}}\in \rwo(\co'_1)$ which implies the existence of a write transaction $W_{\tr_1}$ in $\hist_{R|W}$ s.t. $\tup{W_{\tr_1}, R_{\tr_3}} \in \wro[\xvar]'$ and $\tup{W_{\tr_1}, W_{\tr_2}} \in \co'_1$ and $W_{\tr_1}, W_{\tr_2}$ write on $\xvar$ (these dependencies are represented by the black edges in Figure~\ref{pc_p_proof:2a}). The relations between these transactions of $\hist_{R|W}$ imply that the corresponding transactions of $\hist$ are related as shown in Figure~\ref{pc_p_proof:2b}: $\tup{W_{\tr_1}, W_{\tr_2}} \in \co'_1$ and $\tup{W_{\tr_2}, W_{\tr_4}} \in \co'^*_1$ imply $\tup{\tr_1, \tr_2} \in \co$ and $\tup{\tr_2, \tr_4} \in \co^*$, respectively, $\tup{W_{\tr_1}, W_{\tr_3}} \in \wro[\xvar]'$ implies $\tup{\tr_1, \tr_3} \in \wro[\xvar]$, and $\tup{W_{\tr_4}, R_{\tr_3}} \in \co'_1$ implies $\tup{\tr_4, \tr_3} \in \wro \cup \so$. This implies that $\tup{\hist,\co}$ doesn't satisfy the $\axpre$ axiom, a contradiction.
+%%But to satisfy $\axpre$, $\tup{\tr_2, \tr_1}$ should have been in $\co$, not $\tup{\tr_1, \tr_2}$ - which is a contradiction.
+%  \end{proof}
+% 
+% \begin{figure}[t]
+%  \centering
+%  \begin{subfigure}{.20\textwidth}
+%   \resizebox{\textwidth}{!}{
+%    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+%      semithick, transform shape]
+%     \node[transaction state] at (0,0)       (t_1)           {$W_{\tr_1}$};
+%     \node[transaction state] at (2,0)       (t_3)           {$R_{\tr_3}$};
+%     \node[transaction state, label={above:$\writeVar{ }{\xvar}$}] at (-0.5,1.5) (t_2) {$W_{\tr_2}$};
+%     \node[transaction state] at (1.5,1.5) (t_4) {$W_{\tr_4}$};
+%     \path (t_1) edge node {$\wro[\xvar]$} (t_3);
+%     % \path (t_2) edge[blue] node {$\CO$} (t_1);
+%     \path (t_2) edge[red] node {$\co'^*_1$} (t_4);
+%     \path (t_4) edge[red] node {$\co'_1$} (t_3);
+%     \path (t_1) edge[left] node {$\co'_1$} (t_2);
+%     \path (t_3) edge[red, right] node[pos=.8,rotate=-30,yshift=2.5mm] {$\rwo(\co'_1)$} (t_2);
+%    \end{tikzpicture}
+%   }
+%   \caption{Minimal cycle in $\co'_2$.}
+%   \label{pc_p_proof:2a}
+%  \end{subfigure}
+%  \begin{subfigure}{0.20\textwidth}
+%   \resizebox{\textwidth}{!}{
+%    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+%      semithick, transform shape]
+%     \node[transaction state, text=red] at (0,0)       (t_1)           {$\tr_1$};
+%     \node[transaction state] at (2,0)       (t_3)           {$\tr_3$};
+%     \node[transaction state, text=red,label={above:\textcolor{red}{$\writeVar{ }{\xvar}$}}] at (-0.5,1.5) (t_2) {$\tr_2$};
+%     \node[transaction state] at (1.5,1.5) (t_4) {$\tr_4$};
+%     \path (t_1) edge[red] node {$\wro[\xvar]$} (t_3);
+%     % \path (t_2) edge[blue] node {$\CO$} (t_1);
+%     \path (t_2) edge node {$\co^*$} (t_4);
+%     \path (t_4) edge node {$\wro \cup \so$} (t_3);
+%     \path (t_1) edge[left] node {$\co$} (t_2);
+%    \end{tikzpicture}
+%   }
+%   \caption{$\axpre$ violation in $\tup{\hist, \co}$}
+%   \label{pc_p_proof:2b}
+%  \end{subfigure}
+%  \caption{Cycles in $\co'_2$ correspond to $\axpre$ violations.}
+%  \label{pc_p_proof:2}
+% \end{figure}
+%
+% \begin{lemma}\label{lem:pc1:app}
+%If a history $\hist$ satisfies prefix consistency, then $\hist_{R|W}$ is serializable.
+%\end{lemma}
+% \begin{proof}
+%% So $\co'_1 \cup \co'_2$ is acyclic. We take $\co'$ to be any topological order of $\co'_1 \cup \co'_2$. 
+% Let $\co'$ be any total order consistent with $\co'_2$. Assume by contradiction that $\tup{\hist_{R|W},\co'}$ doesn't satisfy $\axser$. Then, there exist $\tr'_1, \tr'_2, \tr'_3 \in T'$ such that $\tup{\tr'_1, \tr'_2}, \tup{\tr'_2, \tr'_3} \in \co'$ and $\tr'_1, \tr'_2$ write on some variable $\xvar$ and $\tup{\tr'_1, \tr'_3} \in \wro[\xvar]'$. But then $\tr'_1, \tr'_2$ are write transactions and $\co'_1$ must contain $\tup{\tr'_1, \tr'_2}$. Therefore, $\rwo(\co'_1)$ and $\co'_2$ should contain $\tup{\tr'_3, \tr'_2}$, a contradiction with $\co'$ being consistent with $\co'_2$.
+%%  we must have added $\tup{\tr'_3, \tr'_2} \in \co'_2$. So $\tup{\tr'_2, \tr'_3}$ can not be in $\co'$. Therefore, $\co'$ must satisfy $\axser$ and proves our claim in predicate (\ref{pre_leftright}).
+% \end{proof}
+% 
+% The following theorem shows that the reverse of Lemma~\ref{lem:pc1:app} holds as well.
+% 
+% \begin{theorem}\label{th:pc:app}
+%A history $\hist$ satisfies prefix consistency iff $\hist_{R|W}$ is serializable.
+%\end{theorem}
+%\begin{proof}
+%The ``only-if'' direction is proven by Lemma~\ref{lem:pc1:app}. For the reverse, we show that 
+% % Now we will prove, if $\hist_{R|W}$ is serializable, then $\hist$ is prefix consistent. Formally we are trying to prove,
+% \begin{align*}
+%  \forall \co'.\ \exists \co.\ \tup{\hist_{R|W}, \co'} \models \axser \Rightarrow \tup{\hist, \co} \models \axpre %\label{pre_rightleft}
+% \end{align*}
+% 
+% Thus, let $\co'$ be a commit (total) order on transactions of $\hist_{R|W}$ which together with $\hist_{R|W}$ satisfies the serializability axiom.
+% % Consider a total order $\co'$ for $\hist_{R|W}$ which satisfies serialization. We will show there exists a $\co$ for $h$ which satisfies prefix consistency. 
+% Let $\co$ be a commit order on transactions of $\hist$ defined by 
+% $\co = \{\tup{\tr_1, \tr_2} | \tup{W_{\tr_1}, W_{\tr_2}} \in \co'\}$ ($\co$ is clearly a total order). If $\co$ were not to be consistent with $\wro \cup \so$, then there would exist transactions $\tr_1$ and $\tr_2$ such that  $\tup{\tr_1, \tr_2} \in \wro \cup \so$ and $\tup{\tr_2, \tr_1} \in \co$, which would imply that $\tup{W_{\tr_1}, R_{\tr_2}} , \tup{R_{\tr_2}, W_{\tr_2}} \in \wro \cup \so$ and $\tup{W_{\tr_2}, W_{\tr_1}} \in \co'$, which violates the acylicity of $\co'$. We show that $\tup{\hist, \co}$ satisfies $\axpre$. Assume by contradiction that there exists a $\axpre$ violation between $\tr_1$, $\tr_2$, $\tr_3$, $\tr_4$ (shown in Figure \ref{pc_p_proof:3a}), i.e., for some $\xvar \in \vars{\hist}$, $\tup{\tr_1, \tr_3} \in \wro[\xvar]$ and $\writeVar{\tr_2}{\xvar}$, $\tup{\tr_1, \tr_2} \in \co$, $\tup{\tr_2, \tr_4} \in \co^*$ and $\tup{\tr_4, \tr_3} \in \wro \cup \so$. Then, the corresponding transactions $W_{\tr_1}, W_{\tr_2}, W_{\tr_4}, R_{\tr_3}$ in $\hist_{R|W}$ would be related as follows: 
+%$\tup{W_{\tr_1}, W_{\tr_2}} \in \co'$ and $\tup{W_{\tr_1}, R_{\tr_3}} \in \wro[\xvar]'$ because $\tup{\tr_1, \tr_3} \in \wro[\xvar]$ and $\tup{\tr_1, \tr_2} \in \co$.
+%        Since $\co'$ satisfies $\axser$, then $\tup{R_{\tr_3}, W_{\tr_2}} \in \co'$.
+%        But $\tup{\tr_2, \tr_4} \in \co^*$ and $\tup{\tr_4, \tr_3} \in \wro \cup \so$ imply that $\tup{W_{\tr_2}, W_{\tr_4}} \in \co'^*$ and $\tup{W_{\tr_4}, R_{\tr_3}} \in \wro' \cup \so'$, which show that $\co'$ is cyclic (the red cycle in figure \ref{pc_p_proof:3b}), a contradiction.
+%\end{proof}
+% 
+% 
+% \begin{figure}[t]
+%  \centering
+%  \begin{subfigure}{.20\textwidth}
+%   \resizebox{\textwidth}{!}{
+%    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+%      semithick, transform shape]
+%     \node[transaction state, text=red] at (0,0)       (t_1)           {$\tr_1$};
+%     \node[transaction state] at (2,0)       (t_3)           {$\tr_3$};
+%     \node[transaction state, text=red,label={above:\textcolor{red}{$\writeVar{ }{\xvar}$}}] at (-0.5,1.5) (t_2) {$\tr_2$};
+%     \node[transaction state] at (1.5,1.5) (t_4) {$\tr_4$};
+%     \path (t_1) edge[red] node {$\wro[\xvar]$} (t_3);
+%     % \path (t_2) edge[blue] node {$\CO$} (t_1);
+%     \path (t_2) edge node {$\co^*$} (t_4);
+%     \path (t_4) edge node {$\wro \cup \so$} (t_3);
+%     \path (t_1) edge[left] node {$\co$} (t_2);
+%    \end{tikzpicture}
+%   }
+%   \caption{$\axpre$ violation in $\tup{\hist, \co}$}
+%   \label{pc_p_proof:3a}
+%  \end{subfigure}
+%  \begin{subfigure}{0.20\textwidth}
+%   \resizebox{\textwidth}{!}{
+%    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+%      semithick, transform shape]
+%     \node[transaction state] at (0,0)       (t_1)           {$W_{\tr_1}$};
+%     \node[transaction state] at (2,0)       (t_3)           {$R_{\tr_3}$};
+%     \node[transaction state, label={above:\textcolor{red}{$\writeVar{ }{\xvar}$}}] at (-0.5,1.5) (t_2) {$W_{\tr_2}$};
+%     \node[transaction state] at (1.5,1.5) (t_4) {$W{\tr_4}$};
+%     \path (t_1) edge node[near start] {$\wro[\xvar]'$} (t_3);
+%     % \path (t_2) edge[blue] node {$\CO$} (t_1);
+%     \path (t_2) edge[red] node {$\co'^*$} (t_4);
+%     \path (t_4) edge[red] node {$\wro' \cup \so'$} (t_3);
+%     \path (t_1) edge[left] node {$\co'$} (t_2);
+%     \path (t_3) edge[red,above right] node {$\co'$} (t_2);
+%    \end{tikzpicture}
+%   }
+%   \caption{Cycle in $\co'$.}
+%   \label{pc_p_proof:3b}
+%  \end{subfigure}
+%  
+%  \caption{$\axpre$ violations correspond to cycles in $\co'$.}
+%  \label{pc_p_proof:3}
+% \end{figure}

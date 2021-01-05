@@ -1,0 +1,52 @@
+%!TEX root = Thesis.tex
+
+\section{Proofs of Section~\ref{sec:def}}\label{app:definitions}
+
+\begin{lemma}
+ Let $\hist=\tup{T, \so, \wro}$ be a history. 
+ If $\tup{\hist,\co}$ satisfies $\mathsf{Read\ Atomic}$, then %the extension of $\wro[\xvar]$ to transactions 
+ for every transaction $\tr$ and two reads $\rd[\id_1]{\xvar}{\val_1},\rd[\id_2]{\xvar}{\val_2}\in \readOp{\tr}$, $\wro^{-1}(\rd[\id_1]{\xvar}{\val_1})=\wro^{-1}(\rd[\id_2]{\xvar}{\val_2})$ and $\val_1 = \val_2$.\end{lemma}
+\begin{proof}
+ Let $\tup{\tr_1, \rd[\id_1]{\xvar}{\val_1}}, \tup{\tr_2, \rd[\id_2]{\xvar}{\val_2}} \in \wro[\xvar]$. Then $\tr_1, \tr_2$ write to $\xvar$. Let us assume by contradiction, that $\tr_1\neq\tr_2$. By \textsf{Read Atomic}, $\tup{\tr_2, \tr_1} \in \co$ because $\tup{\tr_1, \rd[\id_1]{\xvar}{\val_1}} \in \wro[\xvar]$ and $\tr_2$ writes to $\xvar$. Similarly, we can also show that $\tup{\tr_1, \tr_2} \in \co$. This contradicts the fact that $\co$ is a strict total order. Therefore, $\tr_1 = \tr_2$. We also have that $\val_1 = \val_2$ because each transaction contains a single write to $\xvar$.
+ \end{proof}
+
+\begin{lemma}
+ The following entailments hold:
+ \begin{align*}
+   & \mathsf{Causal} \implies \mathsf{Read\ Atomic}\implies \mathsf{Read\ Committed} \\
+   & \mathsf{Prefix} \implies \mathsf{Causal}                                        \\
+   & \mathsf{Serializability} \implies \mathsf{Prefix}\land \mathsf{Conflict}        
+ \end{align*} 
+\end{lemma}
+\begin{proof}
+  We will show the contrapositive of each implication:
+ \begin{itemize}
+   \item If $\tup{\hist, \co}$ does not satisfy \textsf{Read Committed},  then
+\begin{align*}
+\exists \xvar,\ \exists \tr_1,\tr_2,\ \exists \alpha,\beta.\ \tup{\tr_1,\alpha}\in \wro[\xvar] \land \writeVar{\tr_2}{\xvar}\ \land \tup{\tr_2,\beta}\in\wro \land \tup{\beta,\alpha} \in \po \land \tup{\tr_1,\tr_2}\in\co. 
+\end{align*}
+Let $\tr_3$ the transaction containing $\alpha$ and $\beta$. We have that $\tup{\tr_2, \tr_3} \in \wro$. But then we have $\tr_1, \tr_2, \tr_3$ such that $\tup{\tr_1, \tr_3} \in \wro[\xvar]$ and $\tup{\tr_2, \tr_3} \in \wro$ and $\writeVar{\tr_2}{\xvar}$. So by \textsf{Read Atomic}, $\tup{\tr_2, \tr_1} \in \co$. This contradicts the fact that $\co$ is a strict total order. Therefore, $\tup{\hist, \co}$ does not satisfy \textsf{Read\ Atomic}.
+   \item If $\tup{\hist, \co}$ does not satisfy \textsf{Read Atomic}, then 
+ \begin{align*}  
+ \exists \xvar, \exists \tr_1,\tr_2,\tr_3.\ \tup{\tr_1,\tr_3}\in \wro[\xvar] \land \writeVar{\tr_2}{\xvar}\ \land \tup{\tr_2,\tr_3}\in\wro\cup\so \land \tup{\tr_1,\tr_2}\in\co.
+ \end{align*}
+  Then $\tup{\tr_2,\tr_3}\in(\wro\cup\so)^+$. Then, by \textsf{Causal}, we have $\tup{\tr_2, \tr_1} \in \co$, which contradicts the fact that $\co$ is a strict total order. Therefore, $\tup{\hist, \co}$ does not satisfy \textsf{Causal}.
+   \item If $\tup{\hist, \co}$ does not satisfy \textsf{Causal}, then
+\begin{align*}
+\exists \xvar, \exists \tr_1,\tr_2,\tr_3.\ \tup{\tr_1,\tr_3}\in \wro[\xvar] \land \writeVar{\tr_2}{\xvar}\ \land \tup{\tr_2,\tr_3}\in(\wro\cup\so)^+ \land\tup{\tr_1,\tr_2}\in\co.
+\end{align*}
+   But, $(\wro\cup\so)^+ = (\wro\cup\so)^* \circ (\wro\cup\so) \subseteq \co^* \circ (\wro\cup\so)$. Therefore, $\tup{\tr_2,\tr_3}\in\co^* \circ (\wro\cup\so)$. Then, by \textsf{Prefix}, we have $\tup{\tr_2, \tr_1} \in \co$, which contradicts the fact that $\co$ is a strict total order. Therefore, $\tup{\hist, \co}$ does not satisfy \textsf{Prefix}.
+   \item If $\tup{\hist, \co}$ does not satisfy \textsf{Prefix} or \textsf{Conflict}, then 
+\begin{align*}
+\exists \xvar, \exists \tr_1,\tr_2,\tr_3, \tr_4.\ \tup{\tr_1,\tr_3}\in \wro[\xvar] \land \writeVar{\tr_2}{\xvar}\ \land \tup{\tr_2,\tr_4}\in\co^* \land \tup{\tr_1,\tr_2}\in\co
+\end{align*}
+and 
+       \begin{itemize}
+         \item $\tup{\tr_4,\tr_3}\in \co \land \writeVar{\tr_3}{\yvar}\ \land \writeVar{\tr_3}{\yvar}$ if it violates \textsf{Conflict}.
+         \item $\tup{\tr_4,\tr_3}\in (\wro \cup \so)$ if it violates \textsf{Prefix}.
+       \end{itemize}
+       
+In both cases, we have that $\tup{\tr_4, \tr_3} \in \co$. Because $\co$ is transitive, $\tup{\tr_2, \tr_4} \in \co^*$ and $\tup{\tr_4, \tr_3} \in \co$ imply that $\tup{\tr_2, \tr_3} \in \co$. Then by \textsf{Serializability}, we have $\tup{\tr_2, \tr_1} \in \co$, which contradicts the fact that $\co$ is a strict total order. Therefore, $\tup{\hist, \co}$ does not satisfy \textsf{Serializability}.
+ \end{itemize}
+\end{proof}
+

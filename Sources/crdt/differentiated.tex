@@ -1,0 +1,233 @@
+%!TEX root = Thesis.tex
+
+\section{Polynomial-Time Algorithms for Registers and Arrays}
+\label{sec:algorithms}
+
+We show that the problem of checking consistency is polynomial time for RGA, and even for LWW and MVR under the assumption that each value is written at most once, i.e., for each value $v$, the input history contains at most one write operation {\sf write}($x$,$v$). Histories satisfying this assumption are called \emph{differentiated}. The latter is a restriction motivated by the fact that practical implementations of these datatypes are data-independent~\cite{DBLP:conf/popl/Wolper86}, i.e., their behavior doesn't depend on the concrete values read or written and any potential buggy behavior can be exposed in executions where each value is written at most once. Also, in a testing environment, this restriction can be enforced by tagging each value with a replica identifier and a sequence number.
+
+In all three cases, the feature that enables polynomial time consistency checking is the fact that the read-from relation becomes fixed for a given history, i.e., if the history is consistent, then there exists exactly one read-from relation $\rf$ that satisfies the \textsc{ReadFrom\_} and \textsc{Retval\_} axioms, and $\rf$ can be derived syntactically from the operation labels (using those axioms). Then, our axiomatic characterizations enable a consistency checking algorithm which roughly, consists in instantiating those axioms in order to compute an abstract execution.
+
+%\setlength{\textfloatsep}{3pt}
+\begin{algorithm}[t]
+  {\footnotesize\input{Sources/crdt/figures/alg-register}}
+  \caption{Consistency checking for RGA, LWW, and MVR. \textsc{Re\ldots}[$T$] refers to an axiom of $T$, or $\mathit{true}$ when $T$ lacks such an axiom. The relation $R^+$ denotes the transitive closure of $R$.
+% Since LWW contains no axiom
+% Since MVR contains no axiom constraining the linearization order, the procedure {\sf Closure} is vacuous and returns directly $\hb$.
+\vspace{-1.5em}
+ }
+  \label{algo:common}
+\end{algorithm}
+
+The consistency checking algorithm for RGA, LWW, and MVR is listed in Algorithm~\ref{algo:common}. It computes the three relations $\rf$, $\hb$, and $\lin$ of an abstract execution using the datatype's axioms. The history is declared consistent iff there exist satisfying $\rf$ and $\hb$ relations, and the relations $\hb$ and $\lin$ computed this way are acyclic. The acyclicity requirement comes from the definition of abstract executions where $\hb$ and $\lin$ are required to be partial/total orders.
+While an abstract execution would require that $\lin$ is a total order, this algorithm computes a partial linearization order. However, any total order compatible with this partial linearization would satisfy the axioms of the datatype.
+
+%\setlength{\textfloatsep}{3pt}
+\begin{algorithm}[t]
+  {\footnotesize\input{Sources/crdt/figures/alg-rga}}
+  \caption{The procedure {\sf ComputeRF} for RGA.}
+  \label{alg:rga:1}
+\end{algorithm}
+
+
+%The computation of $\rf$, $\hb$, and $\lin$ is based on the axioms of the considered datatype.
+{\sf ComputeRF} computes the read-from relation $\rf$ satisfying the \textsc{ReadFrom\_} and \textsc{Retval\_} axioms. In the case of LWW and MVR, it defines $\rf$ as the set of all pairs formed of {\sf write}($x$,$v$) and {\sf read}($x$) operations where $v$ belongs to the return value of the {\sf read}. By \textsc{Retval\_}, each {\sf read}($x$) operation must be associated to at least one {\sf write}($x$,\_) operation. Also, the fact that each value is written at most once implies that this $\rf$ relation is uniquely defined, e.g., for LWW, it is not possible to find two {\sf write} operations that could be $\rf$ related to the same {\sf read} operation. In general, if there exists no $\rf$ relation satisfying these axioms, then {\sf ComputeRF} returns a distinguished value $\bot$ to signal a consistency violation. Note that the computation of the read-from for LWW and MVR is quadratic time\footnote{Assuming constant time lookup/insert operations (e.g., using hashmaps), this complexity is linear time.} since the constraints imposed by the axioms relate only to the operation labels, the methods they invoke or their arguments. The case of RGA is slightly more involved because the axiom \textsc{RetvalRGA} introduces more read-from constraints based on the happens-before order which includes $\ro$ and the $\rf$ itself. In this case, the computation of $\rf$ relies on a fixpoint computation, which converges in at most quadratic time (the maximal size of $\rf$), described in Algorithm~\ref{alg:rga:1}. Essentially, we use the axiom \textsc{ReadFromRGA} to populate the read-from relation and then, apply the axiom \textsc{RetvalRGA} iteratively, using the read-from constraints added in previous steps, until the computation converges.
+
+After computing the read-from relation, our algorithm defines the happens-before relation $\hb$ as the transitive closure of $\ro$ union $\rf$. This is sound because none of the axioms of these datatypes enforce new happens-before constraints, which are not already captured by $\ro$ and $\rf$. Then, it checks whether the $\hb$ defined this way is acyclic and satisfies the datatype's axioms that constrain $\hb$, i.e., \textsc{ReadFromMaximal} and \textsc{ReadAllMaximals}(when they are present).
+
+Finally, in the case of LWW and RGA, the algorithm computes a (partial) linearization order that satisfies the corresponding \textsc{Lin\_} axioms. Starting from an initial linearization order which is exactly the happens-before, it computes new constraints by instantiating the universally quantified axioms \textsc{LinLWW} and \textsc{LinRGA}. Since these axioms are not ``recursive'', i.e., they don't enforce linearization order constraints based on other linearization order constraints, a standard instantiation of these axioms is enough to compute a partial linearization order such that any extension to a total order satisfies the datatype's axioms.
+
+\vspace{-1.5mm}
+\begin{theorem}
+
+  Algorithm~\ref{algo:common} returns $\mathit{true}$ iff the input history is consistent.
+
+\vspace{-1.5mm}
+\end{theorem}
+
+The following holds because Algorithm~\ref{algo:common} runs in polynomial time — the rank depends on the number of quantifiers in the datatype's axioms. Indeed, Algorithm~\ref{algo:common} represents a least fixpoint computation which converges in at most a quadratic number of iterations (the maximal size of $\rf$).
+
+\vspace{-1.5mm}
+\begin{corollary}
+
+  The admissibility problem is polynomial time for RGA, and for LWW and MVR on differentiated histories.
+
+\vspace{-1.5mm}
+\end{corollary}
+
+%\begin{algorithm}[H]
+%{\footnotesize
+% \SetKwInOut{KwInput}{Input}
+% \SetKwInOut{KwOutput}{Output}
+% \KwIn{A LWWReg CRDT history $\hist = \tup{\Op, \ro}$}
+% \KwOut{$\mathit{true}$ iff $\hist$ satisfies \textsc{Causal consistency}}
+% \BlankLine
+% \If{$\so\cup\wro$ is cyclic} {
+%  \Return{false}\;
+% }
+% $\co \leftarrow \so\cup\wro$\;
+% \ForEach{$\xvar \in \vars{\hist}$}{
+%  \ForEach{$\tr_1 \neq \tr_2 \in T$ s.t. $\tr_1$ and $\tr_2$ write on $\xvar$}{
+%   \If{$\exists \tr_3.\ \tup{\tr_1,\tr_3}\in \wro[\xvar]\land \tup{\tr_2,\tr_3}\in (\so\cup\wro)^+$} { %\Path{\tr_2}{E_1^+}{\tr_3}, \Path{\tr_1}{\wro[\xvar]}{\tr_3}
+%    $\co \leftarrow \co \cup \{\tup{\tr_2, \tr_1}\}$\;
+%   }
+%  }
+% }
+% \eIf{$\co$ is cyclic}{
+%  \Return{false}\;
+% }{
+%  \Return{true}\;
+% }}
+% \caption{Checking \textsc{Causal consistency}}
+% \label{ccalgo:1}
+%\end{algorithm}
+%
+%\begin{procedure}
+%  {\footnotesize
+%   \SetKwInOut{KwInput}{Input}
+%   \SetKwInOut{KwOutput}{Output}
+%   \KwIn{A LWWReg CRDT history $\hist = \tup{\Op, \ro}$}
+%   \KwOut{$\rf$}
+%   \BlankLine
+%   $\rf \leftarrow \emptyset$\;
+%   \ForEach{$\xvar \in \vars{\hist}$}{
+%    \ForEach{$\op_2 \in \Op$ s.t. $\op_2 = \tup{Read(x), a}$}{
+%    \eIf{$\exists \op_1 \in \Op$ s.t. $\op_1 = \tup{Write(x, a), \bot}$}{
+%      $\rf \leftarrow \rf \cup \{\tup{\op_1, \op_2}\}$\;
+%      }{
+%      \Return{$\bot$}\;
+%      }
+%    }
+%   }
+%   \Return{$\rf$}\;
+%   }
+%  \caption{step1()}
+%  \label{lwwreg_uniq:1}
+%\end{procedure}
+%
+%\begin{procedure}
+%  {\footnotesize
+%   \SetKwInOut{KwInput}{Input}
+%   \SetKwInOut{KwOutput}{Output}
+%   \KwIn{A MVReg CRDT history $\hist = \tup{\Op, \ro}$}
+%   \KwOut{$\rf$}
+%   \BlankLine
+%   $\rf \leftarrow \emptyset$\;
+%   \ForEach{$\xvar \in \vars{\hist}$}{
+%    \ForEach{$\op_2 \in \Op$ s.t. $\op_2 = \tup{Read(x), A}$}{
+%    \ForEach{$a \in A$}{
+%
+%    \eIf{$\exists \op_1 \in \Op$ s.t. $\op_1 = \tup{Write(x, a), \bot}$}{
+%      $\rf \leftarrow \rf \cup \{\tup{\op_1, \op_2}\}$\;
+%      }{
+%      \Return{$\bot$}\;
+%      }
+%    }
+%    }
+%   }
+%   \Return{$\rf$}\;
+%   }
+%  \caption{step1()}
+%  \label{mvreg_uniq:1}
+%\end{procedure}
+%
+%\begin{procedure}
+%  {\footnotesize
+%   \SetKwInOut{KwInput}{Input}
+%   \SetKwInOut{KwOutput}{Output}
+%   \KwIn{A RGA CRDT history $\hist = \tup{\Op, \ro}$}
+%   \KwOut{$\rf$}
+%   \BlankLine
+%   $\rf \leftarrow \emptyset$\;
+%   \ForEach{$\xvar \in \vars{\hist}$}{
+%    \ForEach{$\op_2 \in \Op$ s.t $\op_2 = \tup{Read(), [\ldots,a,\ldots]}/\tup{AddAfter(a, \_), \bot}/\tup{Remove(a), \bot}$}{
+%      \eIf{$\exists \op_1 \in \Op$ s.t. $\op_1 = \tup{AddAfter(\_, a), \bot}$}{
+%      $\rf \leftarrow \rf \cup \{\tup{\op_1, \op_2}\}$\;
+%      }{
+%      \Return{$\bot$}\;
+%      }
+%    }
+%   }
+%   \While{true}{
+%   $\rf_1 \leftarrow \emptyset$\;
+%   \ForEach{$\xvar \in \vars{\hist}$}{
+%    \ForEach{$\op_1, \op_2 \in \Op$ s.t. $\tup{\op_1, \op_2} \in (\rf\cup\ro)^+$ and $\op_1 = \tup{AddAfter(\_, a), \bot}$ and $\op_2 = \tup{Read(), A}$ and $a \not\in A$}{
+%    \eIf{$\exists \op_3 \in \Op$ s.t. $\op_3 = Remove(a)$}{
+%
+%      $\rf_1 \leftarrow \rf_1 \cup \{\tup{\op_1, \op_3}\}$\;
+%      }{
+%      \Return{$\bot$}\;
+%      }
+%    }
+%   }
+%   \eIf{$\rf_1 = \emptyset$}{
+%    break\;
+%   }{
+%    $\rf \leftarrow \rf \cup \rf_1$\;
+%   }
+%   }
+%   \Return{$\rf$}\;
+%   }
+%  \caption{step1()}
+%  \label{rga:1}
+%\end{procedure}
+
+%\begin{procedure}
+%  {\footnotesize
+%   \SetKwInOut{KwInput}{Input}
+%   \SetKwInOut{KwOutput}{Output}
+%   \KwIn{$\tup{\tup{\Op, \ro}, \rf, \hb}$}
+%   \KwOut{$\lin$}
+%   \BlankLine
+%   $\lin \leftarrow \emptyset$\;
+%   \ForEach{$\xvar \in \vars{\hist}$}{
+%    \ForEach{$\tup{\op_1, \op_2} \in \rf$ st. $\op_1 = \tup{Write(x, a), \bot}$}{
+%     \If{$\exists \op_3 \in \Op$ s.t. $\op_3 = \tup{Write(x, b), \bot}$ and $a \neq b$ and $\tup{\op_3,\tr_2}\in \hb$} {
+%      $\lin \leftarrow \lin \cup \{\tup{\op_3, \op_1}\}$\;
+%     }
+%    }
+%   }
+%   \Return{$\lin$}\;
+%   }
+%  \caption{step2()}
+%  \label{lwwreg_uniq:2}
+%\end{procedure}
+%
+%\begin{procedure}
+%  {\footnotesize
+%   \SetKwInOut{KwInput}{Input}
+%   \SetKwInOut{KwOutput}{Output}
+%   \KwIn{$\tup{\tup{\Op, \ro}, \rf, \hb}$}
+%   \KwOut{$\lin$}
+%   \BlankLine
+%   $\lin \leftarrow \emptyset$\;
+%   \ForEach{$\xvar \in \vars{\hist}$}{
+%    \ForEach{$\tup{\op_1, \op_2} \in \rf$ st. $\op_1 = \tup{Write(x, A), \bot}$}{
+%     \If{$\exists \op_3 \in \Op$ s.t. $\op_3 = \tup{Write(x, b), \bot}$ and $b \not\in A $ and $\tup{\op_3,\tr_2}\in \hb$} { %\Path{\tr_2}{E_1^+}{\tr_3}, \Path{\tr_1}{\wro[\xvar]}{\tr_3}
+%      $\lin \leftarrow \lin \cup \{\tup{\op_3, \op_1}\}$\;
+%     }
+%    }
+%   }
+%   \Return{$\lin$}\;
+%   }
+%  \caption{step2()}
+%  \label{mvreg_uniq:2}
+%\end{procedure}
+%
+%\begin{procedure}
+%  {\footnotesize
+%   \SetKwInOut{KwInput}{Input}
+%   \SetKwInOut{KwOutput}{Output}
+%   \KwIn{$\tup{\tup{\Op, \ro}, \rf, \hb}$}
+%   \KwOut{$\lin$}
+%   \BlankLine
+%   $\rf_1 \leftarrow \{\tup{\op_1, \op_2} \in \rf | \op_1 = AddAfter(\_, \_), \op_2 = AddAfter(\_, \_)\}$\;
+%    \ForEach{$\op_1 \neq \op_2 \in \Op$ st. $\op_1 = \tup{AddAfter(a, \_), \bot}$ and $\op_2 = \tup{AddAfter(a, \_), \bot}$}{
+%     \If{$\exists \op'_1, \op'_2 \in \Op$ s.t. $\tup{\op_1, \op'_1}, \tup{\op_2, \op'_2} \in \rf^*_1$ s.t. $\op_1 = AddAfter(\_, b), \op_2 = AddAfter(\_, c)$ s.t. $\exists \tup{Read(), [\ldots, b, \ldots, c, \ldots]}$ }{
+%      $\lin \leftarrow \lin \cup \{\tup{\op_2, \op_1}\}$\;
+%     }
+%    }
+%   \Return{$\lin$}\;
+%   }
+%  \caption{step2()}
+%  \label{mvreg_uniq:2}
+%\end{procedure}

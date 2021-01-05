@@ -1,0 +1,180 @@
+%!TEX root = Thesis.tex
+
+
+\section{Equivalence between our definitions and the formalization in~\cite{DBLP:conf/concur/Cerone0G15}}\label{app:gotsman}
+
+%Cerone et al. worked on a similar consistency models~\cite{DBLP:conf/concur/Cerone0G15}. They use similar definitions for operation, transaction, history like ours, except, unlike our definition, their definition are data dependent. So, they do not have $\wro$ relations in a history \ie $\Hist_{\so} = \tup{\Tr, \so}$. Then, they define the consistency axioms in terms of visibility $\vis$ and $\co$ of a history $\hist$. A history $\hist$ satisfies a consistency axiom if there exists $\vis$ and $\co$ for that history, $\tup{\hist, \vis, \co}$ satisfies the resp. consistency axioms.
+
+\citet{DBLP:conf/concur/Cerone0G15} define the criteria RA, CC, PC, SI, and SER using a notion of history that contains only the session order $\so$. Such a history satisfies one of these criteria in their formalization if there exists a visibility relation $\VIS$ between transactions, and a commit order $\co$ extending the visibility relation that satisfy certain axioms.
+
+\begin{table}
+ \centering
+ \resizebox{.48\textwidth}{!}{
+  \begin{tabular}{ |c c|c c|}
+   \hline
+   \multicolumn{3}{|c}{
+    \shortstack{
+     $\forall (O, \textsf{po}) \in \tr, \forall o \in O, o = read(x, n) \land$                    \\
+     $\left\{o' \in \textsf{po}^{-1}(o) \mid o' = \_(x, \_) \right\} \neq \emptyset \Rightarrow$          \\
+     $max_{\textsf{po}} \left(\left\{o' \in \textsf{po}^{-1}(o) \mid o' = \_(x, \_) \right\}\right) = \_(x, n)$
+    }
+   }                         & {\textsc{(Int)}}                                                           \\
+   \hline
+   \multicolumn{3}{|c}{
+    \shortstack{
+     $\forall \tr = (O, \textsf{po}) \in \tr, \forall x, \tr \models \texttt{read}(x, n) \Rightarrow$ \\ $\left(\left(\VIS^{-1}(\tr) \cap \textsf{Write}_x\right) = \emptyset \land n = 0 \right) \lor$ \\
+     $\left(max_{\CO} \left(\VIS^{-1}(\tr) \cap \textsf{Write}_x\right) \models \texttt{write}(x, n)\right)$
+    }
+   }                         & {\textsc{(Ext)}}                                                           \\
+   \hline
+   $\SO \subseteq \VIS$      & \textsc{(Session)}      & \VIS is transitive & \textsc{(TransVis)}         \\
+   \hline
+   $\CO\circ \VIS \subseteq \VIS$ & \textsc{(Prefix)}       & $\VIS = \CO$       & \textsc{(TotalVis)}         \\
+   \hline
+   \multicolumn{3}{|c}{
+    \shortstack{
+     $\forall \tr, \tr' \in T, \forall x, (\tr, \tr' \in \textsf{Write}_x \land \tr \neq \tr') $               \\
+     $\Rightarrow (\tr \xrightarrow{\VIS} \tr' \lor \tr' \xrightarrow{\VIS} \tr)$
+   }  }                      & {\textsc{(NoConflict)}}                                                    \\
+   \hline
+  \end{tabular}
+ }
+ \caption{Consistency axioms for a history $\hist_{\so}=\tup{T,\so}$, visibility relation \textcolor{red}{\sf{vis}}, and commit order \textcolor{red}{\sf{co}}.}
+ \label{weakconsistency_gotsman:1}
+\end{table}
+
+
+The axioms used by \citet{DBLP:conf/concur/Cerone0G15} are given in Table~\ref{weakconsistency_gotsman:1}. 
+
+\textsc{Int} is an axiom which enforces that if there is a read operation $O$ on variable $\xvar$ in a transaction and there is a read or write operation on $\xvar$ before $O$ \ie $\left\{o' \in \textsf{po}^{-1}(o) \mid o' = \_(x, \_) \right\} \neq \emptyset$, then the latest operation on $\xvar$ before $O$ must read or write the value read by $O$ \ie $max_{\textsf{po}} \left(\left\{o' \in \textsf{po}^{-1}(o) \mid o' = \_(x, \_) \right\}\right) = \_(x, n)$.
+
+\textsc{Ext} is an axiom which enforces that if a transaction $\tr$ has a operation $O$ which reads a variable $\xvar$ and which is not preceded by a write on $\xvar$, denoted by $\tr \models \texttt{read}(x, n)$, then either:
+\begin{itemize}
+	\item it read the initial value 0, and there is no transaction writing on $\xvar$ visible to $\tr$, i.e., $\VIS^{-1}(\tr) \cap \textsf{Write}_x=\emptyset$, or
+	\item it read from a write of another transaction $\tr'$ which writes to variable $\xvar$ and $\tr'$ is the last one in the commit order in the visibility set of $\tr$, i.e., $\VIS^{-1}(\tr)$, that writes on $\xvar$. 
+\end{itemize}
+	Since, the writes in our history have unique values, this is equivalent to, for all $\tr_1, \tr_3$ if $\tr_1 \models write(\xvar, n)$ and $\tr_3 \models read(\xvar, n)$, then for any $\tr_2 \in \vis^{-1}(\tr_3)$ where $\tr_2 \neq \tr_1$ and $\tr_2 \models write(\xvar, \_)$, $\tr_2$ can not be after $\tr_1$ in $\co$ order (\ie $\tup{\tr_2, \tr_1} \in \co$ since $\co$ is total), because $\tr_1$ must be the maximal among the transactions that wrote $\xvar$. We illustrated the axiom in Figure~\ref{ext_fig}, which is very similar to our definition in Figure~\ref{consistency_defs}.
+
+\begin{figure}
+ \begin{subfigure}[t]{.3\textwidth}
+  \centering
+  \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+    semithick, transform shape]
+   \node[transaction state, text=red] at (0,0)       (t_1)           {$\tr_1$};
+   \node[transaction state] at (2,0)       (t_3)           {$\tr_3$};
+   \node[transaction state, text=red,label={above:\textcolor{red}{$\writeVar{ }{\xvar}$}}] at (-.5,1.5) (t_2) {$\tr_2$};
+   \path (t_1) edge[red] node {$\wro[\xvar]$} (t_3);
+   % \path (t_2) edge[blue] node {$\CO$} (t_1);
+   \path (t_2) edge[bend left] node {$\vis$} (t_3);
+   \path (t_2) edge[left,double] node {$\co$} (t_1);
+  \end{tikzpicture}
+  \parbox{\textwidth}{
+   $\forall \xvar,\ \forall \tr_1,\tr_2,\ \forall \tr_3.$
+   
+   \hspace{4mm}$\tup{\tr_1,\tr_3}\in \wro[\xvar] \land \writeVar{\tr_2}{\xvar}\ \land$ 
+   
+   \hspace{9mm}$\tup{\tr_2,\tr_3}\in\vis$
+   
+   \hspace{14mm}$\implies \tup{\tr_2,\tr_1}\in\co$
+  }
+  
+  \caption{$\mathsf{Int} \land \mathsf{Ext}$}
+  \label{ext_fig}
+ \end{subfigure}
+ \caption{}
+ \label{}
+\end{figure}
+
+The definitions for \textsc{Session}, \textsc{TransVis}, \textsc{Prefix}, \textsc{TotalVis} are straightforward. \textsc{NoConflict} enforces $\vis$ to totally order the transactions those write on same variable.
+
+We will show in our axioms definition figures, the path between $\tr_2$ and $\tr_3$ is essentially a $\vis$ relation in $\hist_{\so}$.
+
+\begin{table}
+ \centering
+ \resizebox{.44\textwidth}{!}{
+  \begin{tabular}{|l|l|}
+   \hline
+   Consistency model  & Axioms                                                                                                          \\
+   \hline
+   Read atomic        & \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{Session}                                                      \\
+   \hline
+   Causal consistency & \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{Session} $\land$ \textsc{TransVis}                            \\
+   \hline
+   Prefix consistency & \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{Session} $\land$  \textsc{Prefix}                             \\
+   \hline
+   Snapshot isolation & \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{Session} $\land$  \textsc{Prefix} $\land$ \textsc{NoConflict} \\
+   \hline
+   Serializability    & \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{TotalVis}                                                     \\
+   \hline
+  \end{tabular}
+ }
+ \caption{Consistency model definitions in \citet{DBLP:conf/concur/Cerone0G15}.}
+ \label{weakconsistency_gotsman:2}
+\end{table}
+
+
+
+The definitions of RA, CC, PC, SI, and SER in \citet{DBLP:conf/concur/Cerone0G15} are given in Table~\ref{weakconsistency_gotsman:2}. Next, we show the equivalence between these definitions and our definitions in Figure~\ref{consistency_defs} on histories where every value is written at most once. For a history $\hist = \tup{T, \wro, \so}$ as in our framework, $\hist_{\so} = \tup{T, \so}$.
+
+\begin{itemize}
+ \item 
+       We show that \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{Session} $\equiv$ \textsc{Read Atomic}
+       \begin{itemize}
+
+        \item For a history $\hist = \tup{T, \wro, \so}$, if $\hist_{\so}$ satisfies \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{Session} for some $\vis$ and $\co$, we show that $\hist$ satisfies \textsc{Read Atomic} for the same $\co$. If it does not, then, there exists $\tr_1, \tr_2, \tr_3$ such that $\tup{\tr_1, \tr_3} \in \wro[\xvar]$, $\tr_2$ writes on $\xvar$, $\tup{\tr_2,\tr_3} \in \wro \cup \so$ and $\tup{\tr_3, \tr_1} \in \co$. But, since $\vis$ and $\co$ satisfies \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{Session}, $\vis \supseteq \wro \cup \so$. Hence, $\tup{\tr_2,\tr_3} \in \vis$. Therefore, $\tup{\hist, \vis, \so}$ violates the definition in figure \ref{ext_fig}, which contradicts the fact $\tup{\hist_{\so}, \vis, \so}$ satisfies \textsc{Int} $\land$ \textsc{Ext}.
+              
+        \item For the other direction, we have a commit order $\co$ for $\hist$ which satisfies \textsc{Read Atomic}. We show that there exists a visibility relation $\vis$ which together with the same $\co$ and $\hist_{\so}$ satisfies \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{Session}. Let $\vis = \{ \tup{\tr_1, \tr_2} | \tup{\tr_1, \tr_2} \in \wro \cup \so \}$.
+              
+              \begin{itemize}
+               \item First of all, by definition, the internal reads in our transactions are consistent to the last read or write before them. Only thing is left, to show that the first reads of a variable $\xvar$ before a write to $\xvar$ inside a variable is also reading from a unique transaction.
+               \item If $o_1, o_1$ are two reads on $\xvar$ and $\tup{\tr_1, o_1}$, $\tup{\tr_2, o_2}$ $\in$ $\wro$, then by \textsc{Read Atomic} axiom, we have $\tup{\tr_1, \tr_2}$, $\tup{\tr_2, \tr_1}$ $\in \co$. Therefore, the reads to $\xvar$ in a transaction before the first write to $\xvar$ are from same transaction.
+               \item We can not have a violation of \textsc{Int} and \textsc{Ext} because we defined $\vis$ as $\{ \tup{\tr_1, \tr_2} | \tup{\tr_1, \tr_2} \in \wro \cup \so \}$. So any violation of \textsc{Ext} will be a violation of \textsc{Read Atomic}
+               \item $\vis$ satisfy \textsc{Session}, since $\so \subseteq \vis$
+              \end{itemize}
+              
+%              Therefore, \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{Session} $\equiv$ \textsc{Read Atomic}.
+              
+       \end{itemize}
+ \item We show that \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{Session} $\land$ \textsc{TransVis} $\equiv$ \textsc{Causal Consistency}.
+       \begin{itemize}
+        \item If $\hist$ satisfies \textsc{Causal Consistency}, there exists a $\co$ for $\hist$. We define $\vis = (\wro \cup \so)^+$.
+              $\vis \supseteq \wro \cup \so$, therefore as previous case, $\vis$ satisfies \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{Session} and by construction of $\vis$ it is a transitive closure therefore it also satisfies \textsc{TransVis}. If there is any \textsc{Int} and \textsc{Ext} violation then there exist $\tr_1, \tr_2, \tr_3$ such that $\tup{\tr_1, \tr_3} \in \wro[\xvar]$, $\tr_2$ writes on $\xvar$, $\tup{\tr_1, \tr_2} \in \co$ and $\tup{\tr_2, \tr_3} \in \vis = (\wro \cup \so)^+$ which is a violation of \textsf{Casual Consistency}. This is a contradiction. 
+              
+        \item If there exists a $\co$ for $\hist_{\so}$ which satisfies \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{Session} $\land$ \textsc{TransVis}, we show, the same $\co$ satisfies \textsc{Causal Consistency}. If it does not, we have $\tr_1, \tr_2, \tr_3$ such that $\tup{\tr_1, \tr_3} \in \wro[\xvar]$ $\tr_2$ writes on $\xvar$ and $\tup{\tr_2, \tr_3} \in (\wro \cup \so)^+$ and $\tup{\tr_1, \tr_2} \in \co$. But, by \textsc{Int} $\land$ \textsc{Ext}, $\wro \subseteq \vis$ and by \textsc{Session} $\so \subseteq \vis$ and by \textsc{TransVis} we have $\vis^+ \subseteq \vis$ which implies $(\wro \cup \so)^+ \subseteq \vis$. There fore $\tup{\tr_2,tr_3} \in \vis$. So $\tr_1, \tr_2, \tr_3$ violates \textsc{Int} and \textsc{Ext} axiom for $\co$, which is a contradiction.
+       \end{itemize}
+%       Therefore, \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{Session} $\land$ \textsc{TransVis} $\equiv$ \textsc{Causal Consistency}.
+       
+ \item We show that \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{Session} $\land$ \textsc{Prefix} $\equiv$ \textsc{Prefix consistency}.
+       \begin{itemize}
+        \item If $\hist$ satisfies \textsc{Prefix consistency}, there exists a $\co$ for $\hist$. We define $\vis = \co^* \circ (\wro \cup \so)$.
+              $\vis \supseteq \wro \cup \so$ therefore as previous case, $\vis$ satisfies \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{Session}.
+              Assume $\tup{\tr_1, \tr_2} \in \co \circ \vis$. 
+              Then there exists $\tr_3$ such that $\tup{\tr_1, \tr_3} \in \co$ and $\tup{\tr_3, \tr_2} \in \vis = \co^* \circ (\wro \cup \so)$. Therefore, there exists $\tr_4$ such that either $\tr_3 = \tr_4$ or $\tup{\tr_3, \tr_4} \in \co$ and $\tup{\tr_4, \tr_2} \in (\wro \cup \so)$. Since, $\co$ is a total order, then $\tup{\tr_1, \tr_3} \in \co$ and either $\tr_3 = \tr_4$ or $\tup{\tr_3, \tr_4}$ imply $\tup{\tr_1, \tr_4} \in \co$. We have $\tup{\tr_4, \tr_2} \in (\wro \cup \so)$. Therefore, $\tup{\tr_1, \tr_2} \in \co \circ (\wro \cup \so) \subseteq \vis$. Therefore, $\co \circ \vis \subseteq \vis$ which is \textsc{Prefix} axiom.
+              
+        \item If $\hist_{\so}$ satisfies \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{Session} $\land$ \textsc{Prefix}, then there exists a $\co$ for which the axioms satisfy. The same $\co$ will satisfy \textsc{Read Atomic} axiom for $\hist$. So if we have a violation in \textsc{Prefix consistency}, then there exist $\tr_1, \tr_2, \tr_3$ such that $\tup{\tr_1, \tr_3} \in \wro[\xvar]$, $\tr_2$ writes on $\xvar$ and $\tup{\tr_2, \tr_3} \in \co^* \circ (\wro \cup \so)$ and $\tup{\tr_1, \tr_2} \in \co$. If $\tup{\tr_2, \tr_3} \in (\wro \cup \so)$, then it is violation in \textsc{Read Atomic}, therefore, $\tup{\tr_2, \tr_3} \in \co^+ \circ (\wro \cup \so) = \co \circ (\wro \cup \so)$ because $\co$ is transitive. But by \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{Session}, $(\wro \cup \so) \subseteq \vis$, therefore $\co \circ (\wro \cup \so) \subseteq \co \circ \vis \subseteq \vis$. Then $\tr_1, \tr_2, \tr_3$ violates \textsc{Ext}.
+              
+           
+       \end{itemize}
+       
+%       Therefore, \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{Session} $\land$ \textsc{Prefix} $\equiv$ \textsc{Causal Consistency}.
+       
+ \item We have to show, \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{Session} $\land$ \textsc{Prefix} $\land$ \textsc{NoConflict} $\equiv$ \textsc{Snapshot isolation}.
+       
+       \begin{itemize}
+        \item If $\hist$ satisfies \textsc{Snapshot isolation}, it also satisfies \textsc{Prefix consistency}. We define $\vis = (\co^* \circ (\wro \cup \so)) \cup (\co^* \circ \{\tup{\tr_1, \tr_2} | \tup{\tr_1, \tr_2} \in \co, \exists \xvar. \tr_1, \tr_2 \text{write on } \xvar \}$. Clearly, $\vis$ contains the the relations for \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{Session} $\land$ \textsc{Prefix} proof, therefore, $\vis$ satisfies them. Also, $\vis$ satisfies \textsc{NoConflict} by definition since $\co$ is a total order. Any violation in \textsc{Int} and \textsc{Ext} will imply there is a $\tr_1, \tr_2, \tr_3$ such that $\tup{\tr_1, \tr_3} \in \wro[\xvar]$, $\tr_2$ writes on $\xvar$ and $\tup{\tr_2, \tr_3} \in \vis$ and $\tup{\tr_1, \tr_2} \in \co$. But by definition of $\vis$ we will have violations in either \textsc{Prefix} or \textsf{Conflict} axioms of \textsc{Snapshot isolation} model.
+              
+        \item If $\hist_{\so}$ satisfies \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{Session} $\land$ \textsc{Prefix} $\land$ \textsc{NoConflict}, then there exists a $\co$ for which the axioms satisfy. The same $\co$ will satisfy \textsc{Prefix Consistency} axiom for $\hist$. So if we have a violation in \textsc{Snapshot isolation}, it is a violation of \textsf{Conflict} axiom, \ie there exist $\tr_1, \tr_2, \tr_3$ such that $\tup{\tr_1, \tr_3} \in \wro[\xvar]$ $\tr_2$ writes on $\xvar$ and $\tup{\tr_2, \tr_3} \in \co^* \circ \{\tup{\tr_1, \tr_2} | \exists \xvar, \tr_1, \tr_2 \text{write on } \xvar\}$ and $\tup{\tr_1, \tr_2} \in \co$. But $\{\tup{\tr_1, \tr_2} | \exists \xvar, \tr_1, \tr_2 \text{write on } \xvar\} \subseteq \vis$ by \textsc{NoConflict} and $\co \circ \vis \subseteq \vis$ by \textsc{Prefix}. Hence, $\tup{\tr_2, \tr_3} \in \vis$. Then $\tr_1, \tr_2, \tr_3$ violates \textsc{Ext}.
+       \end{itemize}
+       
+%       Therefore, \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{Session} $\land$ \textsc{Prefix} $\land$ \textsc{NoConflict} $\equiv$ \textsc{Snapshot isolation}.
+       
+ \item We show that \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{TotalVis} $\equiv$ \textsc{Serialization}.
+       
+       \begin{itemize}
+        \item If $\hist$ satisfies \textsc{Serialization}, there exists $\co$ for $\hist$ that satisfy \textsc{Serialization}. We define $\vis = \co$. Clearly it satisfies \textsc{TotalVis} because $\co$ is total. We have any violation in \textsc{Int} and \textsc{Ext}, that will imply we have $\tr_1, \tr_2,\tr_3$ such that  $\tr_1, \tr_2, \tr_3$ such that $\tup{\tr_1, \tr_3} \in \vis$ $\tr_2$ writes on $\xvar$ and $\tup{\tr_1, \tr_2} \in \co$. But since $\vis = \co$, $\tr_1, \tr_2, \tr_3$ will violate \textsc{Serialization} axiom, which is a contradiction.
+              
+        \item If $\hist_{\so}$ satisfies \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{TotalVis}, then there exists a $\co$ for which the axioms satisfy. If for same $\co$, we have a violation of \textsc{Serialization}, then there exist $\tr_1, \tr_2, \tr_3$ such that $\tup{\tr_1, \tr_3} \in \wro[\xvar]$ $\tr_2$ writes on $\xvar$ and $\tup{\tr_2, \tr_3} \in \co$ and $\tup{\tr_1, \tr_2} \in \co$. But $\co = \vis$, so then we have a \textsc{Int} and \textsc{Ext} violation in $\hist_{\so}$ for $\tr_1, \tr_2, \tr_3$
+       \end{itemize}
+       
+%       \textsc{Int} $\land$ \textsc{Ext} $\land$ \textsc{TotalVis} $\equiv$ \textsc{Serialization}.
+\end{itemize}

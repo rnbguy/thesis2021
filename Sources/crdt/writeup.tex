@@ -1,0 +1,300 @@
+%!TEX root = Thesis.tex
+
+\section{Old formalization}
+
+We are trying to verify conflict free data type or CRDT based operations.
+
+Given a history of a CRDT, we want to verify if there is a valid execution of the CRDT replicas which generates the history.
+
+\begin{definition}
+ A history $\hist$ is $\tup{\Op, \RO}$, a tuple of operations set $\Op$ and the replica order $\RO$.
+\end{definition}
+
+% Each operation is of the form $\tup{\op, \id}$ where $\op$ is a record of an operation call on a CRDT replica and $\id$ is the identifier of the operation.
+
+Each operation $\op \in \Op$ contains the record of an operation call on a CRDT replica.
+
+$\RO$ is the replica orders. It totally orders the operations on a same replica. That is, if $\op_1$ and $\op_2$ are on same replicas then either $\tup{\op_1, \op_2} \in \RO$ or $\tup{\op_2, \op_2} \in \RO$. Also if $\op_1$ and $\op_2$ are operations on two different replicas, then $\tup{\op_1, \op_2}$, $\tup{\op_2, \op_2} \not\in \RO$.
+
+\begin{definition}
+ Happens before relation, $\hb$, relates two operations $\op_1$ and $\op_2$ such that $\op_1$ happens before $\op_2$ or $\op_1$ is visible to $\op_2$.
+\end{definition}
+
+
+\begin{definition}
+ $\rf$ relates an update operation $\op_1$ to a corresponding read operation $\op_2$. It means there is no other $\op_3$ such that $\tup{\op_1, \op_3} \in \hb$ and $\tup{\op_3, \op_2} \in \hb$ such that $\op_3$ can affect the update performed by $\op_1$. Intuitively, $\rf$ relates the maximal concurrent updates to a read.
+\end{definition}
+
+$\hb$ must be acyclic \ie $\hb$ is a parital order.
+
+$(\rf \cup \RO)^+ \subseteq \hb$
+
+Now we define two axioms for casual consistent CRDT history.
+
+A history $\tup{\Op, \RO}$ is a causal consistent CRDT history if $\exists \rf, \hb$ such that,
+
+\begin{itemize}
+ \item If $\op_1$ and $\op_2$ are in 'write-conflict' and $\op_3$ is in 'read-conflict' with $\op_1, \op_2$ for the same variable $x$ and $\tup{\op_1, \op_2}$, $\tup{\op_2, \op_3} \in \hb$. Then $\tup{\op_1, \op_3} \not\in \rf$.
+
+       Intuitively, $\op_1$ is not the latest update on $x$ to $\op_3$. Hence $\rf$ can not relate them.
+
+ \item If $\{\op_1, \op_2, \cdots, \op_n\}$ are in 'write-conflict' with each other and $\op$ is in 'read-conflict' with each $\op_i$ for the same variable $x$.
+       Then the read at $\op$ happened according a 'resolution-rule' specific to a CRDT.
+
+       Intuitively, $\op_i$ are all happened concurrently and are in write-conflict. So CRDT should somehow resolve the conflict.
+\end{itemize}
+
+Example, for multi value register,
+\begin{figure}[ht]
+  \centering
+  \begin{minipage}{.45\textwidth}
+    \input figures/mv-reg-eg-a
+    \caption{$\tup{\op_1, \op_3} \not\in \rf$}
+    \label{mvreg_eg:a}
+  \end{minipage}
+  \begin{minipage}{.45\textwidth}
+    \input figures/mv-reg-eg-b
+    \caption{$1, 2, 3 \in Rd(x)$ in $\op$}
+    \label{mvreg_eg:b}
+  \end{minipage}
+\end{figure}
+
+
+\section{Specific CRDT Cases}
+
+\begin{figure}[ht]
+  \centering
+  \begin{minipage}{.45\textwidth}
+    \input figures/lww-reg-a
+    \caption{$\tup{\op_1, \op_3} \not\in \rf$}
+    \label{lwwreg:a}
+  \end{minipage}
+  \begin{minipage}{.45\textwidth}
+    \input figures/lww-reg-b
+    \caption{If $\op$ reads $x$ value to be $2$, that means, there exists a global linearization $\lin \supseteq \hb$ of $\Op$ such $\tup{\op_1, \op_2}$, $\tup{\op_3, \op_2} \in \lin$}
+    \label{lwwreg:b}
+  \end{minipage}
+  \caption{Last writer wins register}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{.45\textwidth}
+    \input figures/mv-reg-a
+    \caption{$\tup{\op_1, \op_3} \not\in \rf$}
+    \label{mvreg:a}
+  \end{minipage}
+  \begin{minipage}{.45\textwidth}
+    \input figures/mv-reg-b
+    \caption{$Rd(x) = \{1,2,3\}$ in $\op$}
+    \label{mvreg:b}
+  \end{minipage}
+  \caption{Multi value register}
+\end{figure}
+
+Counter:
+
+If $\op_0$: $Rd(x)$ and $\hb^{-1}(\op_0) = \{\op \mid \tup{\op, \op_0} \in \hb\}$, then $Rd(x) = $ number of increment of $x$ in $\hb^{-1}(\op_0)$ - number of decrement of $x$ in $\hb^{-1}(\op_0)$.
+
+This is because, decrement and increment are commutative operations. So it does not matter in which order the increment and decrement happened on a variable, just whether the operation is visible affects the read operation on that variable.
+
+Replicated growing array:
+
+Because of its unique updates and removes, RGA has axioms for $\rf$.
+
+\begin{itemize}
+ \item $\op_1$: AddAfter(\_, a), $\op_2$: AddAfter(a, \_) $\Rightarrow$ $\tup{\op_1, \op_2} \in \rf$.
+ \item $\op_1$: AddAfter(\_, a), $\op_2$: Remove(a, \_) $\Rightarrow$ $\tup{\op_1, \op_2} \in \rf$.
+ \item $\op_1$: AddAfter(\_, a), $\op_2$: Read contains a $\Rightarrow$ $\tup{\op_1, \op_2} \in \rf$.
+ \item $\op_1$: AddAfter(\_, a), $\op_2$: Read does not contain a $\Rightarrow$ $\tup{\op_1, \op_2} \in \hb$ implies $\exists$ $\op_3$: Remove(a) such that $\tup{\op_3, \op_2} \in \rf$.
+\end{itemize}
+
+
+
+\begin{figure}[ht]
+  \centering
+  \begin{minipage}{.45\textwidth}
+    \input figures/rga-a
+    \caption{Read in $\op_3$ contains c before b}
+    \label{rga:a}
+  \end{minipage}
+  \begin{minipage}{.45\textwidth}
+    \input figures/rga-b
+    \caption{Without loss of generality, if Read in $\op$ contains b, c, d in this order, that implies, there exists a global linearization $\lin \supseteq \hb$ for which $\tup{\op_3, \op_2}$ , $\tup{\op_2, \op_1} \in \lin$ }
+    \label{rga:b}
+  \end{minipage}
+  \caption{Replicated growing array}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \begin{minipage}{.45\textwidth}
+    \input figures/set-a1
+    \caption{$\tup{\op_3, \op_1} \not\in \rf$}
+    \label{set:a1}
+  \end{minipage}
+  \begin{minipage}{.45\textwidth}
+    \input figures/set-a2
+    \caption{$\tup{\op_3, \op_1} \not\in \rf$}
+    \label{set:a2}
+  \end{minipage}
+  \begin{minipage}{.45\textwidth}
+    \input figures/set-a3
+    \caption{$\tup{\op_3, \op_1} \not\in \rf$}
+    \label{set:a3}
+  \end{minipage}
+  \begin{minipage}{.45\textwidth}
+    \input figures/set-a4
+    \caption{$\tup{\op_3, \op_1} \not\in \rf$}
+    \label{set:a4}
+  \end{minipage}
+  \begin{minipage}{.45\textwidth}
+    \input figures/set-b1
+    \caption{For Rem-wins-add set, Read in $\op$ will not contain $x$}
+    \label{set:b1}
+  \end{minipage}
+  \begin{minipage}{.45\textwidth}
+    \input figures/set-b2
+    \caption{For Add-wins-rem set, Read in $\op$ will contain $x$}
+    \label{set:b2}
+  \end{minipage}
+  \caption{CRDT Set}
+\end{figure}
+
+
+
+\begin{figure}[ht]
+  \centering
+  \begin{minipage}{.45\textwidth}
+    \input figures/flag-a1
+    \caption{$\tup{\op_3, \op_1} \not\in \rf$}
+    \label{flag:a1}
+  \end{minipage}
+  \begin{minipage}{.45\textwidth}
+    \input figures/flag-a2
+    \caption{$\tup{\op_3, \op_1} \not\in \rf$}
+    \label{flag:a2}
+  \end{minipage}
+  \begin{minipage}{.45\textwidth}
+    \input figures/flag-a3
+    \caption{$\tup{\op_3, \op_1} \not\in \rf$}
+    \label{flag:a3}
+  \end{minipage}
+  \begin{minipage}{.45\textwidth}
+    \input figures/flag-a4
+    \caption{$\tup{\op_3, \op_1} \not\in \rf$}
+    \label{flag:a4}
+  \end{minipage}
+  \begin{minipage}{.45\textwidth}
+    \input figures/flag-b1
+    \caption{For Disable-wins-enable set, Read in $\op$ will have $x$ disabled}
+    \label{flag:b1}
+  \end{minipage}
+  \begin{minipage}{.45\textwidth}
+    \input figures/flag-b2
+    \caption{For Enable-wins-disable set, Read in $\op$ will have $x$ enabled}
+    \label{flag:b2}
+  \end{minipage}
+  \caption{CRDT Flag}
+\end{figure}
+
+
+\section{Algorithm}
+
+\include{algorithm}
+
+\include{boundednpcalgo}
+
+\include{orset}
+
+We propose a general algorithm to verify a CRDT history.
+
+\begin{definition}
+ A visible prefix of a replica over multiple replicas is union of prefix of each replica with the respective valid $\hb, \rf$(also, $\lin$ if required) restricted to that union.
+\end{definition}
+
+\begin{algorithm}[ht]
+ \SetKwInOut{KwInput}{Input}
+ \SetKwInOut{KwOutput}{Output}
+ \KwIn{A CRDT history $\hist = \tup{\Op, \RO}$}
+ \KwOut{$\mathit{true}$ iff $\hist$ valid history}
+ \BlankLine
+ $PrefixMap \leftarrow$ for each replica initiate with empty prefix\;
+ \While{there is an unfinished prefix in replica map}{
+  $R_1 \leftarrow$ replica with unfinished replica map\;
+  \eIf{nondeterministically}{
+   // receive update from other replica\;
+   // i.e. the other replica prefix happens-before the next operations in $R_1$\;
+   $R_2 \leftarrow$ nondeterministically choose an replica which has new operations to share\;
+   take the visibility map of $R_2$ and \emph{merge} with $R_1$\;
+  }{
+   // progress current replica\;
+   // include the next operation in the current replica\;
+   \If{next operation is a Read}{
+    check the read values are consistent to current prefix map of $R_1$\;
+    // linearization may need to be updated\;
+   }
+   \If{next operation is a Update}{
+    update the prefix map accordingly\;
+   }
+   // note, a operation can both be Read and Update\;
+  }
+ }
+ \caption{Verifying CRDT history}
+ \label{genalgo:1}
+\end{algorithm}
+
+\begin{proof}
+ To prove the soundness of the algorithm we need to show the algorithm always extends a valid prefix map to an another valid prefix map.
+
+ Note, a prefix map is invalid if it is an inconsistent Read.
+
+ While merging two prefixes, the merged prefix does not add new Read operation. So it is always okay to do this.
+
+ While advancing a replica, a only Update operation does not really make a valid. The algorithm only add a Read operation, while advancing a replica with a Read operation. The algorithm checks for inconsistencies before adding such Read operation.
+
+ So at every step, the algorithm advances with valid prefix map. If the algorithm is able to reach a successful run, that means, there is a valid CRDT execution of the history.
+
+ To show the completeness of the algorithm, we have to show for every valid history the algorithm can have a successful run. If there is a successful run, that means, there is a valid happens-before $\hb$ relation and it induces a partial order over the replica operations. The algorithm can follow the topological extension of that $\hb$ and have a successful run.
+\end{proof}
+
+
+\section{Verification complexities}
+
+\begin{itemize}
+ \item Unique value writes or given $\rf$ for last-writer-wins and multi-value register are in poly time. Because it induces unique $\rf$ relation.
+
+ \item Counter with bounded number of replica is in P.
+
+    In the general algorithm, it is easy to see, for counter, we don't need to store the actual $\hb$ relation of a prefix. Now there are only polynomial many prefix of a history of a bounded number of replica. So to determinize the algorithm, it will require to explore at most each replica with all possible prefix. Since there are bounder number of replica, total configuration of each replica with prefix becomes polynomial size. So the algorithm quits after polynomial many steps.
+
+ \item Replicated growing array. We can figure out the $\rf$ deterministically because of unique add, remove and read in RGA. Then we can deterministically find out the $\hb$ and $\lin$ relations. If we found a valid $\lin$ then, the RGA history is valid.
+\end{itemize}
+
+\begin{algorithm}[ht]
+ {\footnotesize
+  \SetKwInOut{KwInput}{Input}
+  \SetKwInOut{KwOutput}{Output}
+  \KwIn{A RGA history $\hist = \tup{\Op, \RO}$}
+  \KwOut{$\mathit{true}$ iff $\hist$ valid history}
+  \BlankLine
+  \ForEach{$\op_1, \op_2$} {
+   \If{$\op_1$: AddAfter(\_, a) $\land$ $\op_2$: AddAfter(a, \_)/Remove(a)/Read contains a} {
+    $\rf \rightarrow \rf \cup \{\tup{\op_1, \op_2}\}$\;
+   }
+  }
+  $\hb \rightarrow \rf$\;
+  $\lin \rightarrow \hb$\;
+  \While{true} {
+   \If{$\op_1$: AddAfter(a, b), $\op_2$: AddAfter(a, c), $\lin$ does not relate $\op_1, \op_2$, $\exists$ Read where b happens after c}{
+    $\lin \rightarrow \lin \cup \{\tup{\op_1, \op_2}\}$
+   }
+  }
+  \eIf{$\lin$ is cyclic} {
+   \Return{false}\;
+  }{
+   \Return{true}\;
+  }}
+ \caption{Verifying RGA history}
+ \label{ccalgo:1}
+\end{algorithm}

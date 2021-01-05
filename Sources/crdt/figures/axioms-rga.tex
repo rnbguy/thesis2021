@@ -1,0 +1,17 @@
+%!TEX root = ../main.tex
+\begin{align*}
+  & \text{\underline{\sc ReadFromRGA}} \\
+  & \forall o_2.\ {\sf meth}(o_2)={\sf addAfter} \implies {\sf arg}_1(o_2) = \circ\ \vee\\
+  & \hspace{4cm}\exists o_1.\ {\sf meth}(o_1)={\sf addAfter}\land {\sf arg}_2(o_1)={\sf arg}_1(o_2) \land \rf(o_1,o_2)\  \\
+  & \hspace{.2cm} \land {\sf meth}(o_2)={\sf remove} \implies \exists o_1.\  {\sf meth}(o_1)={\sf addAfter}\land {\sf arg}_2(o_1)={\sf arg}(o_2) \land \rf(o_1,o_2)\  \\
+  & \hspace{.2cm} \land\ {\sf meth}(o_2)={\sf read} \implies \forall v\in {\sf ret}(o_2)\ \exists o_1.{\sf meth}(o_1)={\sf addAfter}\land {\sf arg}_2(o_1)=v \land \rf(o_1,o_2)
+  \\
+  & \text{\underline{\sc RetvalRGA}} \\
+  & \forall o_1,o_2.\ {\sf meth}(o_1) = {\sf read}\land {\sf meth}(o_2) = {\sf addAfter}\land \hb(o_2,o_1)\land {\sf arg}_2(o_2)\not\in {\sf ret}(o_1) \\
+  & \hspace{3.7cm}\implies \exists o_3.\ {\sf meth}(o_3) = {\sf remove}\land {\sf arg}(o_3)={\sf arg}_2(o_2)\land \rf(o_3,o_1)
+  \\
+  & \text{\underline{\sc LinRGA}} \\
+  & \forall o_1, o_2.\ \big({\sf meth}(o_1) = {\sf meth}(o_2) = {\sf addAfter}\land {\sf arg}_1(o_1)={\sf arg}_1(o_2) \ \land \\
+  &\hspace{1.05cm} \exists o_3,o_4,o_5.\ {\sf meth}(o_3) = {\sf meth}(o_4) = {\sf addAfter}\land \rf^*_{\sf addAfter}(o_1,o_3)\land \rf^*_{\sf addAfter}(o_2,o_4)\land \\
+  &\hspace{1.05cm} {\sf meth}(o_5) = {\sf read}\land {\sf arg}_2(o_4) <_{o_5} {\sf arg}_2(o_3) \big) \implies \lin(o_1,o_2)
+\end{align*}

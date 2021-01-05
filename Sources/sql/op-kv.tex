@@ -1,0 +1,440 @@
+%!TEX root = Thesis.tex
+
+\section{Operational Semantics for $\KVProgs$}
+\label{sec:op-kv}
+
+We define a small-step operational semantics for Key-Value store programs, which is parametrized by an isolation level $I$. Transactions are executed \emph{serially} one after another, and the values returned by $\rdo$ operations are decided using the axiomatic definition of $I$. The semantics maintains a history of previously executed operations, and the value returned by a $\rdo$ is chosen non-deterministically as long as extending the current history with the corresponding write-read dependency satisfies the axioms of $I$. 
+We show that this semantics is sound and complete for any natural isolation level $I$, i.e., it generates precisely the same set of histories as a \emph{baseline} semantics where transactions can interleave arbitrarily and the $\rdo$ operations can return arbitrary values as long as they can be proved to be correct at the end of the execution.
+
+\subsection{Definition of the Operational Semantics}
+
+%\begin{figure}
+%\begin{minipage}{3.3cm}
+%\begin{lstlisting}[xleftmargin=5mm,escapeinside={(*}{*)}]
+%[ write((*$\key_1$*),1) ]
+%[ x2 = read((*$\key_2$*)) ]
+%\end{lstlisting}
+%\end{minipage}
+%\begin{minipage}{1mm}
+%||
+%\end{minipage}
+%\hspace{-4mm}
+%\begin{minipage}{3.3cm}
+%\begin{lstlisting}[xleftmargin=5mm,escapeinside={(*}{*)}]
+%[ write((*$\key_2$*),1) ]
+%[ x1 = read((*$\key_1$*)) ]
+%\end{lstlisting}
+%\end{minipage}
+%
+%{\small
+%Execution order: \hspace{6cm}
+%
+%[ \texttt{write}($\key_1$,1) ] [ \texttt{write}($\key_2$,1) ] [ \texttt{x2} = \texttt{read}($\key_2$) ] [ \texttt{x1} = \texttt{read}($\key_1$) ] 
+%}
+%
+%{\small (a)}
+%
+%
+%\begin{minipage}{4cm}
+%  \resizebox{.95\textwidth}{!}{
+%   \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+%     semithick, transform shape]
+%    \node[draw, rounded corners=2mm] (t0) at (1.7, 1.7) {\begin{tabular}{l} $\wrt{\key_1}{0}$ \\ $\wrt{\key_2}{0}$ \end{tabular}};
+%    \node[draw, rounded corners=2mm] (s11) at (0, 0) {\begin{tabular}{l} $\wrt{\key_1}{1}$ \end{tabular}};
+%    \node[draw, rounded corners=2mm] (t1) at (3.5, 0) {\begin{tabular}{l} $\wrt{\key_2}{1}$ \end{tabular}};
+%    \path (t0) edge[above] node[pos=0.6, xshift=-3] {$\so$} (s11);
+%    \path (t0) edge[above] node[pos=0.6, xshift=3] {$\so$} (t1);
+%   \end{tikzpicture}  
+%  }
+%  
+%  \begin{center}
+%  {\small (b)}
+%  \end{center}
+%\end{minipage}
+%\begin{minipage}{4cm}
+%  \resizebox{.95\textwidth}{!}{
+%   \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+%     semithick, transform shape]
+%    \node[draw, rounded corners=2mm] (t0) at (1.7, 1.7) {\begin{tabular}{l} $\wrt{\key_1}{0}$ \\ $\wrt{\key_2}{0}$ \end{tabular}};
+%    \node[draw, rounded corners=2mm] (s11) at (0, 0) {\begin{tabular}{l} $\wrt{\key_1}{1}$ \end{tabular}};
+%    \node[draw, rounded corners=2mm] (s12) at (0, -1.7) {\begin{tabular}{l} $\rd{\key_2}{0}$ \end{tabular}};
+%    \node[draw, rounded corners=2mm] (t1) at (3.5, 0) {\begin{tabular}{l} $\wrt{\key_2}{1}$ \end{tabular}};
+%    \node[draw, rounded corners=2mm] (t2) at (3.5, -1.7) {\begin{tabular}{l} $\rd{\key_1}{0}$  \end{tabular}};
+%    \path (t0) edge[above] node[pos=0.6, xshift=-3] {$\so$} (s11);
+%    \path (t0) edge[above] node[pos=0.6, xshift=3] {$\so$} (t1);
+%    \path (s11) edge node {$\so$} (s12);
+%    \path (t1) edge node {$\so$} (t2);
+%    \path (t0) edge[red, right, bend left=20] node[pos=0.7] {$\wro$} (s12);
+%    \path (t0) edge[red, left, bend right=20] node[pos=0.7] {$\wro$} (t2);
+%%    \path (t1) edge[red, left] node {$\wro[\yvar]$} (t2);
+%   \end{tikzpicture}  
+%  }
+%  
+%    \begin{center}
+%  {\small (c)}
+%  \end{center}
+%
+%\end{minipage}
+%\caption{Demonstrating the $\mathsf{Causal}$ operational semantics on the program and execution order in (a). We use brackets to delimit transactions, and transactions in the same session are aligned vertically. The history recorded by the semantics after the first two (write) transactions is shown in (b). The history recorded at the end of the execution is shown in (c).}
+%\label{fig:opsEx}
+%\end{figure}
+
+\tikzset{
+  keep name/.style={
+    prefix after command={
+      \pgfextra{\let\fixname\tikzlastnode}
+    }
+  },
+  partialbox/.style={
+    keep name,
+    append after command={
+  ([xshift=#1]\fixname.north west) -- 
+  (\fixname.north west) -- 
+  (\fixname.south west) -- 
+  ([xshift=#1]\fixname.south west)
+  ([xshift=-#1]\fixname.north east) -- 
+  (\fixname.north east) -- 
+  (\fixname.south east) -- 
+  ([xshift=-#1]\fixname.south east)
+    }
+  },
+  partialbox/.default=15pt
+}
+
+\begin{figure}
+\begin{minipage}{2.2cm}
+\begin{lstlisting}[xleftmargin=5mm,basicstyle=\ttfamily\footnotesize,escapeinside={(*}{*)}]
+begin;
+write((*$\key_1$*),1);
+x2=read((*$\key_2$*));
+commit
+\end{lstlisting}
+\end{minipage}
+\begin{minipage}{1mm}
+||
+\end{minipage}
+\hspace{-5mm}
+\begin{minipage}{2.2cm}
+\begin{lstlisting}[xleftmargin=5mm,basicstyle=\ttfamily\footnotesize,escapeinside={(*}{*)}]
+begin;
+write((*$\key_2$*),1);
+x1=read((*$\key_1$*));
+commit
+\end{lstlisting}
+\end{minipage}
+\begin{minipage}{4.1cm}
+  \resizebox{.7\textwidth}{!}{
+   \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+     semithick, transform shape]
+    \node[draw, rounded corners=2mm] (t0) at (1.7, 1.7) {\begin{tabular}{l} $\wrt{\key_1}{0}$ \\ $\wrt{\key_2}{0}$ \end{tabular}};
+    \node(s11) at (0, 0) {\begin{tabular}{l} $\wrt{\key_1}{1}$ \end{tabular}};
+    \path (t0) edge[above] node[pos=0.6, xshift=-3] {$\so$} (s11);
+   \end{tikzpicture}  
+  }
+\end{minipage}
+
+{\small (a)} \hspace{4cm} {\small (b)}
+
+\medskip
+\begin{minipage}{4.1cm}
+  \resizebox{.7\textwidth}{!}{
+   \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+     semithick, transform shape]
+    \node[draw, rounded corners=2mm] (t0) at (1.7, 1.7) {\begin{tabular}{l} $\wrt{\key_1}{0}$ \\ $\wrt{\key_2}{0}$ \end{tabular}};
+    \node[draw, rounded corners=2mm] (s11) at (0, 0) {\begin{tabular}{l} $\wrt{\key_1}{1}$ \\ $\rd{\key_2}{0}$ \end{tabular}};
+    \path (t0) edge[above] node[pos=0.6, xshift=-3] {$\so$} (s11);
+    \path (t0) edge[red, right, bend left=20] node[pos=0.7] {$\wro$} (s11);
+   \end{tikzpicture}  
+  }
+  
+  \begin{center}
+  {\small (c)}
+  \end{center}
+\end{minipage}
+\begin{minipage}{4.1cm}
+  \resizebox{\textwidth}{!}{
+   \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+     semithick, transform shape]
+    \node[draw, rounded corners=2mm] (t0) at (1.7, 1.7) {\begin{tabular}{l} $\wrt{\key_1}{0}$ \\ $\wrt{\key_2}{0}$ \end{tabular}};
+    \node[draw, rounded corners=2mm] (s11) at (0, 0) {\begin{tabular}{l} $\wrt{\key_1}{1}$ \\ $\rd{\key_2}{0}$ \end{tabular}};
+    \node[draw, rounded corners=2mm] (s12) at (3.5, 0) {\begin{tabular}{l} $\wrt{\key_2}{1}$ \\ $\rd{\key_1}{0}$ \end{tabular}};
+    \path (t0) edge[above] node[pos=0.6, xshift=-3] {$\so$} (s11);
+    \path (t0) edge[right] node[pos=0.3] {$\so$} (s12);
+    \path (t0) edge[red, right, bend left=20] node[pos=0.4,xshift=-1] {$\wro$} (s11);
+    \path (t0) edge[red, left, bend right=20] node[pos=0.9,xshift=-1] {$\wro$} (s12);
+   \end{tikzpicture}  
+  }
+  
+    \begin{center}
+  {\small (d)}
+  \end{center}
+\end{minipage}
+\vspace{-3mm}
+\caption{The $\mathsf{Causal}$ semantics on the program in (a), assuming that the transaction on the left is scheduled first. 
+%The histories recorded by the semantics after the write and after both instructions from the left transaction are pictured in (b) and (c), respectively. The history recorded at the end of the execution is shown in (d).
+}
+\label{fig:opsEx}
+\vspace{-5mm}
+\end{figure}
+
+%\begin{figure}
+%  \resizebox{8cm}{!}{
+%   \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+%     semithick, transform shape]
+%    \node[draw, rounded corners=2mm] (t0) at (2.05, 1.5) {\begin{tabular}{l} $\wrt{\texttt{cart:}u}{\{..\, I\, ..\}}$ \end{tabular}};
+%    \node[draw, rounded corners=2mm] (s11) at (0, 0) {\begin{tabular}{l} $\rd{\texttt{cart:}u}{\{..\, I\, ..\}}$ \\ $\wrt{\texttt{cart:}u}{\{..\, I, I\, ..\}}$ \end{tabular}};
+%    \node (s11l) at (-1, 0.8) {\textbf{AddItem}};
+%    \node[draw, rounded corners=2mm] (s12) at (4.1, 0) {\begin{tabular}{l} $\rd{\texttt{cart:}u}{\{..\, I\, ..\}}$ \\ $\wrt{\texttt{cart:}u}{\{..\, ..\}}$ \end{tabular}};
+%    \node (s11l) at (4.9, 0.8) {\textbf{DeleteItem}};
+%    \node[draw, rounded corners=2mm] (r1) at (8.3, 0) {\begin{tabular}{l} $\rd{\texttt{cart:}u}{\{..\, ..\}}$ \end{tabular}};
+%    \node[draw, rounded corners=2mm] (r2) at (8.3, -1.3) {\begin{tabular}{l} $\rd{\texttt{cart:}u}{\{..\, I, I\, .\}}$ \end{tabular}};
+%    \path (t0) edge[left] node {$\wro$} (s11);
+%    \path (t0) edge[right] node {$\wro$} (s12);
+%    \path (r1) edge[left] node {$\so$} (r2);
+%    \path (s12) edge[above] node {$\wro$} (r1);
+%    \path (s11) edge[below,bend right=10] node {$\wro$} (r2);
+%%    \path (t0) edge[red, right, bend left=20] node[pos=0.4,xshift=-1] {$\wro$} (s11);
+%%    \path (t0) edge[red, left, bend right=20] node[pos=0.9,xshift=-1] {$\wro$} (s12);
+%   \end{tikzpicture}  
+%  }
+%
+%\end{figure}
+
+We use the program in Figure~\ref{fig:opsEx}a to give an overview of our semantics, assuming Causal Consistency. This program has two concurrent transactions whose reads can both return the initial value $0$, which is not possible under $\mathsf{Serializability}$. 
+
+Our semantics executes transactions in their entirety one after another (without interleaving them), maintaining a history that contains all the executed operations. We assume that the transaction on the left executes first. Initially, the history contains a fictitious transaction log that writes the initial value 0 to all keys, and that will precede all the transaction logs created during the execution in session order. 
+
+Executing a write instruction consists in simply appending the corresponding write operation to the log of the current transaction. For instance, executing the first write (and $\ibegin$) in our example results in adding a transaction log that contains a write operation (see Figure~\ref{fig:opsEx}b). The execution continues with the read instruction from the same transaction, and it cannot switch to the other transaction.
+
+The execution of a read instruction consists in choosing non-deterministically a write-read dependency that validates $\mathsf{Causal}$ when added to the current history. In our example, executing $\iread(\key_2)$ results in adding a write-read dependency from the transaction log writing initial values, which determines the return value of the $\iread$ (see Figure~\ref{fig:opsEx}c). This choice makes the obtained history satisfy $\mathsf{Causal}$. 
+
+The second transaction executes in a similar manner. When executing its read instruction, the chosen write-read dependency is again related to the transaction log writing initial values (see Figure~\ref{fig:opsEx}d). This choice is valid under $\mathsf{Causal}$. Since a read must not read from the preceding transaction, this semantics is able to simulate all the ``anomalies'' of a weak isolation level (this execution being an example).
+
+Formally, the operational semantics is defined as a transition relation $\Rightarrow_I$ between \emph{configurations}, which are defined as tuples containing the following:
+\begin{itemize}
+	\item history $\hist$ storing the operations executed in the past, 
+	\item identifier $j$ of the current session,
+	\item local variable valuation $\gamma$ for the current transaction, 
+	\item code $\mathsf{B}$ that remains to be executed from the current transaction, and
+	\item sessions/transactions $\mathsf{P}$ that remain to be executed from the original program.
+\end{itemize}
+
+For readability, we define a program as a partial function $\mathsf{P}:\mathsf{SessId}\rightharpoonup \mathsf{Sess}$ that associates session identifiers in $\mathsf{SessId}$ with concrete code as defined in Figure~\ref{fig:syntax} (i.e., sequences of transactions). Similarly, the session order $\so$ in a history is defined as a partial function $\so:\mathsf{SessId}\rightharpoonup \mathsf{Tlogs}^*$ that associates session identifiers with sequences of transaction logs. Two transaction logs are ordered by $\so$ if one occurs before the other in some sequence $\so(j)$ with 
+$j\in \mathsf{SessId}$.
+
+Before presenting the definition of $\Rightarrow_I$, we introduce some notation. Let $\hist$ be a history that contains a representation of $\so$ as above. We use $\hist\oplus_j \tup{\tr,O,\po}$ to denote a history where $\tup{\tr,O,\po}$ is appended to $\so(j)$. 
+Also, for an operation $o$, $\hist\oplus_j o$ is the history obtained from $\hist$ by adding $o$ to the last transaction log in $\so(j)$ and as a last operation in the program order of this log (i.e.,  if $\so(j)=\sigma; \tup{t,O,\po}$, then the session order $\so'$ of $\hist\oplus_j o$ is defined by $\so'(k)=\so(k)$ for all $k\neq j$ and $\so(j) =\sigma; \tup{t,O\cup{o},\po\cup \{(o',o): o'\in O\}}$). Finally, for a history $\hist = \tup{T, \so, \wro}$, $\hist\oplus\wro(\tr,o)$ is the history obtained from $\hist$ by adding $(\tr,o)$ to the write-read relation.
+
+\begin{figure} [t]
+\small
+  \centering
+  \begin{mathpar}
+    \inferrule[spawn]{\tr \mbox{ fresh}\quad \mathsf{P}(j) = \ibegin; \mathsf{Body}; \icommit; \mathsf{S}}{
+      \hist,\_,\_,\epsilon,\mathsf{P}
+      \Rightarrow_I
+      \hist \oplus_j \tup{\tr,\emptyset,\emptyset},j,\emptyset,\mathsf{Body},\mathsf{P}[j\mapsto \mathsf{S}]
+    } 
+
+    \inferrule[if-true]{\varphi(\vec{x})[x\mapsto \gamma(x): x\in\vec{x}]\mbox{ true}}{
+      \hist,j,\gamma,\iif{\phi(\vec{x})}{\mathsf{Instr}};\mathsf{B}, \mathsf{P}
+      \Rightarrow_I
+      \hist,j,\gamma,\mathsf{Instr};\mathsf{B},\mathsf{P}
+    } 
+
+    \inferrule[if-false]{\varphi(\vec{x})[x\mapsto \gamma(x): x\in\vec{x}]\mbox{ false}}{
+      \hist,j,\gamma,\iif{\phi(\vec{x})}{\mathsf{Instr}};\mathsf{B}, \mathsf{P}
+      \Rightarrow_I
+      \hist,j,\gamma,\mathsf{B},\mathsf{P}
+    } 
+
+    \inferrule[write]{v = \gamma(x)\quad \id\mbox{ fresh}}{
+      \hist,j,\gamma, \iwrite(\key,\xvar);\mathsf{B}, \mathsf{P}
+      \Rightarrow_I
+      \hist \oplus_j \wrt[\id]{\key}{\val},j,\gamma,\mathsf{B},\mathsf{P}
+    } 
+
+    \inferrule[read-local]{
+    \wrt{\key}{\val}\mbox{ is the last write on $\key$ in $\tr$ w.r.t. $\po$}\\
+    \id\mbox{ fresh }
+    }{
+      \hist,j,\gamma, \xvar := \iread(\key);\mathsf{B}, \mathsf{P}
+      \Rightarrow_I
+      \hist \oplus_j \rd[\id]{\key}{\val},j,\gamma[\xvar\mapsto \val],\mathsf{B},\mathsf{P}
+    } 
+
+    \inferrule[read-extern]{
+    \hist=(T,\so,\wro) \\
+    \tr \mbox{ is the id of the last transaction log in $\so(j)$} \\
+    \wrt{\key}{\val}\in\writeOp{\tr'}\mbox{ with $\tr'\in T$ and $\tr'\neq \tr$} \\
+    \id\mbox{ fresh }\\
+    \hist' = (\hist \oplus_j \rd[\id]{\key}{\val}) \oplus \wro(\tr',\rd[i]{\key}{\val}) \\
+    \hist' \mbox{ satisfies } I }{
+      \hist,j,\gamma, \xvar := \iread(\key);\mathsf{B}, \mathsf{P}
+      \Rightarrow_I 
+      \hist',j,\gamma[\xvar\mapsto \val], \mathsf{B}, \mathsf{P}
+    } 
+    
+  \end{mathpar}
+ \vspace{-4mm}
+  \caption{Operational semantics for $\KVProgs$ programs under isolation level $I$. For a function $f:A\rightharpoonup B$, $f[a\mapsto b]$ denotes the function $f':A\rightharpoonup B$ defined by $f'(c) = f(c)$, for every $c\neq a$ in the domain of $f$, and $f'(a)=b$.}
+  \label{fig:op:sem}
+ \vspace{-4mm}
+\end{figure}
+
+Figure~\ref{fig:op:sem} lists the rules defining $\Rightarrow_I$. The \textsc{spawn} rule starts a new transaction, provided that there is no other live transaction ($\mathsf{B}=\epsilon$). It adds an empty transaction log to the history and schedules the body of the transaction. \textsc{if-true} and \textsc{if-false} check the truth value of a Boolean condition of an $\mathtt{if}$ conditional. \textsc{write} corresponds to a write instruction and consists in simply adding a write operation to the current history. \textsc{read-local} and \textsc{read-extern} concern read instructions. \textsc{read-local} handles the case where the read follows a write on the same key $k$ in the same transaction: the read returns the value written by the last write on $k$ in the current transaction. Otherwise, \textsc{read-extern} corresponds to reading a value written in another transaction $\tr'$ ($\tr$ is the id of the log of the current transaction). The transaction $\tr'$ is chosen non-deterministically as long as extending the current history with the write-read dependency associated to this choice leads to a history that still satisfies $I$.
+
+An \emph{initial} configuration for program $\prog$ contains the program $\prog$ along with a history $\hist=\tup{\{\tr_0\},\emptyset,\emptyset}$, where $\tr_0$ is a transaction log containing only writes that write the initial values of all keys, and empty current transaction code ($\mathsf{B}=\epsilon$). 
+An execution of a program $\prog$ under an isolation level $I$ is a sequence of configurations $c_0 c_1\ldots c_n$ where $c_0$ is an initial configuration for $\prog$, and $c_m\Rightarrow_I c_{m+1}$, for every $0\leq m < n$. We say that $c_n$ is \emph{$I$-reachable} from $c_0$.
+The history of such an execution is the history $\hist$ in the last configuration $c_n$. 
+A configuration is called \emph{final} if it contains the empty program ($\prog=\emptyset$).
+Let $\histOf[I]{\prog}$ denote the set of all histories of an execution of $\prog$ under $I$ that ends in a final configuration.
+
+
+
+
+%\begin{example}
+%
+%TODO SHOW AN EXECUTION AND THE SEQUENCE OF HISTORIES ON AN EXAMPLE RELATED TO THE SHOPPING CART
+%
+%\end{example}
+
+%TODO SAY THAT THIS SEMANTICS CAN BE CONFIGURED TO USE READS WITH DIFFERENT ISOLATION LEVELS.
+
+\subsection{Correctness of the Operational Semantics}
+
+\begin{figure} [t]
+\small
+  \centering
+  \begin{mathpar}
+    \inferrule[spawn*]{\tr \mbox{ fresh}\quad \mathsf{P}(j) = \ibegin; \mathsf{Body}; \icommit; \mathsf{S} \quad \vec{\mathsf{B}}(j) = \epsilon}{
+      \hist,\vec{\gamma},\vec{\mathsf{B}},\mathsf{P}
+      \Rightarrow
+      \hist \oplus_j \tup{\tr,\emptyset,\emptyset},\vec{\gamma}[j\mapsto \emptyset],\vec{\mathsf{B}}[j\mapsto \mathsf{Body}],\mathsf{P}[j\mapsto \mathsf{S}]
+    } 
+
+%    \inferrule[if-true]{\varphi(\vec{x})[x\mapsto \vec{\gamma}(j)(x): x\in\vec{x}]\mbox{ true} \\
+%    \vec{\mathsf{B}}(j) = \iif{\phi(\vec{x})}{\mathsf{Instr}};\mathsf{B}
+%    }{
+%      \hist,\vec{\gamma},\vec{\mathsf{B}}, \mathsf{P}
+%      \Rightarrow
+%      \hist,\vec{\gamma},\vec{\mathsf{B}}[j\mapsto \mathsf{Instr};\mathsf{B}],\mathsf{P}
+%    } 
+%
+%    \inferrule[if-false]{\varphi(\vec{x})[x\mapsto \vec{\gamma}(j)(x): x\in\vec{x}]\mbox{ false} \\
+%    \vec{\mathsf{B}}(j) = \iif{\phi(\vec{x})}{\mathsf{Instr}};\mathsf{B}
+%    }{
+%      \hist,\vec{\gamma},\vec{\mathsf{B}}, \mathsf{P}
+%      \Rightarrow
+%      \hist,\vec{\gamma},\vec{\mathsf{B}}[j\mapsto \mathsf{B}],\mathsf{P}
+%    } 
+%
+%    \inferrule[write]{v = \vec{\gamma}(j)(x)\quad \id\mbox{ fresh} \quad 
+%    \vec{\mathsf{B}}(j) = \iwrite(\key,\xvar);\mathsf{B}
+%    }{
+%      \hist,\vec{\gamma},\vec{\mathsf{B}}, \mathsf{P}
+%      \Rightarrow
+%      \hist \oplus_j \wrt[\id]{\key}{\val},\vec{\gamma},\vec{\mathsf{B}}[j\mapsto \mathsf{B}], \mathsf{P}
+%    } 
+%
+%    \inferrule[read-local]{
+%    \wrt{\key}{\val}\mbox{ is the last write on $\key$ in $\tr$}\\
+%    \id\mbox{ fresh } \\
+%    \vec{\mathsf{B}}(j) = \xvar := \iread(\key);\mathsf{B}
+%    }{
+%      \hist,\vec{\gamma},\vec{\mathsf{B}}, \mathsf{P}
+%      \Rightarrow
+%      \hist \oplus_j \rd[\id]{\key}{\val},\vec{\gamma}[(j,\xvar)\mapsto \val],\vec{\mathsf{B}}[j\mapsto \mathsf{B}],\mathsf{P}
+%    } 
+
+    \inferrule[read-extern*]{
+    \vec{\mathsf{B}}(j) = \xvar := \iread(\key);\mathsf{B} \\
+    \hist=(T,\so,\wro) \\
+    \tr \mbox{ is the id of the last transaction log in $\so(j)$} \\
+    \wrt{\key}{\val}\in\writeOp{\tr'}\mbox{ with $\tr'\in \transC{\hist,\vec{\mathsf{B}}}$ and $\tr\neq \tr'$} \\
+    \id\mbox{ fresh }\\
+    \hist' = (\hist \oplus_j \rd[\id]{\key}{\val}) \oplus \wro(\tr',\rd[i]{\key}{\val}) }{
+      \hist,\vec{\gamma},\vec{\mathsf{B}}, \mathsf{P}
+      \Rightarrow
+      \hist',\vec{\gamma}[(j,\xvar)\mapsto \val],\vec{\mathsf{B}}[j\mapsto \mathsf{B}],\mathsf{P}
+    } 
+    
+  \end{mathpar}
+ \vspace{-4mm}
+  \caption{A baseline operational semantics for $\KVProgs$ programs. Above, $\transC{\hist,\vec{\mathsf{B}}}$ denotes the set of transaction logs in $\hist$ that excludes those corresponding to live transactions, i.e., transaction logs $\tr''\in T$ such that $\tr''$ is the last transaction log in some $\so(j')$ and $\vec{B}(j')\neq\epsilon$.}
+  \label{fig:op:sem:baseline}
+ \vspace{-4mm}
+\end{figure}
+
+We define the correctness of $\Rightarrow_I$ in relation to a \emph{baseline} semantics where transactions can interleave arbitrarily, and the values returned by $\rdo$ operations are only constrained to come from committed transactions. 
+%For any isolation level $I$ defined by a set of natural axioms (as explained below), we show that $\histOf[I]{\prog}$ is precisely the set of histories that are produced by the baseline semantics and that satisfy $I$. As opposed to the definition of $\Rightarrow_I$, the conformance of the values returned by $\rdo$ operations to $I$ is checked only at the end of the execution.
+This semantics is represented by a transition relation $\Rightarrow$, which is defined by a set of rules that are analogous to $\Rightarrow_I$. 
+%correspond to starting a new transaction or executing some specific instruction in the body of a transaction (analogous to $\Rightarrow_I$). 
+Since it allows transactions to interleave, a configuration contains a history $\hist$, the sessions/transactions $\mathsf{P}$ that remain to be executed, and:
+\begin{itemize}
+	\item a valuation map $\vec{\gamma}$ that records local variable values in the current transaction of each session ($\vec{\gamma}$ associates identifiers of sessions that have live transactions with valuations of local variables),
+	\item a map $\vec{B}$ that stores the code of each live transaction (associating session identifiers with code).
+\end{itemize}
+Figure~\ref{fig:op:sem:baseline} lists some rules defining $\Rightarrow$ (the others can be defined in a similar manner). \textsc{spawn*} starts a new transaction in a session $j$ provided that this session has no live transaction ($\vec{\mathsf{B}}(j) = \epsilon$). Compared to \textsc{spawn} in Figure~\ref{fig:op:sem}, this rule allows unfinished transactions in other sessions. \textsc{read-extern*} does not check conformance to $I$, but it allows a read to only return a value written in a completed (committed) transaction. In this work, we consider only isolation levels satisfying this constraint. Executions, initial and final configurations are defined as in the case of $\Rightarrow_I$. The history of an execution is still defined as the history in the last configuration. Let $\histOf[*]{\prog}$ denote the set of all histories of an execution of $\prog$ w.r.t. $\Rightarrow$ that ends in a final configuration.
+
+Practical isolation levels satisfy a ``prefix-closure'' property saying that if the axioms of $I$ are satisfied by a pair $\tup{\hist_2,\co_2}$, then they are also satisfied by every \emph{prefix} of $\tup{\hist_2,\co_2}$. A prefix of $\tup{\hist_2,\co_2}$ contains a prefix of the sequence of transactions in $\hist_2$ when ordered according to $\co_2$, and the last transaction log in this prefix is possibly incomplete.
+%obtained by removing some ``suffix'' of the commit order or some operations from the last transaction log in commit order. 
+%Formally, we say that a pair $\tup{\hist_1,\co_1}$ is a \emph{prefix} of $\tup{\hist_2,\co_2}$, denoted by $\tup{\hist_1,\co_1}\leq \tup{\hist_2,\co_2}$, when the transaction logs in $\hist_1$ are contained in $\hist_2$, except for one transaction log which is a prefix of a transaction log in $\hist_2$, and all the relations in $\hist_1$ and $\co_1$ are restrictions of the relations in $\hist_2$ and $\co_2$ (to the set of operations/transactions in $\hist_1$), respectively. 
+In general, this prefix-closure property holds for isolation levels $I$ that are defined by axioms as in (\ref{eq:axiom}), provided that the property $\phi(\tr_2,\alpha)$ is \emph{monotonic}, i.e., the set of models in the context of a pair $\tup{\hist_2,\co_2}$ is a \emph{superset} of the set of models in the context of a prefix $ \tup{\hist_1,\co_1}$ of $\tup{\hist_2,\co_2}$. For instance, the property $\phi$ in the axiom defining $\mathsf{Causal}$ is $(\tr_2,\alpha)\in (\wro \cup \so)^+$, which is clearly monotonic. In general, standard isolation levels are defined using a property $\alpha$ of the form $(\tr_2,\alpha)\in R$ where $R$ is an expression built from the relations $\po$, $\so$, $\wro$, and $\co$ using (reflexive and) transitive closure and composition of relations~\cite{DBLP:journals/pacmpl/BiswasE19}. Such properties are monotonic in general (they would not be if those expressions would use the negation/complement of a relation).  An axiom as in (\ref{eq:axiom}) is called \emph{monotonic} when the property $\phi$ is monotonic. 
+
+%We define the correctness of $\Rightarrow_I$ in relation to a \emph{baseline} semantics where transactions can interleave arbitrarily, and the values returned by $\rdo$ operations are only constrained to come from committed transactions. 
+%For any isolation level $I$ defined by a set of natural axioms (as explained below), we show 
+The following theorem shows that $\histOf[I]{\prog}$ is precisely the set of histories under the baseline semantics, which satisfy $I$ (the validity of the reads is checked at the end of an execution), provided that the axioms of $I$ are monotonic.
+
+ \begin{theorem}
+For any isolation level $I$ defined by a set of monotonic axioms,
+$
+\histOf[I]{\prog} = \{ h \in \histOf[*]{\prog}: h\mbox{ satisfies }I\}.
+$
+ \end{theorem}
+ 
+The $\subseteq$ direction follows mostly from the fact that $\Rightarrow_I$ is more constrained than $\Rightarrow$. For the opposite direction, given a history $\hist$ that satisfies $I$, i.e., there exists a commit order $\co$ such that $\tup{h,\co}$ satisfies the axioms of $I$, we can show that there exists an execution under $\Rightarrow_I$ with history $\hist$, where transactions  execute serially in the order defined by $\co$. The prefix closure property is used to prove that \textsc{read-extern} transitions are enabled (these transitions get executed with a prefix of $\hist$). See the supplementary material for more details.
+  
+It can also be shown that $\Rightarrow_I$ is \emph{deadlock-free} for every natural isolation level (e.g., Read Committed, Causal Consistency, Snapshot Isolation, and Serializability), i.e., every read can return some value satisfying the axioms of $I$ at the time when it is executed (independently of previous choices). 
+
+%The following theorem shows that the operational semantics $\Rightarrow_I$ is also \emph{deadlock-free}, in particular, that every read can return some value satisfying the constraints imposed by the axiomatic definition of $I$ at the time when it is executed (independently of previous choices). 
+ 
+%Deadlock-freedom holds under the assumption that the properties $\phi(\tr_2,\alpha)$ from the axioms defining $I$ (cf. (\ref{eq:axiom})) are \emph{closed under operation removal}, in the sense that they continue to hold for some particular instantiation of $\tr_2$ and $\alpha$ in the context of some $\tup{\hist,\co}$ even when removing the last operation $\beta$ in the last transaction log w.r.t. $\co$, provided that $\beta$ is not $\alpha$ itself (when $\alpha$ is an operation). 
+%%i.e., for any interpretation of $\tr_2$ and $\alpha$ in a prefix $\tup{\hist_1,\co_1}$ of $\tup{\hist_2,\co_2}$, if $\phi(\tr_2,\alpha)$ holds in the context of $\tup{\hist_2,\co_2}$, then it also holds in the context of $\tup{\hist_1,\co_1}$. 
+%For instance, the property $\phi$ in $\mathsf{Read Committed}$ is $(\tr_2,\alpha)\in \wro\circ\po$, and it continues to hold in such a case because its truth value is independent of operations that are after $\alpha$ in $\po$, or transaction logs that follow the transaction log containing $\alpha$ in $\co$ (because $\wro\subseteq \co$). This property holds for all the isolation levels that we are aware of (see~\cite{DBLP:journals/pacmpl/BiswasE19}). An axiom as in (\ref{eq:axiom}) is called \emph{normal} when $\phi(\tr_2,\alpha)$ is closed under operation removal.
+ 
+% are \emph{consistent} in the sense that the property $\phi(\tr_2,\alpha)$ in (\ref{eq:axiom}) holds only if $\tr_2$ is in commit order before $\alpha$, when $\alpha$ is a transaction (like in $\mathsf{Causal}$ and $\mathsf{Serializability}$), or  $\tr_2$ is before $\alpha$ in $\co\circ \po$, when $\alpha$ is a read operation (like in $\mathsf{Read Comitted}$). This holds in the case of $\mathsf{Read Comitted}$ because $\wro\subseteq \co$, in the case of $\mathsf{Causal}$ because $(\wro\cup\so)^+\subseteq \co$, and $\mathsf{Serializability}$ where  $\phi(\tr_2,\alpha)$ is exactly $(\tr_2,\alpha)\in\co$. If this would not be the case, and for instance, both $\phi(\tr_2,\alpha)$ and $(\alpha,\tr_2)\in\co$ hold, then the right-hand side of the entailment in (\ref{eq:axiom}) can induce a cycle $\tr_1, \alpha, \tr_2, \tr_1$ in $\co$ because $(\tr_1,\alpha)\in \wro[\key]$ implies $(\tr_1,\alpha)\in \co$, which contradicts the fact that $\co$ is a total order. For technical reasons, we also require that the property $\phi(\tr_2,\alpha)$ does not depend on the ``future'', in the sense that if it holds in the context of a tuple 
+
+% \begin{theorem}
+% Let $I$ be an isolation level that is defined by a set of normal axioms. 
+%For any non-final configuration $c$ that is $I$-reachable from an initial configuration for a program $\prog$, there exists a configuration $c'$ such that $c\Rightarrow_I c'$.
+% % Every execution $c_0 c_1\ldots c_n$ of a program $\prog$ under $I$ is the prefix of 
+% %an execution of $\prog$ under $I$ that ends in a final configuration.
+% % Also, let $\rho=c_0 c_1\ldots c_n$ be an execution of a program $\prog$ under $I$. 
+%%Then $\rho$ is the prefix of an execution of $\prog$ under $I$ that ends in a final configuration.
+% \end{theorem}
+% \begin{proof}(Sketch)
+%Let $c_0 c_1\ldots c_n$ be an execution under $\Rightarrow_I$ that ends in a non-final configuration $c = c_n$. There are two cases depending on the next instruction to be executed in $c_n$. First, if there is no pending transaction (the $\mathsf{B}$ component is empty), or the next instruction in the current transaction is a conditional $\iif{\_}{\_}$, a write, or a \emph{local} read (i.e., an instruction $ \xvar := \iread(\key)$ that was preceded by a write on $\key$ in the same transaction), then being able to extend the execution is quite obvious (the transitions \textsc{spawn}, \textsc{if-true}, \textsc{if-false}, \textsc{write}, \textsc{read-local} are trivially enabled).
+%
+%The less obvious case is when the next instruction is a \emph{non-local} read $ \xvar := \iread(\key)$. By the definition in Figure~\ref{fig:op:sem}, a \textsc{read-extern} transition is enabled when there exists a transaction log $\tr'$ in the history $\hist_n$ of $c_n$, such that $\hist_n$ along with the write-read dependency $\wro(\tr',\rd[i]{\key}{\val})$ satisfies $I$. Assume that this is the first read of $\key$ in the current transaction (otherwise, $\tr'$ can be instantiated to the same transaction log as in the previous read of $\key$ in the same transaction; the conformance to $I$ of this choice is a direct consequence of its conformance at the previous read). Provided that the axioms of $I$ are normal, it can be shown that there exists such a $\tr'$, which roughly, corresponds to the ``last'' transaction that wrote $\key$. Here, ``last'' does not necessarily mean the last transaction in the execution, but it may mean the last transaction in the commit order that was used to justify the last application of  \textsc{read-extern} before $c_n$ (where we check conformance to $I$). 
+%
+%More precisely, let $c_j$ be the last configuration in the execution $c_0 c_1\ldots c_n$ that is obtained by a \textsc{read-extern} transition and $\hist_j$ the history in $c_j$. By definition, there exists $\co_j$ such that $\tup{\hist_j,\co_j}\models I$. Let $\co_n$ be an extension of $\co_j$ where all the transaction logs created after $c_j$ are ordered as they are created during the execution (in \textsc{spawn} transitions), and after those in $\co_j$. Since the write-read relation of $\hist_j$ is identical to that of $\hist_n$, any axiom of the form (\ref{eq:axiom}) satisfied by $\tup{\hist_j,\co_j}$ is also satisfied by $\tup{\hist_n,\co_n}$. Therefore, $\tup{\hist_n,\co_n}\models I$. Now, let $\tr'$ be the \emph{last} transaction log in $\co_n$ such that $\writeVar{\tr'}{\key}$, and let $\hist_{n+1}$ be the history obtained from $\hist_n$ by adding the write-read dependency $\wro(\tr',\rd[i]{\key}{\val})$ ($\rd[i]{\key}{\val}$ is the operation corresponding to the execution of the current read instruction). We show that $\tup{\hist_{n+1},\co_n}\models I$, which implies that there is a \textsc{read-extern} transition which is enabled in $c_n$. Let $\tr_1$, $\tr_2$, $\alpha$ be an instantiation of the $\forall$ quantifiers from (\ref{eq:axiom}) in the context of $\tup{\hist_{n+1},\co_n}$, which satisfies the left-hand side of the entailment, i.e., $(\tr_1,\alpha)\in\wro_{k'}^{n+1}$, for some key $k'$, where $\wro^{n+1}$ is the write-read relation of $\hist_{n+1}$, and $\phi(\tr_2,\alpha)$ holds. If $\alpha$ is interpreted as a transaction 
+%
+%
+%By the consistency of the axioms, the latter implies that $(\tr_2,\alpha)\in\co_n$.
+%
+%For simplicity, we assume that $\alpha$ is a transaction log (the case where $\alpha$ is a read operation is similar). If $\tr_1\neq \tr'$ or $\alpha\neq \tr$, where $\tr$ is the transaction log containing $\rd[i]{\key}{\val}$, then $(\tr_1,\alpha)$ is a write-read dependency on the same key  
+%
+%
+%Since $\hist_{n+1}$ contains only one more read operation compared to $\hist_n$, by the consistency of the axioms, 
+%
+%By the consistency of the axioms, 
+%
+% We show that
+%\begin{align*}
+%\tup{(\hist \oplus_j \rd[\id]{\key}{\val}) \oplus \wro(\tr',\rd[i]{\key}{\val}),\co_n}\models I,
+%\end{align*}
+%where $j$ is the session containing the current transaction.
+% \end{proof}
+ 
+ 
+

@@ -1,0 +1,8 @@
+\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+  semithick, transform shape]
+ \node[draw, rounded corners=2mm] (op1) {$\op_1$: $x \leftarrow 1$};
+ \node[draw, rounded corners=2mm, below of = op1] (op2) {$\op_2$: $x \leftarrow 2$};
+ \node[draw, rounded corners=2mm, right of = op2] (op3) {$\op_3$: $Rd(x)$};
+ \path (op1) edge node {$\hb$} (op2);
+ \path (op2) edge node {$\hb$} (op3);
+\end{tikzpicture}

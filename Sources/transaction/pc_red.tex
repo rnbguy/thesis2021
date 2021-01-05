@@ -1,0 +1,392 @@
+%!TEX root = Thesis.tex
+
+\subsection{Reducing Prefix Consistency to Serializability}\label{ssec:pc}
+
+We describe a polynomial time reduction of checking prefix consistency of bounded-width histories to the analogous problem for serializability. Intuitively, as opposed to serializability, prefix consistency allows that two transactions read the same snapshot of the database and commit together even if they write on the same variable. Based on this observation, given a history $\hist$ for which we want to check prefix consistency, we define a new history $\hist_{R|W}$ where each transaction $\tr$ is split into a transaction performing all the reads in $\tr$ and another transaction performing all the writes in $\tr$ (the history $\hist_{R|W}$ retains all the session order and write-read dependencies of $\hist$). We show that if the set of read and write transactions obtained this way can be shown to be serializable, then the original history satisfies prefix consistency, and vice-versa. 
+For instance, Figure~\ref{pre_red_example} shows this transformation on the two histories in Figure~\ref{pre_red_example:1} and Figure~\ref{pre_red_example:3}, which represent typical anomalies known as ``long fork'' and ``lost update'', respectively. The former is not admitted by PC while the latter is admitted. It can be easily seen that the transformed history corresponding to the ``long fork'' anomaly is not serializable while the one corresponding to ``lost update'' is serializable.
+We show that this transformation leads to a history of the same width, which 
+%We show that $\hist$ satisfies prefix consistency iff $\hist_{R|W}$ satisfies serializabilty and that the two histories have the same width. 
+by Corollary~\ref{cor:ser}, implies that checking prefix consistency of bounded-width histories is polynomial time.
+
+%given a history $\hist$ we define a transformation 
+% to serialization verification problem. Given a history $\hist$, we will construct a new history $\hist'$, s.t. $\hist$ is prefix consistent (resp. snapshot isolation) if and only if $\hist'$ is serializable and $\hist$ and $\hist'$ have equal bounded-width and the number of transactions in $\hist'$ will be twice of the number of transactions in $\hist$. So prefix consistency (resp. snapshot isolation) verification problem of bounded-width histories is also in \textsf{PTIME}.
+
+Thus, given a history $\hist = \tup{T, \wro, \so}$, we define the history $\hist_{R|W} = \tup{T', \wro', \so'}$ as follows:
+\begin{itemize}
+ \item $T'$ contains a transaction $R_\tr$, called a \emph{read} transaction, and a transaction $W_\tr$, called a \emph{write} transaction, for each transaction $\tr$ in the original history, i.e., $T' = \{R_\tr | \tr \in T\} \cup \{W_\tr | \tr \in T\}$
+ \item the write transaction $W_{\tr}$ writes exactly the same set of variables as $\tr$, i.e., for each variable $\xvar$, $W_{\tr}$ writes to $\xvar$ iff $\tr$ writes to $\xvar$.
+ \item the read transaction $R_{\tr}$ reads exactly the same values and the same variables as $\tr$, i.e., for each variable $\xvar$,
+ $\wro[\xvar]' = \{\tup{W_{\tr_1}, R_{\tr_2}} | \tup{\tr_1, \tr_2} \in \wro[\xvar]\}$
+ \item the session order between the read and the write transactions corresponds to that of the original transactions and read transactions precede their write counterparts, i.e.,
+ \begin{align*}
+ \so' = \{\tup{R_\tr, W_\tr} | \tr \in T\} \cup \{\tup{R_{\tr_1}, R_{\tr_2}}, \tup{R_{\tr_1}, W_{\tr_2}}, \tup{W_{\tr_1}, R_{\tr_2}}, \tup{W_{\tr_1}, W_{\tr_2}} | \tup{\tr_1,\tr_2} \in \so \}
+ \end{align*}
+\end{itemize}
+
+\begin{figure}
+  \centering
+  \begin{subfigure}{.49\textwidth}
+  \resizebox{\textwidth}{!}{
+  \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+   semithick, transform shape]
+   % \node[draw, rounded corners=2mm] (t1) at (0, 0) {\begin{tabular}{l} \texttt{x = 1;} \\ \texttt{y = 1;}\end{tabular}};
+   \node[draw, rounded corners=2mm] (t2) at (-1.7, -1.5) {\begin{tabular}{l} \texttt{read(x); // 0} \\ \texttt{x = 1;} \end{tabular}};
+  \node[draw, rounded corners=2mm] (t3) at (1.4, -1.5) {\begin{tabular}{l} \texttt{read(y); // 0} \\ \texttt{y = 1;} \end{tabular}};
+  \node[draw, rounded corners=2mm] (t4) at (4.5, -1.5) {\begin{tabular}{l} \texttt{read(x); // 1} \\ \texttt{read(y); // 0} \end{tabular}};
+  \node[draw, rounded corners=2mm] (t5) at (7.6, -1.5) {\begin{tabular}{l} \texttt{read(x); // 0} \\ \texttt{read(y); // 1} \end{tabular}};
+  % \node[draw, rounded corners=2mm] (t3) at (1.5, 0) {\begin{tabular}{l} \texttt{read(x); // 2} \\ \texttt{read(y); // 1} \end{tabular}};
+  % \path (t1) edge node {} (t3);
+  % \path (t2) edge node {$\so$} (t3);
+  % \path (t1) edge node {} (t2);
+  % \path (t3_1) edge node {$\po$} (t3_2);
+  \end{tikzpicture}  
+  }
+   \caption{Long fork}
+   \label{pre_red_example:1}
+  \end{subfigure}
+%  \hspace{.5cm}
+  \begin{subfigure}{.49\textwidth}
+  \resizebox{\textwidth}{!}{
+  \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+   semithick, transform shape]
+   % \node[draw, rounded corners=2mm] (t1) at (0, 0) {\begin{tabular}{l} \texttt{x = 1;} \\ \texttt{y = 1;}\end{tabular}};
+   \node[draw, rounded corners=2mm] (t2r) at (-1.7, -1.5) {\begin{tabular}{l} \texttt{read(x); // 0} \end{tabular}};
+   \node[draw, rounded corners=2mm] (t2w) at (-1.7, -3.2) {\begin{tabular}{l} \texttt{x = 1;} \end{tabular}};
+   \node[draw, rounded corners=2mm] (t3r) at (1.4, -1.5) {\begin{tabular}{l} \texttt{read(y); // 0} \end{tabular}};
+  \node[draw, rounded corners=2mm] (t3w) at (1.4, -3.2) {\begin{tabular}{l} \texttt{y = 1;} \end{tabular}};
+  \node[draw, rounded corners=2mm] (t4r) at (4.5, -1.5) {\begin{tabular}{l} \texttt{read(x); // 1} \\ \texttt{read(y); // 0} \end{tabular}};
+  \node[draw, rounded corners=2mm] (t5r) at (7.6, -1.5) {\begin{tabular}{l} \texttt{read(y); // 1} \\ \texttt{read(x); // 0} \end{tabular}}; 
+  \node[draw, rounded corners=2mm] (t4w) at (4.5, -3.2) {\begin{tabular}{l} \texttt{// empty} \end{tabular}};
+   \node[draw, rounded corners=2mm] (t5w) at (7.6, -3.2) {\begin{tabular}{l} \texttt{// empty} \end{tabular}};
+  % \node[draw, rounded corners=2mm] (t3) at (1.5, 0) {\begin{tabular}{l} \texttt{read(x); // 2} \\ \texttt{read(y); // 1} \end{tabular}};
+  \path (t2r) edge node {$\so$} (t2w);
+  \path (t3r) edge node {$\so$} (t3w);
+  \path (t4r) edge node {$\so$} (t4w);
+  \path (t5r) edge node {$\so$} (t5w);
+  % \path (t2) edge node {$\so$} (t3);
+  % \path (t1) edge node {} (t2);
+  % \path (t3_1) edge node {$\po$} (t3_2);
+  \end{tikzpicture}  
+  }
+   \caption{Long fork (transformed)}
+   \label{pre_red_example:2}
+  \end{subfigure}
+
+\vspace{3mm}
+  \begin{subfigure}{.25\textwidth}
+  \resizebox{\textwidth}{!}{
+  \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+   semithick, transform shape]
+   % \node[draw, rounded corners=2mm] (t1) at (0, 1.2) {\begin{tabular}{l} \texttt{x = 1;} \end{tabular}};
+   \node[draw, rounded corners=2mm] (t2) at (-1.6, 0) {\begin{tabular}{l} \texttt{read(x); // 0} \\ \texttt{x = 1;} \end{tabular}};
+   \node[draw, rounded corners=2mm] (t3) at (1.6, 0) {\begin{tabular}{l} \texttt{read(x); // 0} \\ \texttt{x = 2;} \end{tabular}};
+   % \node[draw, rounded corners=2mm] (t3) at (0, -2.4) {\begin{tabular}{l} \texttt{read(x); // 2} \end{tabular}};
+  % \node[draw, rounded corners=2mm] (t3) at (1.7, -1.5) {\begin{tabular}{l} \texttt{read(y); // 1} \\ \texttt{y = 2;} \end{tabular}};
+  % \node[draw, rounded corners=2mm] (t3) at (1.5, 0) {\begin{tabular}{l} \texttt{read(x); // 2} \\ \texttt{read(y); // 1} \end{tabular}};
+  % \path (t1) edge node {} (t3);
+  % \path (t2) edge node {$\co$} (t3);
+  % \path (t1) edge node {} (t2); 
+  % \path (t3_1) edge node {$\po$} (t3_2);
+  \end{tikzpicture}  
+  }
+   \caption{Lost update}
+   \label{pre_red_example:3}
+  \end{subfigure}
+  \hspace{2cm}
+  \begin{subfigure}{.32\textwidth}
+  \resizebox{.75\textwidth}{!}{
+  \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+   semithick, transform shape]
+   % \node[draw, rounded corners=2mm] (t1) at (0, 1.2) {\begin{tabular}{l} \texttt{x = 1;} \end{tabular}};
+   \node[draw, rounded corners=2mm] (t2r) at (0, 0) {\begin{tabular}{l} \texttt{read(x); // 0} \end{tabular}};
+   \node[draw, rounded corners=2mm] (t2w) at (0, -1.5) {\begin{tabular}{l}  \texttt{x = 1;} \end{tabular}};
+   \node[draw, rounded corners=2mm] (t3r) at (3.2, 0) {\begin{tabular}{l} \texttt{read(x); // 0} \end{tabular}};
+   \node[draw, rounded corners=2mm] (t3w) at (3.2, -1.5) {\begin{tabular}{l} \texttt{x = 2;} \end{tabular}};
+   % \node[draw, rounded corners=2mm] (t3) at (0, -2.4) {\begin{tabular}{l} \texttt{read(x); // 2} \end{tabular}};
+  % \node[draw, rounded corners=2mm] (t3) at (1.7, -1.5) {\begin{tabular}{l} \texttt{read(y); // 1} \\ \texttt{y = 2;} \end{tabular}};
+  % \node[draw, rounded corners=2mm] (t3) at (1.5, 0) {\begin{tabular}{l} \texttt{read(x); // 2} \\ \texttt{read(y); // 1} \end{tabular}};
+  % \path (t1) edge node {} (t3);
+  % \path (t2) edge node {$\co$} (t3);
+  % \path (t1) edge node {} (t2); 
+  % \path (t3_1) edge node {$\po$} (t3_2);
+  \path (t2r) edge node {$\so$} (t2w);
+  \path (t3r) edge node {$\so$} (t3w);
+  \end{tikzpicture}  
+  }
+   \caption{Lost update (transformed)}
+   \label{pre_red_example:4}
+  \end{subfigure}
+  \vspace{-3mm}
+  \caption{Reducing PC to SER. Initially, the value of every variable is 0.}
+  \label{pre_red_example}
+  \vspace{-3mm}
+\end{figure}
+
+The following lemma is a straightforward consequence of the definitions. % (see Appendix~\ref{app:pc_red}).
+
+\begin{lemma}\label{lem:pc_width}
+The histories $\hist$ and $\hist_{R|W}$ have the same width.
+\end{lemma}
+
+Next, we show that $\hist_{R|W}$ is serializable if $\hist$ is prefix consistent. Formally, we show that
+ \begin{align*}
+  \forall \co.\ \exists \co'.\ \tup{\hist, \co} \models \axpre \Rightarrow \tup{\hist_{R|W}, \co'} \models \axser 
+ \end{align*}
+%\begin{theorem}
+% There is a polynomial time reduction from prefix consistency verification problem to serialization verification problem - without increasing the width of the history.
+%\end{theorem}
+%
+%
+%Now we claim, $\hist$ is prefix consistent if and only if $\hist_{R|W}$ is serializable.
+%
+%\begin{proof}
+% First we will prove, if $\hist$ is prefix consistent, then $\hist_{R|W}$ is serializable. Formally we are trying to prove,
+% 
+% \begin{align}
+%  \forall \co, \exists \co' \tup{\hist, \co} \models \axpre \Rightarrow \tup{\hist_{R|W}, \co'} \models \axser \label{pre_leftright}
+% \end{align}
+%
+% Consider a total order $\co$ for $\hist$ which satisfies prefix consistency. We will show there exists a $\co'$ for $\hist_{R|W}$ which satisfies serialization. To find such $\co'$, first we construct a partial order $\co'_1$ on $T'$ and then try to extend $\co'_1$ to $\co'$.
+Thus, let $\co$ be a commit (total) order on transactions of $\hist$ which together with $\hist$ satisfies the prefix consistency axiom. We define two \emph{partial} commit orders $\co'_1$ and $\co'_2$, $\co'_2$ a strengthening of $\co'_1$, which we prove that they are acyclic and that any linearization $\co'$ of $\co'_2$ is a valid witness for $\hist_{R|W}$ satisfying serializability.
+
+Thus, let $\co'_1$ be a \emph{partial} commit order on transactions of $\hist_{R|W}$ defined as follows:
+ \begin{align*}
+  \co'_1 = \{\tup{R_{\tr}, W_{\tr}} | \tr \in T\} \cup \{\tup{W_{\tr_1}, W_{\tr_2}} | \tup{\tr_1, \tr_2} \in \co\}\ \cup \{\tup{W_{\tr_1},R_{\tr_2}} | \tup{\tr_1, \tr_2} \in \wro \cup \so\} 
+ \end{align*}
+ 
+We show that if $\co'_1$ were to be cyclic, then it contains a minimal cycle with one read transaction, and at least one but at most two write transactions. Then, we show that such cycles cannot exist. 
+
+ \begin{lemma}\label{lem:co1}
+The relation $\co'_1$ is acyclic.
+\end{lemma}
+% \begin{proof}
+% Now we will show $\co'_1$ is acyclic. To do that, first we show few properties of a minimal cycle in $\co'_1$ to ease our proofs. 
+ \textsc{Proof.} We first show that if $\co'_1$ were to be cyclic, then it contains a minimal cycle with one read transaction, and at least one but at most two write transactions. Then, we show that such cycles cannot exist. 
+Therefore, let us assume that $\co'_1$ is cyclic. Then,
+%\vspace{-4mm}
+  \begin{wrapfigure}{l}{0.4\textwidth} 
+%  \centering
+  \begin{subfigure}{.19\textwidth}
+   \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+      semithick, transform shape]
+     \node[transaction state] at (0,0)       (t_1)           {$W_{\tr_1}$};
+     \node[transaction state] at (2,0)       (t_2)           {$W_{\tr_2}$};
+     \path (t_1) edge[dashed, bend left=90] node {$\co'^+_1$} (t_2);
+     \path (t_2) edge[dashed, color=red, bend left=90] node {$\co'^+_1$} (t_1);
+     \path (t_1) edge[color=red] node[below] {$\co'_1$} (t_2);
+    \end{tikzpicture}  
+   }
+   \caption{$\tup{W_{\tr_1}, W_{\tr_2}} \in \co'_1$}
+   \label{ww_consecutive:a}
+  \end{subfigure}
+  \hspace{1mm}
+  \begin{subfigure}{.19\textwidth}
+   \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+      semithick, transform shape]
+     \node[transaction state] at (0,0)       (t_1)           {$W_{\tr_1}$};
+     \node[transaction state] at (2,0)       (t_2)           {$W_{\tr_2}$};
+     \path (t_1) edge[dashed, color=blue, bend left=90] node {$\co'^+_1$} (t_2);
+     \path (t_2) edge[dashed, bend left=90] node {$\co'^+_1$} (t_1);
+     \path (t_2) edge[color=blue] node[above] {$\co'_1$} (t_1);
+    \end{tikzpicture}  
+   }
+   \caption{$\tup{W_{\tr_2}, W_{\tr_1}} \in \co'_1$}
+   \label{ww_consecutive:b}
+  \end{subfigure}
+  \vspace{-3mm}
+  \caption{Cycles with non-consecutive write transactions.}
+  \label{ww_consecutive}
+  \vspace{-5mm}
+ \end{wrapfigure} 
+ \begin{itemize}
+  \item Since $\tup{W_{\tr_1}, W_{\tr_2}} \in \co'_1$ implies $\tup{\tr_1, \tr_2} \in \co$, for every $\tr_1$ and $\tr_2$, a cycle in $\co'_1$ cannot contain only write transactions. Otherwise, it will imply a cycle in the original commit order $\co$. Therefore, a cycle in $\co'_1$ must contain at least one read transaction. 
+  \item Assume that a cycle in $\co'_1$ contains two write transactions $W_{\tr_1}$ and $W_{\tr_2}$ which are not consecutive, like in Figure~\ref{ww_consecutive}.
+%  In figure \ref{ww_consecutive}, we have a minimal cycle in $\co'_1$ in which there are two transactions $W_{\tr_1}$ and $W_{\tr_2}$ which are not consecutive. 
+Since either $\tup{W_{\tr_1}, W_{\tr_2}}\in \co'_1$ or $\tup{W_{\tr_1}, W_{\tr_2}}\in \co'_1$, there exists a smaller cycle in $\co'_1$ where these two write transactions are consecutive. If $\tup{W_{\tr_1}, W_{\tr_2}}\in \co'_1$, then $\co'_1$ contains the smaller cycle on the lower part of the original cycle (Figure~\ref{ww_consecutive:a}), and if $\tup{W_{\tr_2}, W_{\tr_1}}\in \co'_1$, then $\co'_1$ contains the cycle on the upper part of the original cycle (Figure~\ref{ww_consecutive:b}). Thus, all the write transactions in a minimal cycle of $\co'_1$ must be consecutive. 
+% So all $W_{\_}$ transactions in a minimal cycle in $\co'_1$ must be consecutive.
+\end{itemize}
+
+\begin{itemize}
+  \item If a minimal cycle were to contain three write transactions, then all of them cannot be consecutive unless they all three form a cycle, which is not possible. So a minimal cycle contains at most two write transactions.
+  \item Since $\co'_1$ contains no direct relation between read transactions, it cannot contain a cycle with two consecutive read transactions, or only read transactions.
+  %there is no relation of the form $\tup{R_{\_}, R_{\_}}$ in $\co'_1$. So there is no cycle with consecutive $R_{\_}$ transactions.
+%  \item All these above properties togerther imply a minimal cycle in $\co'_1$ contains atleast one but atmost two $W_{\_}$ transactions and one $R_{\_}$ transaction.
+ \end{itemize}
+This shows that a minimal cycle of $\co'_1$ would include a read transaction and a write transaction, and at most one more write transaction. We prove that such cycles are however impossible:
+ \begin{itemize}
+  \item if the cycle is of size 2, then it contains two transactions $W_{\tr_1}$ and $R_{\tr_2}$ such that $\tup{W_{\tr_1}, R_{\tr_2}}\in\co'_1$ and $\tup{R_{\tr_2}, W_{\tr_1}}\in \co'_1$. Since all the $\tup{R_{\_}, W_{\_}}$ dependencies in $\co'_1$ are of the form $\tup{R_\tr, W_\tr}$, it follows that $\tr_1 = \tr_2$. Then, we have $\tup{W_{\tr_1}, R_{\tr_1}} \in \co'_1$ which implies $\tup{\tr_1, \tr_1} \in \wro \cup \so$, a contradiction.
+  \item if the cycle is of size 3, then it contains three transactions $W_{\tr_1}$, $W_{\tr_2}$, and $R_{\tr_3}$ such that $\tup{W_{\tr_1}, W_{\tr_2}}\in \co'_1$,  $\tup{W_{\tr_2}, R_{\tr_3}}\in \co'_1$, and $\tup{R_{\tr_3}, W_{\tr_1}} \in \co'_1$. Using a similar argument as in the previous case, $\tup{R_{\tr_3}, W_{\tr_1}} \in \co'_1$ implies $\tr_3 = \tr_1$. Therefore, $\tup{\tr_1, \tr_2} \in \co$ and $\tup{\tr_2, \tr_1} \in \wro \cup \so$, which contradicts the fact that $\wro \cup \so\subseteq \co$. \hfill $\Box$
+  %  satisfies prefix consistency for $\hist$.
+ \end{itemize}
+% \end{proof}
+
+ 
+ %Therefore, $\co'_1$ is acyclic. 
+%Now we want to remove the choices for which any acyclic extension of $\co'_1$ will violate $\axser$. The extension will be a total order, so if we do not want a relation $\tup{\tr_1, \tr_2}$ in $\co'$, then $\tup{\tr_2, \tr_1}$ must be in it. So we collect all such relations implied by $\co'_1$ in 
+ We define a strengthening of $\co'_1$ where intuitively, we add all the dependencies from read transactions $\tr_3$ to write transactions $\tr_2$ that ``overwrite'' values read by $\tr_3$. Formally, $\co'_2= \co'_1\cup\rwo(\co'_1)$ where 
+ \begin{align*}
+  \rwo(\co'_1) = \{\tup{\tr_3, \tr_2}| \exists \xvar \in \vars{h}.\ \exists \tr_1\in T'.\ \tup{\tr_1,\tr_3} \in \wro[\xvar]', \tup{\tr_1, \tr_2} \in \co'_1, \writeVar{\tr_2}{\xvar} \} 
+ \end{align*}
+ 
+ It can be shown that any cycle in $\co'_2$ would correspond to a $\mathsf{Prefix}$ violation in the original history. Therefore,
+ 
+  \begin{figure}[h] %{l}{0.5\textwidth} 
+  \centering
+  \begin{subfigure}{.26\textwidth}
+   \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+      semithick, transform shape]
+     \node[transaction state] at (0,0)       (t_1)           {$W_{\tr_1}$};
+     \node[transaction state] at (2,0)       (t_3)           {$R_{\tr_3}$};
+     \node[transaction state, label={above:$\writeVar{ }{\xvar}$}] at (-0.5,1.5) (t_2) {$W_{\tr_2}$};
+     \node[transaction state] at (1.5,1.5) (t_4) {$W_{\tr_4}$};
+     \path (t_1) edge node {$\wro[\xvar]$} (t_3);
+     % \path (t_2) edge[blue] node {$\CO$} (t_1);
+     \path (t_2) edge[red] node {$\co'^*_1$} (t_4);
+     \path (t_4) edge[red] node {$\co'_1$} (t_3);
+     \path (t_1) edge[left] node {$\co'_1$} (t_2);
+     \path (t_3) edge[red, right] node[pos=.8,rotate=-30,yshift=2.5mm] {\small{$\rwo(\co'_1)$}} (t_2);
+    \end{tikzpicture}
+   }
+   \caption{}
+   \label{pc_p_proof:2a}
+  \end{subfigure}
+  \hspace{10mm}
+  \begin{subfigure}{0.31\textwidth}
+   \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+      semithick, transform shape]
+     \node[transaction state, text=red] at (0,0)       (t_1)           {$\tr_1$};
+     \node[transaction state] at (2,0)       (t_3)           {$\tr_3$};
+     \node[transaction state, text=red,label={above:\textcolor{red}{$\writeVar{ }{\xvar}$}}] at (-0.5,1.5) (t_2) {$\tr_2$};
+     \node[transaction state] at (1.5,1.5) (t_4) {$\tr_4$};
+     \path (t_1) edge[red] node {$\wro[\xvar]$} (t_3);
+     % \path (t_2) edge[blue] node {$\CO$} (t_1);
+     \path (t_2) edge node {$\co^*$} (t_4);
+     \path (t_4) edge node {$\wro \cup \so$} (t_3);
+     \path (t_1) edge[left] node {$\co$} (t_2);
+    \end{tikzpicture}
+   }
+   \caption{}
+   \label{pc_p_proof:2b}
+  \end{subfigure}
+%   \vspace{-3mm}
+  \caption{Cycles in $\co'_2$ correspond to $\axpre$ violations: (a) Minimal cycle in $\co'_2$, (b) $\axpre$ violation in $\tup{\hist, \co}$.}
+  \label{pc_p_proof:2}
+%   \vspace{-2.5mm}
+ \end{figure}
+
+ 
+ %\vspace{-1mm}
+ \begin{lemma}\label{lem:co2}
+ The relation $\co'_2$ is acyclic.
+ \end{lemma}
+ \begin{proof}
+ Assume that $\co'_2$ is cyclic. Any minimal cycle in $\co'_2$ still satisfies the properties of minimal cycles of $\co'_1$ proved in Lemma~\ref{lem:co1} (because all write transactions are still totally ordered and $\co'_2$ doesn't relate directly read transactions). 
+ %- $\co'_2$ has relations of the form $\tup{R_{\_}, W_{\_}}$. 
+ So, a minimal cycle in $\co'_2$ contains a read transaction and a write transaction, and at most one more write transaction.
+ 
+ Since $\co'_1$ is acyclic, a cycle in $\co'_2$, and in particular a minimal one, must  necessarily contain a dependency from $\rwo(\co'_1)$. Note that a minimal cycle cannot contain two such dependencies since this would imply that it contains two non-consecutive write transactions. 
+%  $\co'_1$ was acyclic. All the relations in $\co'_2$ are of the form $\tup{R_{\_}, W_{\_}}$. If $(\co'_1 \cup \co'_2)$ has a cycle, then the cycle must contain an relation from $\co'_2$. But two $\tup{R_{\_}, W_{\_}}$ in a cycle implies, two non-consecutive $W_{\_}$ in a cycle. So a simple cycle in $(\co'_1 \cup \co'_2)$ would contain only one relation of the form $\tup{R_{\_}, W_{\_}}$.
+% 
+The red edges in Figure~\ref{pc_p_proof:2a} show a minimal cycle of $\co'_2$ satisfying all the properties mentioned above. This cycle contains a dependency $\tup{R_{\tr_3}, W_{\tr_2}}\in \rwo(\co'_1)$ which implies the existence of a write transaction $W_{\tr_1}$ in $\hist_{R|W}$ s.t. $\tup{W_{\tr_1}, R_{\tr_3}} \in \wro[\xvar]'$ and $\tup{W_{\tr_1}, W_{\tr_2}} \in \co'_1$ and $W_{\tr_1}, W_{\tr_2}$ write on $\xvar$ (these dependencies are represented by the black edges in Figure~\ref{pc_p_proof:2a}). The relations between these transactions of $\hist_{R|W}$ imply that the corresponding transactions of $\hist$ are related as shown in Figure~\ref{pc_p_proof:2b}: $\tup{W_{\tr_1}, W_{\tr_2}} \in \co'_1$ and $\tup{W_{\tr_2}, W_{\tr_4}} \in \co'^*_1$ imply $\tup{\tr_1, \tr_2} \in \co$ and $\tup{\tr_2, \tr_4} \in \co^*$, respectively, $\tup{W_{\tr_1}, W_{\tr_3}} \in \wro[\xvar]'$ implies $\tup{\tr_1, \tr_3} \in \wro[\xvar]$, and $\tup{W_{\tr_4}, R_{\tr_3}} \in \co'_1$ implies $\tup{\tr_4, \tr_3} \in \wro \cup \so$. This implies that $\tup{\hist,\co}$ doesn't satisfy the $\axpre$ axiom, a contradiction. %\hfill $\Box$
+%But to satisfy $\axpre$, $\tup{\tr_2, \tr_1}$ should have been in $\co$, not $\tup{\tr_1, \tr_2}$ - which is a contradiction.
+\end{proof}
+ 
+ 
+
+ \begin{lemma}\label{lem:pc1:app}
+If a history $\hist$ satisfies prefix consistency, then $\hist_{R|W}$ is serializable.
+\end{lemma}
+ \begin{proof}
+% So $\co'_1 \cup \co'_2$ is acyclic. We take $\co'$ to be any topological order of $\co'_1 \cup \co'_2$. 
+ Let $\co'$ be any total order consistent with $\co'_2$. Assume by contradiction that $\tup{\hist_{R|W},\co'}$ doesn't satisfy $\axser$. Then, there exist $\tr'_1, \tr'_2, \tr'_3 \in T'$ such that $\tup{\tr'_1, \tr'_2}, \tup{\tr'_2, \tr'_3} \in \co'$ and $\tr'_1, \tr'_2$ write on some variable $\xvar$ and $\tup{\tr'_1, \tr'_3} \in \wro[\xvar]'$. But then $\tr'_1, \tr'_2$ are write transactions and $\co'_1$ must contain $\tup{\tr'_1, \tr'_2}$. Therefore, $\rwo(\co'_1)$ and $\co'_2$ should contain $\tup{\tr'_3, \tr'_2}$, a contradiction with $\co'$ being consistent with $\co'_2$.
+%  we must have added $\tup{\tr'_3, \tr'_2} \in \co'_2$. So $\tup{\tr'_2, \tr'_3}$ can not be in $\co'$. Therefore, $\co'$ must satisfy $\axser$ and proves our claim in predicate (\ref{pre_leftright}).
+ \end{proof}
+
+ 
+ Finally, it can be proved that any linearization $\co'$ of $\co'_2$ satisfies $\mathsf{Serializability}$ (together with $\hist_{R|W}$). Moreover, it can also be shown that the serializability of $\hist_{R|W}$ implies that $\hist$ satisfies PC. Therefore,
+
+\begin{theorem}\label{th:pc}
+A history $\hist$ satisfies prefix consistency iff $\hist_{R|W}$ is serializable.
+\end{theorem}
+\textsc{Proof.}
+The ``only-if'' direction is proven by Lemma~\ref{lem:pc1:app}. For the reverse, we show that 
+ % Now we will prove, if $\hist_{R|W}$ is serializable, then $\hist$ is prefix consistent. Formally we are trying to prove,
+\begin{align*}
+\forall \co'.\ \exists \co.\ \tup{\hist_{R|W}, \co'} \models \axser \Rightarrow \tup{\hist, \co} \models \axpre %\label{pre_rightleft}
+\end{align*}
+
+%\noindent
+%$\forall \co'.\ \exists \co.\ \tup{\hist_{R|W}, \co'} \models \axser $
+%
+%\hspace{3cm}
+%$\Rightarrow \tup{\hist, \co} \models \axpre$ %\label{pre_rightleft}
+ 
+  \begin{figure}[t] %{l}{0.53\textwidth} 
+  \centering
+  \begin{subfigure}{.31\textwidth}
+   \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+      semithick, transform shape]
+     \node[transaction state, text=red] at (0,0)       (t_1)           {$\tr_1$};
+     \node[transaction state] at (2,0)       (t_3)           {$\tr_3$};
+     \node[transaction state, text=red,label={above:\textcolor{red}{$\writeVar{ }{\xvar}$}}] at (-0.5,1.5) (t_2) {$\tr_2$};
+     \node[transaction state] at (1.5,1.5) (t_4) {$\tr_4$};
+     \path (t_1) edge[red] node {$\wro[\xvar]$} (t_3);
+     % \path (t_2) edge[blue] node {$\CO$} (t_1);
+     \path (t_2) edge node {$\co^*$} (t_4);
+     \path (t_4) edge node {$\wro \cup \so$} (t_3);
+     \path (t_1) edge[left] node {$\co$} (t_2);
+    \end{tikzpicture}
+   }
+   \caption{}
+   \label{pc_p_proof:3a}
+  \end{subfigure}
+  \hspace{10mm}
+  \begin{subfigure}{0.31\textwidth}
+   \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+      semithick, transform shape]
+     \node[transaction state] at (0,0)       (t_1)           {$W_{\tr_1}$};
+     \node[transaction state] at (2,0)       (t_3)           {$R_{\tr_3}$};
+     \node[transaction state, label={above:\textcolor{red}{$\writeVar{ }{\xvar}$}}] at (-0.5,1.5) (t_2) {$W_{\tr_2}$};
+     \node[transaction state] at (1.5,1.5) (t_4) {$W{\tr_4}$};
+     \path (t_1) edge node[near start] {$\wro[\xvar]'$} (t_3);
+     % \path (t_2) edge[blue] node {$\CO$} (t_1);
+     \path (t_2) edge[red] node {$\co'^*$} (t_4);
+     \path (t_4) edge[red] node {$\wro' \cup \so'$} (t_3);
+     \path (t_1) edge[left] node {$\co'$} (t_2);
+     \path (t_3) edge[red,above right] node {$\co'$} (t_2);
+    \end{tikzpicture}
+   }
+   \caption{}
+   \label{pc_p_proof:3b}
+  \end{subfigure}
+  
+  \caption{$\axpre$ violations correspond to cycles in $\co'$: (a) $\axpre$ violation in $\tup{\hist, \co}$, (b) Cycle in $\co'$.}
+  \label{pc_p_proof:3}
+ \end{figure}
+ 
+ Thus, let $\co'$ be a commit (total) order on transactions of $\hist_{R|W}$ which together with $\hist_{R|W}$ satisfies the serializability axiom.
+ % Consider a total order $\co'$ for $\hist_{R|W}$ which satisfies serialization. We will show there exists a $\co$ for $h$ which satisfies prefix consistency. 
+ Let $\co$ be a commit order on transactions of $\hist$ defined by 
+ $\co = \{\tup{\tr_1, \tr_2} | \tup{W_{\tr_1}, W_{\tr_2}} \in \co'\}$ ($\co$ is clearly a total order). If $\co$ were not to be consistent with $\wro \cup \so$, then there would exist transactions $\tr_1$ and $\tr_2$ such that  $\tup{\tr_1, \tr_2} \in \wro \cup \so$ and $\tup{\tr_2, \tr_1} \in \co$, which would imply that $\tup{W_{\tr_1}, R_{\tr_2}} , \tup{R_{\tr_2}, W_{\tr_2}} \in \wro \cup \so$ and $\tup{W_{\tr_2}, W_{\tr_1}} \in \co'$, which violates the acylicity of $\co'$. We show that $\tup{\hist, \co}$ satisfies $\axpre$. Assume by contradiction that there exists a $\axpre$ violation between $\tr_1$, $\tr_2$, $\tr_3$, $\tr_4$ (shown in Figure \ref{pc_p_proof:3a}), i.e., for some $\xvar \in \vars{\hist}$, $\tup{\tr_1, \tr_3} \in \wro[\xvar]$ and $\writeVar{\tr_2}{\xvar}$, $\tup{\tr_1, \tr_2} \in \co$, $\tup{\tr_2, \tr_4} \in \co^*$ and $\tup{\tr_4, \tr_3} \in \wro \cup \so$. Then, the corresponding transactions $W_{\tr_1}, W_{\tr_2}, W_{\tr_4}, R_{\tr_3}$ in $\hist_{R|W}$ would be related as follows: 
+$\tup{W_{\tr_1}, W_{\tr_2}} \in \co'$ and $\tup{W_{\tr_1}, R_{\tr_3}} \in \wro[\xvar]'$ because $\tup{\tr_1, \tr_3} \in \wro[\xvar]$ and $\tup{\tr_1, \tr_2} \in \co$.
+        Since $\co'$ satisfies $\axser$, then $\tup{R_{\tr_3}, W_{\tr_2}} \in \co'$.
+        But $\tup{\tr_2, \tr_4} \in \co^*$ and $\tup{\tr_4, \tr_3} \in \wro \cup \so$ imply that $\tup{W_{\tr_2}, W_{\tr_4}} \in \co'^*$ and $\tup{W_{\tr_4}, R_{\tr_3}} \in \wro' \cup \so'$, which show that $\co'$ is cyclic (the red cycle in Figure \ref{pc_p_proof:3b}), a contradiction. \hfill $\Box$
+
+ 
+ 
+ 
+ 
+Since the history $\hist_{R|W}$ can be constructed in linear time, Lemma~\ref{lem:pc_width}, Theorem~\ref{th:pc}, and Corollary~\ref{cor:ser} imply the following result.
+ 
+ \begin{corollary}\label{cor:pc}
+ 
+For an arbitrary but fixed constant $k\in\mathbb{N}$, the problem of checking prefix consistency for histories of width at most $k$ is polynomial time.
+ \end{corollary}
+ 
+%\end{proof}

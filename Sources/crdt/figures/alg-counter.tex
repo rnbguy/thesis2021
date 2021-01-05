@@ -1,0 +1,26 @@
+\SetKwInOut{KwInput}{Input}
+\SetKwInOut{KwOutput}{Output}
+\KwIn{History $\hist = (\Op, \ro)$, prefix map $m$, and set $\mathit{seen}$ of invalid prefix maps}
+\KwOut{$\mathit{true}$ if{f} there exists read-from and happens-before relations $\rf$ and $\hb$ such that $m\subseteq \hb$, and $\tup{\hist,\rf,\hb}$ satisfies the counter axioms.}
+\BlankLine
+\lIf{$m$ is complete}{\Return{true}}
+ \ForEach{replica $i$}{
+   \ForEach{replica $j \neq i$}{
+     $m'\leftarrow m[i \leftarrow m(i) \cup m(j)]$\;
+     \If{$m'\not\in seen$ and \emph{$\mathsf{checkCounter}(\hist,m',\mathit{seen})$}}{
+       \Return{true}\;
+     }
+     $\mathit{seen}\leftarrow\mathit{seen}\cup\{m'\}$\;
+   }
+   \If{$\exists o_1.\ \ro^1({\sf last}_i(m),o_1)$}{ %$\exists \op_1 \in (\Op|_{R_i} \setminus M[R_i])$ such that $\tup{\op_2, \op_1} \in \ro \Rightarrow \op_2 \in M[R_i]$
+     \If{$\mathsf{meth}(\op_1) = \mathsf{read}$ and $\mathsf{arg}(\op_1) = \xvar \land \mathsf{ret}(\op_1) \neq |\{\op \in m[i] | \op = {\sf inc}(x)\}| - |\{\op \in m[i] | \op = {\sf dec}(x)\}|$}{
+         \Return{false}\;
+       }
+       $m'\leftarrow m[i \leftarrow m(i) \cup \{o_1\}]$\;
+       \If{$m' \not\in seen$ and $\mathsf{checkCounter}(\hist, m', \mathit{seen})$}{
+         \Return{true}\;
+       }
+       $\mathit{seen}\leftarrow\mathit{seen}\cup\{m'\}$\;
+   }
+ }
+ \Return{false}\;

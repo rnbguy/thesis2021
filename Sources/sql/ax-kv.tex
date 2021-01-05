@@ -1,0 +1,502 @@
+%!TEX root = Thesis.tex
+\section{Isolation Levels for Key-Value Stores}
+\label{sec:ax-kv}
+
+%We consider a sequence of increasingly stronger isolation levels: Read Atomic, Causal Consistency, Prefix Consistency, Snapshot Isolation, Serializability. In each level, a transaction reads from a snapshot obtained by executing a sequence of transactions atomically (be sure about this intuition). Different levels impose constraints on the relationship between the sequences read by different transactions.
+%
+%Recall the OOPSLA'19 definitions. Histories as abstractions of executions, and the axioms corresponding to these isolation levels.
+%
+%Give some theorem about "a transaction reads from a snapshot obtained by executing a sequence of transactions atomically". This is important for explaining why transactions can be executed atomically in the operational semantics.
+%
+%Give a theorem about "prefix closure": if a history is correct, then it remains correct if we remove a suffix of a session (this suffix does not necessarily contain only entire transactions). This is useful for proving the completeness of the operational semantics.
+
+We present the axiomatic framework introduced in~\cite{DBLP:journals/pacmpl/BiswasE19} for defining isolation levels\footnote{Isolation levels are called consistency models in~\cite{DBLP:journals/pacmpl/BiswasE19}.} in Key-Value stores. Isolation levels are defined as logical constraints, called \emph{axioms}, over \emph{histories}, which are an abstract representation of the interaction between a program and the store in a concrete execution. 
+% that record the sequence of reads and writes executed in each transaction, the order between transactions in each session, and a write-read relation (also called read-from) that ``justifies'' read values by associating each read to a write that wrote the value returned by the read.
+
+%TODO SOME INTRO EXPLAINING THAT ISOLATION LEVELS ARE DEFINED AS AXIOMS OVER HISTORIES, WHICH REPRESENT THE INTERACTION BETWEEN A PROGRAM AND A STORE. 
+
+\subsection{Histories}
+
+Programs interact with a Key-Value store by issuing transactions formed of $\textsf{read}$ and $\textsf{write}$ instructions. The effect of executing one such instruction is represented using an \emph{operation}, which is an element of the set
+\begin{align*}
+ \Op=\set{\rd[\id]{\key}{\val},\wrt[\id]{\key}{\val}: \id\in\OId, \key\in\Keys, \val\in \Val}
+\end{align*} 
+where $\rd[\id]{\key}{\val}$ (resp., $\wrt[\id]{\key}{\val}$) corresponds to reading a value $\val$ from a key $\key$ (resp., writing $\val$ to $\key$). Each operation is associated with an identifier $\id$ from an arbitrary set $\OId$. We omit operation identifiers when they are not important.
+
+\begin{definition}
+ A \emph{transaction log} $\tup{\tr,O, \po}$ is a transaction identifier $\tr$ and a finite set of operations $O$ along with a strict total order $\po$ on $O$, called \emph{program order}.
+\end{definition}
+
+The program order $\po$ represents the order between instructions in the body of a transaction. We assume that each transaction log is well-formed in the sense that if a read of a key $k$ is preceded by a write to $\key$ in $\po$, then it should return the value written by the last write to $\key$ before the read (w.r.t. $\po$). This property is implicit in the definition of every isolation level that we are aware of. For simplicity, we may use the term \emph{transaction} instead of transaction log. The  set of all transaction logs is denoted by $\mathsf{Tlogs}$.
+
+%We use $\tr$, $\tr_1$, $\tr_2$, $\ldots$ to range over transaction logs. 
+
+The set of read operations $\rd{\key}{\_}$ in a transaction log $\tr$ that are \emph{not} preceded by a write to $\key$ in $\po$ is denoted by $\readOp{\tr}$. As mentioned above, the other read operations take their values from writes in the same transaction and their behavior is independent of other transactions. Also, the set of write operations $\wrt{\key}{\_}$ in $\tr$ that are \emph{not} followed by other writes to $\key$ in $\po$ is denoted by $\writeOp{\tr}$. If a transaction contains multiple writes to the same key, then only the last one (w.r.t. $\po$) can be visible to other transactions (w.r.t. any isolation level that we are aware of). The extension to sets of transaction logs is defined as usual. 
+Also, we say that a transaction log $\tr$ \emph{writes} a key $\key$, denoted by $\writeVar{\tr}{\key}$, when $\wrt[\id]{\key}{\val}\in \writeOp{\tr}$ for some $\id$ and $\val$. 
+%Similarly, $\tr$ \emph{reads} $\key$ when $\rd[\id]{\key}{\val}\in \readOp{\tr}$ for some $\id$ and $\val$.
+
+
+
+%\begin{figure}[t]
+% \centering
+% \begin{subfigure}{.21\textwidth}
+%   \centering
+%  \resizebox{!}{1.3cm}{
+%   \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=2cm,
+%     semithick, transform shape]
+%    \node[draw, rounded corners=2mm] (t1) {\begin{tabular}{l} \texttt{x = 1;} \\ ... \\ \texttt{x = 2;} \end{tabular}};
+%    \node[draw, rounded corners=2mm, right of = t1] (t2) {\begin{tabular}{l} ... \\ \texttt{read(x);} \end{tabular}};
+%   \end{tikzpicture}  
+%  }
+%%  \caption{Only the lastest write is visible to other transaction}
+%\caption{}
+%  \label{rc_eg:1}
+% \end{subfigure}
+% \hspace{10mm}
+% \begin{subfigure}{.1\textwidth}
+%   \centering
+%  \resizebox{!}{2cm}{
+%   \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=2cm,
+%     semithick, transform shape]
+%    \node[draw, rounded corners=2mm] (t1) {\begin{tabular}{l} \texttt{x = 1;} \\ ... \\ \texttt{x = 2;} \\ ... \\ \texttt{read(x);}\end{tabular}};
+%   \end{tikzpicture}  
+%  }
+%%  \caption{Always reads the latest write inside a transaction}
+%\caption{}
+%  \label{rr_eg:1}
+% \end{subfigure}
+% \hspace{10mm}
+% \begin{subfigure}{.14\textwidth}
+%   \centering
+%  \resizebox{!}{1.3cm}{
+%   \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=2cm,
+%     semithick, transform shape]
+%    \node[draw, rounded corners=2mm] (t1) {\begin{tabular}{l} \texttt{x = 1;} \\ ... \\ \texttt{ABORT;} \end{tabular}};
+%    \node[draw, rounded corners=2mm, right of = t1] (t2) {\begin{tabular}{l} ... \\ \texttt{read(x);} \end{tabular}};
+%   \end{tikzpicture}  
+%  }
+%%  \caption{Aborted transactions are not visible}
+%\caption{}
+%  \label{abort:1}
+% \end{subfigure}
+% \caption{Examples of transactions used to justify our simplifying assumptions (each box represents a different transaction): (a) only the last written value is observable in other transactions, (b) reads following writes to the same variable return the last written value in the same transaction, and (c) values written in aborted transactions are not observable.}
+% \label{read_latest}
+% \vspace{-3mm}
+%\end{figure}
+
+%To simplify the exposition, we assume that each transaction $\tr$ contains at most one write operation to each variable\footnote{That is, for every transaction $\tr$, and every $\wrt{\xvar}{\val}, \wrt{\yvar}{\val'}\in \writeOp{\tr}$, we have that $\xvar\neq\yvar$.}, and that a read of a variable $\xvar$ cannot be preceded by a write to $\xvar$ in the same transaction\footnote{That is, for every transaction $\tr=\tup{O, \po}$, if $\wrt{\xvar}{\val}\in \writeOp{\tr}$ and there exists $\rd{\xvar}{\val}\in \readOp{\tr}$, then we have that $\tup{\rd{\xvar}{\val},\wrt{\xvar}{\val}}\in \po$}. If a transaction would contain multiple writes to the same variable, then only the last one should be visible to other transactions (w.r.t. any consistency criterion considered in practice). For instance, the \texttt{read(x)} in Figure~\ref{rc_eg:1} should not return 1 because this is not the last value written to {\tt x} by the other transaction. It can return the initial value or 2.
+%%In figure (\ref{rc_eg:1}), however the two transactions are executed, the operation \texttt{print(x)} in below transaction should not print \texttt{0}. Because \texttt{x=0} is not the latest write in the above transaction.
+%Also, if a read would be preceded by a write to the same variable in the same transaction, then it should return a value written in the same transaction (i.e., the value written by the latest write to $\xvar$ in that transaction). 
+%For instance, the \texttt{read(x)} in Figure~\ref{rr_eg:1} can only return 2 (assuming that there are no other writes on {\tt x} in the same transaction).
+%%In figure (\ref{rr_eg:1}), the operation \texttt{print(x)} in the transaction should not print \texttt{1}, because $\texttt{print(x)}$ is not the latest write to \texttt{print(x)}.
+%These two properties can be verified easily (in a syntactic manner) on a given execution. Beyond these two properties, the various consistency criteria used in practice constrain only the last writes to each variable in each transaction and the reads that are not preceded by writes to the same variable in the same transaction.
+
+A \emph{history} contains a set of transaction logs (with distinct identifiers) ordered by a (partial) \emph{session order} $\so$ that represents the order between transactions in the same session\footnote{In the context of our programming language, $\so$ would be a union of total orders. This constraint is not important for defining isolation levels.}. It also includes a
+%ordering constraints imposed by the applications using the database. Most often, $\so$ is a union of sequences, each sequence being called a \emph{session}. 
+\emph{write-read} relation (also called read-from) that ``justifies'' read values by associating each read to a transaction that wrote the value returned by the read.
+%that identifies the transaction writing the value returned by each read in the execution. 
+
+%As mentioned before, such a relation can be extracted easily from executions where each value is written at most once. Since in practice, databases are data-independent~\cite{DBLP:conf/popl/Wolper86}, i.e., their behavior does not depend on the concrete values read or written in the transactions, any potential buggy behavior can be exposed in such executions. 
+
+%Transactions and operations may be failed or aborted. The effects of the failed or aborted transactions and operations should not be visible. So we assume the transactions and operations are always successful or committed. If such transactions and operations exist, we discard them after checking there is no operation that read from failed or aborted transactions or operations. Therefore  In figure (\ref{abort:1}), the left transaction is aborted. So the operation \texttt{print(x)} in the right transaction should not output \texttt{0}. 
+
+
+%We assume, in each transaction if there is no write before a read, it reads either from the last write of an another transaction or an initial value. Also when a transaction reads a value after a write, it reads from last write before that read. \ie if $\rd{\xvar}{\val} \in \tr_1$ reads from $\wrt{\xvar}{\val} \in \tr_2$, then for any other $\wrt{\xvar}{\_} \in \tr_2$ or $\tr_1$, $\tup{\wrt{\xvar}{\_}, \wrt{\xvar}{\val}} \in O_{\tr_2}$ or $\tup{\rd{\xvar}{\val}, \wrt{\xvar}{\_}} \in O_{\tr_1}$.
+%
+%Once we have a set of transactions, we can statically check if this is true for all transactions. Then, for all variables, we can ignore all the writes except the final one and all the reads after first write in a transaction. For simplicity, we assume that 
+
+
+
+% TODO EXPLAIN THE FOLLOWING SIMPLIFICATIONS: WE DON'T CARE ABOUT MULTIPLE WRITES SINCE ANYWAY, ALL CRITERIA REQUIRE THAT ONLY THE LAST ONE IS VISIBLE. ALSO, ONCE A VARIABLE IS WRITTEN EVERY CRITERION REQUIRES THAT THE READ RETURNS THE INTERNALLY WRITTEN VALUE. ALL THESE THINGS CAN BE CHECKED EASILY IN A SYNTACTIC WAY ON HISTORIES.
+
+
+%We say that a transaction $\tr$ writes value $\val$ a variable $\xvar$, denoted by $\tr\models \wrt{\xvar}{\val}$, whenever $\wrt{\xvar}{\val}$ is the last write o variable $\xvar$ of $\tr$, i.e., $\wrt{\xvar}{\val}\in \writeOp{\tr}$ and for any $\wrt{\xvar}{\val'}\in \writeOp{\tr}$ with $\val\neq\val'$, we have that $\tup{\wrt{\xvar}{\val'}, \wrt{\xvar}{\val}}\in \po$.
+% \item $\tr \models \wrt[\id]{\xvar}{\val} \Leftrightarrow max_{\textsf{po}} \left( \left\{ write(x,\_) \in O \right\} \right) = write(x, n)$
+% \item $(O, \textsf{po}) \models \texttt{read}(x, n) \Leftrightarrow min_{\textsf{po}} \left( \left\{ \_(x,\_) \in O \right\} \right) = read(x, n)$
+% \item $(O, \textsf{po}) \in Write_{x} \Leftrightarrow \left\{ write(x,\_) \in O \right\} \neq \emptyset$
+
+
+
+%When a read operation in a transaction reads a value from an operation from another transaction, it defines a \emph{write-read order} between them. Also, typically a transactional system allows its clients to group their transactions in one single session. This imposes a \emph{session order} on the transactions. We define a client-visible results of an execution of a set of sessions as a \emph{history}.
+
+% TODO SAY THAT HISTORIES CONTAIN ONLY COMMITTED TRANSACTIONS FROM A CONCRETE EXECUTION, THE EFFECTS OF ABORTED TRANSACTIONS ARE NOT VISIBLE.
+
+\begin{definition}
+ A \emph{history} $\tup{T, \so, \wro}$ is a set of transaction logs $T$ along with a strict partial \emph{session order} $\so$, and a 
+ %surjective\footnote{That is, for all $\rd{\xvar}{\val}\in \readOp{T}$ there exists a transaction $\tr\in T$ such that $\tup{\tr,\rd{\xvar}{\val}}\in \wro$.} 
+\emph{write-read} relation $\wro\subseteq T\times \readOp{T}$ such that
+the inverse of $\wro$ is a total function, and if $(\tr,\rd{\key}{\val})\in\wro$, then $\wrt{\key}{\val}\in\tr$, and $\so\cup\wro$ is acyclic.
+\end{definition}
+
+% TODO SAY THAT INITIAL VALUES ARE ASSUMED TO BE WRITTEN BY A TRANSACTION ORDERED IN SO BEFORE ALL THE OTHER TRANSACTIONS.
+
+%The transactions may try to read a variable, even before there is a write to it. In practice, the databases return a default initialized or null value for those reads. This situation can be thought as if the database wrote that value in an \emph{initialization} transaction, in which all variables are written with an initialized value. So we assume a history contains an initialization transaction. This initialization transaction precedes all other transactions by $\so$.
+
+To simplify the technical exposition, we assume that every history includes a distinguished transaction log writing the initial values of all keys. This transaction log precedes all the other transaction logs in $\so$. We use $\hist$, $\hist_1$, $\hist_2$, $\ldots$ to range over histories. The set of transaction logs $T$ in a history $\hist=\tup{T, \so, \wro}$ is denoted by $\tlogs{\hist}$.
+
+%We say that the read operation $\rd{\key}{\val}$ \emph{reads the value $\val$ of $\key$ written by $\tr$} when $(\tr,\rd{\key}{\val})\in\wro$. 
+For a key $\key$, $\wro[\key]$ denotes the restriction of $\wro$ to reads of $\key$, \ie, $\wro[\key]=\wro\cap (T\times \{\rd{\key}{\val}\mid \val\in \Val\})$. Moreover, we extend the relations $\wro$ and $\wro[\key]$ to pairs of transactions by $\tup{\tr_1,\tr_2}\in \wro$, resp., $\tup{\tr_1,\tr_2}\in \wro[\key]$, iff there exists a read operation $\rd{\key}{\val}\in \readOp{\tr_2}$ such that $\tup{\tr_1,\rd{\key}{\val}}\in \wro$, resp., $\tup{\tr_1,\rd{\key}{\val}}\in \wro[\key]$. 
+We say that the transaction log $\tr_1$ is \emph{read} by the transaction log $\tr_2$ when $\tup{\tr_1,\tr_2}\in \wro$. % and that it is \emph{read} when it is read by some transaction $\tr_2$. 
+%
+
+%A consistency model describes how a transactional system processes transactions. To formally define the behaviors, we will extend history with two relations.
+
+%The definitions of the consistency criteria rely on a few basic notions of sequences and orders. We denote the \emph{prefix} of a sequence $\sigma$ up to and including an element $\alpha$ by $\sigma(\alpha)$, and the \emph{prefix} of a partial order $\pi$ up to and including $\alpha$ by $\pi(\alpha) = \set{\tup{ \alpha_1, \alpha_2 } \in \pi : \tup{\alpha_2, \alpha} \in \pi \text{ or } \alpha_2 = \alpha }$. A sequence $\sigma_1$ is called a \emph{subsequence} of another sequence $\sigma_2$, denoted by $\sigma_1\preceq \sigma_2$, when $\sigma_1$ is obtained from $\sigma_2$ by deleting elements. We extend the notion of subsequence to partial orders and say that an order $\pi_1$ is a \emph{suborder} of another order $\pi_2$ if $\pi_1\subseteq \pi_2$. For uniformity, we write $\pi_1 \preceq \pi_2$ when $\pi_1$ is a suborder of $\pi_2$. The subsequence of a sequence $\sigma$ that includes all the elements ordered between two elements $\alpha_1$ and $\alpha_2$ (including $\alpha_1$ and $\alpha_2$) is denoted by $\sigma[\alpha_1,\alpha_2]$.
+%Also, for simplicity, we don’t make the distinction between sequences and total orders, reusing notions like prefix and subsequence in the context of total orders.
+%
+%\begin{definition}
+% A \emph{linearization} $\ell=\tup{\lin,\vis}$ of a history $\tup{T, \so, \wro}$ is a total order $\lin$ on $T$, and a function $\vis$, mapping each transaction $\tr\in T$ to a subsequence of $\lin(\tr)$ including $\tr$.
+%\end{definition}
+%
+%A consistency model is defined as the set of histories which admit linearizations satisfying certain \emph{consistency axioms}. The axioms rely on a few notations
+%\begin{itemize}
+% \item $\tr \models \wrt[\id]{\xvar}{\val} \Leftrightarrow max_{\textsf{po}} \left( \left\{ write(x,\_) \in O \right\} \right) = write(x, n)$
+% \item $(O, \textsf{po}) \models \texttt{read}(x, n) \Leftrightarrow min_{\textsf{po}} \left( \left\{ \_(x,\_) \in O \right\} \right) = read(x, n)$
+% \item $(O, \textsf{po}) \in Write_{x} \Leftrightarrow \left\{ write(x,\_) \in O \right\} \neq \emptyset$
+%\end{itemize}
+
+
+\subsection{Axiomatic Framework}
+
+% from Table. \ref{weakconsistency:1}. Table. \ref{weakconsistency:2} lists the axioms of consistency models.
+
+\input{Sources/sql/def_figs.tex}
+
+
+% Practically, \textsc{Int} ensures each transaction takes one global snapshot of variables at the beginning. Then no other global changes affect that snapshot for any read or write local to that transaction. \textsc{Ext} ensures each transaction always observes the latest global snapshot that is visible to it.
+
+
+ %characterize the set of histories satisfying a certain consistency criterion. 
+A history is said to satisfy a certain isolation level if there exists a strict total order $\co$ on its transaction logs, called \emph{commit order}, which extends the write-read relation and the session order, and which satisfies certain properties. These properties, called \emph{axioms}, relate the commit order with the session-order and the write-read relation in the history. 
+%The axioms define mandatory $\co$ predecessors $\tr_2$ of a transaction $\tr_1$ that is read in the history. 
+They are defined as 
+first-order formulas\footnote{These formulas are interpreted on tuples $\tup{\hist,\co}$ of a history $\hist$ and a commit order $\co$ on the transactions in $\hist$ as usual.} of the following form:
+\begin{align}
+  & \forall \key,\ \forall \tr_1\neq \tr_2,\ \forall \alpha.\ \nonumber\\
+  & \hspace{3mm}  \tup{\tr_1,\alpha}\in \wro[\key] \land \writeVar{\tr_2}{\key} \land \phi(\tr_2,\alpha) \implies \tup{\tr_2,\tr_1}\in\co \label{eq:axiom}
+%  & \hspace{5.4cm} \implies \tup{\tr_2,\tr_1}\in\co \nonumber
+\end{align}
+where $\phi$ is a property relating $\tr_2$ and $\alpha$ (i.e., the read or the transaction reading from $\tr_1$) that varies from one axiom to another. Intuitively, this axiom schema states the following: in order for $\alpha$ to read specifically $t_1$'s write on $x$, it must be the case that every $t_2$ that also writes $x$ and satisfies $\phi(t_2,\alpha)$ was committed before $t_1$. 
+%Note that in all cases we consider, $\phi(t_2,\alpha)$ already ensures that $t_2$ is committed before the read $\alpha$, so this axiom schema ensures that $t_2$ is furthermore committed before $t_1$'s write.
+The property $\phi$ relates $\tr_2$ and $\alpha$ using the relations in a history and the commit order. 
+Figure~\ref{consistency_defs} shows the axioms defining three isolation levels: Read Committed, Causal Consistency, and Serializability (see~\cite{DBLP:journals/pacmpl/BiswasE19} for axioms defining Read Atomic, Prefix, and Snapshot Isolation). 
+
+
+
+For instance, $\mathsf{Read\ Committed}$~\cite{DBLP:conf/sigmod/BerensonBGMOO95} requires that every read returns a value written in a committed transaction, and also, that the reads in the same transaction are ``monotonic'', i.e., they do not return values that are older, w.r.t. the commit order, than values read in the past.
+%\footnote{This monotonicity property corresponds to the fact that in the original formulation of $\mathsf{Read\ Committed}$~\cite{DBLP:conf/sigmod/BerensonBGMOO95}, every write is guarded by the acquisition of a lock on the written key, that is held until the end of the transaction.}. 
+While the first condition holds for every history (because of the surjectivity of $\wro$), the second condition is expressed by the axiom $\mathsf{Read\ Committed}$ in Figure~\ref{lock_rc_def}, which states that for any transaction $\tr_1$ writing a key $\key$ that is read in a transaction $\tr$, the set of transactions $\tr_2$ writing $\key$ and read previously in the same transaction (these reads may concern other keys) must precede $\tr_1$ in commit order. 
+For instance, Figure~\ref{rc_example:1} shows a history and a (partial) commit order that does not satisfy this axiom because $\rd{\key_1}{1}$ returns the value written in a transaction ``older'' than the transaction read in the previous $\rd{\key_2}{2}$. %An example of a history and commit order satisfying this axiom is given in Figure~\ref{rr_example:1}.
+
+%\begin{figure}
+%  
+%   \centering
+%   \begin{subfigure}{.22\textwidth}
+%  \resizebox{\textwidth}{!}{
+%  \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+%    semithick, transform shape]
+%    % \node[draw, rounded corners=2mm] (t1) at (0, 0) {\begin{tabular}{l} \texttt{x = 1;} \end{tabular}};
+%   \node[draw, rounded corners=2mm] (t2) at (0, -.75) {\begin{tabular}{l} \texttt{x = 1;} \\ \texttt{y = 1};\end{tabular}};
+%   \node[draw, rounded corners=2mm, minimum width=3.5cm, minimum height=2.5cm] (t3) at (3, -0.75) {};
+%   \node[draw=black!50, rounded corners=2mm, dashed] (t3_1) at (3, 0) {\begin{tabular}{l} \texttt{print(y); // 1} \end{tabular}};
+%   \node[draw=black!50, rounded corners=2mm, dashed] (t3_2) at (3, -1.5) {\begin{tabular}{l} \texttt{print(x); // 0} \end{tabular}};
+%   % \path (t1) edge node {} (t3_2);
+%   % \path (t2) edge node {} (t3_1);
+%   % \path (t1) edge node {$\co$} (t2);
+%   \path (t3_1) edge node {$\po$} (t3_2);
+%  \end{tikzpicture}  
+%  }
+%    \caption{$\mathsf{Read\ Committed}$ violation.}
+%    \label{rc_example:1}
+%    
+%\end{subfigure}
+%\begin{subfigure}{.22\textwidth}
+%\resizebox{\textwidth}{!}{
+%\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+% semithick, transform shape]
+% % \node[draw, rounded corners=2mm] (t1) at (0, 0) {\begin{tabular}{l} \texttt{x = 1;} \end{tabular}};
+%\node[draw, rounded corners=2mm] (t2) at (0, -.75) {\begin{tabular}{l} \texttt{x = 1;} \end{tabular}};
+%\node[draw, rounded corners=2mm, minimum width=3.5cm, minimum height=2.5cm] (t3) at (3, -0.75) {};
+%\node[draw=black!50, rounded corners=2mm, dashed] (t3_1) at (3, -0) {\begin{tabular}{l} \texttt{print(x); // 0} \end{tabular}};
+%\node[draw=black!50, rounded corners=2mm, dashed] (t3_2) at (3, -1.5) {\begin{tabular}{l} \texttt{print(x); // 1} \end{tabular}};
+%% \path (t1) edge node {} (t3_1);
+%% \path (t2) edge node {} (t3_2);
+%% \path (t1) edge node {$\co$} (t2);
+%\path (t3_1) edge node {$\po$} (t3_2);
+%\end{tikzpicture}  
+%}
+% \caption{Repeatable Read violation.}
+% \label{rr_example:1}
+%\end{subfigure}
+%\begin{subfigure}{.22\textwidth}
+%\resizebox{\textwidth}{!}{
+%\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+% semithick, transform shape]
+% % \node[draw, rounded corners=2mm] (t1) at (0, 1.5) {\begin{tabular}{l} \texttt{x = 1;} \\ \texttt{y = 1;}\end{tabular}};
+%\node[draw, rounded corners=2mm] (t2) at (-.85, -.75) {\begin{tabular}{l} \texttt{print(x); // 0} \\ \texttt{y = 1};\end{tabular}};
+%\node[draw, rounded corners=2mm, minimum width=3.5cm, minimum height=2.5cm] (t3) at (3, -0.75) {};
+%\node[draw=black!50, rounded corners=2mm, dashed] (t3_1) at (3, 0) {\begin{tabular}{l} \texttt{print(x); // 0} \end{tabular}};
+%\node[draw=black!50, rounded corners=2mm, dashed] (t3_2) at (3, -1.5) {\begin{tabular}{l} \texttt{print(y); // 0} \end{tabular}};
+%% \path (t1) edge node {} (t3);
+%\path (t2) edge node {$\so$} (t3);
+%% \path (t1) edge node {} (t2);
+%\path (t3_1) edge node {$\po$} (t3_2);
+%\end{tikzpicture}  
+%}
+% \caption{Read My Writes violation.}
+% \label{rmw_example:1}
+%\end{subfigure}
+%\begin{subfigure}{.22\textwidth}
+%\resizebox{\textwidth}{!}{
+%\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+% semithick, transform shape]
+% % \node[draw, rounded corners=2mm] (t1) at (0, 0) {\begin{tabular}{l} \texttt{x = 1;} \\ \texttt{y = 1;} \end{tabular}};
+%\node[draw, rounded corners=2mm] (t2) at (0, -.75) {\begin{tabular}{l} \texttt{x = 1;} \\ \texttt{y = 1};\end{tabular}};
+%\node[draw, rounded corners=2mm, minimum width=3.5cm, minimum height=2.5cm] (t3) at (3, -0.75) {};
+%\node[draw=black!50, rounded corners=2mm, dashed] (t3_2) at (3, -1.5) {\begin{tabular}{l} \texttt{print(y); // 1} \end{tabular}};
+%\node[draw=black!50, rounded corners=2mm, dashed] (t3_1) at (3, -0) {\begin{tabular}{l} \texttt{print(x); // 0} \end{tabular}};
+%% \path (t1) edge node {} (t3_1);
+%% \path (t2) edge node {} (t3_2);
+%% \path (t1) edge node {$\co$} (t2);
+%\path (t3_1) edge node {$\po$} (t3_2);
+%\end{tikzpicture}  
+%}
+% \caption{Repeatable Read violation.}
+% \label{ra_example:1}
+%\end{subfigure}
+%
+%
+%\begin{subfigure}{.22\textwidth}
+%  \centering
+%\resizebox{.65\textwidth}{!}{
+%\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+% semithick, transform shape]
+% % \node[draw, rounded corners=2mm] (t1) at (0, 1.5) {\begin{tabular}{l} \texttt{x = 1;} \\ \texttt{y = 1;}\end{tabular}};
+%\node[draw, rounded corners=2mm] (t2) at (1.5, 1.5) {\begin{tabular}{l} \texttt{print(x); // 0} \\ \texttt{x = 1;} \\ \texttt{y = 1;} \end{tabular}};
+%\node[draw, rounded corners=2mm] (t3) at (1.5, 0) {\begin{tabular}{l} \texttt{print(x); // 1} \\ \texttt{print(y); // 0} \end{tabular}};
+%% \path (t1) edge node {} (t3);
+%% \path (t2) edge node {$\so$} (t3);
+%% \path (t1) edge node {} (t2);
+%% \path (t3_1) edge node {$\po$} (t3_2);
+%\end{tikzpicture}  
+%}
+% \caption{$\mathsf{Causal}$ violation.}
+% \label{cc_example:1}
+%\end{subfigure}
+%\begin{subfigure}{.22\textwidth}
+%\resizebox{\textwidth}{!}{
+%\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+% semithick, transform shape]
+% % \node[draw, rounded corners=2mm] (t1) at (0, 0) {\begin{tabular}{l} \texttt{x = 1;} \\ \texttt{y = 1;}\end{tabular}};
+% \node[draw, rounded corners=2mm] (t2) at (-1.7, -1.5) {\begin{tabular}{l} \texttt{print(x); // 0} \\ \texttt{x = 1;} \end{tabular}};
+%\node[draw, rounded corners=2mm] (t3) at (1.7, -1.5) {\begin{tabular}{l} \texttt{print(y); // 0} \\ \texttt{y = 1;} \end{tabular}};
+%\node[draw, rounded corners=2mm] (t4) at (-1.7, -3) {\begin{tabular}{l} \texttt{print(x); // 1} \\ \texttt{print(y); // 0} \end{tabular}};
+%\node[draw, rounded corners=2mm] (t5) at (1.7, -3) {\begin{tabular}{l} \texttt{print(y); // 1} \\ \texttt{print(x); // 0} \end{tabular}};
+%% \node[draw, rounded corners=2mm] (t3) at (1.5, 0) {\begin{tabular}{l} \texttt{print(x); // 2} \\ \texttt{print(y); // 1} \end{tabular}};
+%% \path (t1) edge node {} (t3);
+%% \path (t2) edge node {$\so$} (t3);
+%% \path (t1) edge node {} (t2);
+%% \path (t3_1) edge node {$\po$} (t3_2);
+%\end{tikzpicture}  
+%}
+% \caption{$\mathsf{Prefix}$ violation.}
+% \label{pre_example:1}
+%\end{subfigure}
+%
+%
+%\begin{subfigure}{.22\textwidth}
+%\resizebox{\textwidth}{!}{
+%\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+% semithick, transform shape]
+% % \node[draw, rounded corners=2mm] (t1) at (0, 0) {\begin{tabular}{l} \texttt{x = 1;} \end{tabular}};
+% \node[draw, rounded corners=2mm] (t2) at (-1.7, -1.2) {\begin{tabular}{l} \texttt{print(x); // 0} \\ \texttt{x = 1;} \end{tabular}};
+% \node[draw, rounded corners=2mm] (t3) at (1.7, -1.2) {\begin{tabular}{l} \texttt{print(x); // 0} \\ \texttt{x = 1;} \end{tabular}};
+% % \node[draw, rounded corners=2mm] (t3) at (0, -2.4) {\begin{tabular}{l} \texttt{print(x); // 2} \end{tabular}};
+%% \node[draw, rounded corners=2mm] (t3) at (1.7, -1.5) {\begin{tabular}{l} \texttt{print(y); // 1} \\ \texttt{y = 2;} \end{tabular}};
+%% \node[draw, rounded corners=2mm] (t3) at (1.5, 0) {\begin{tabular}{l} \texttt{print(x); // 2} \\ \texttt{print(y); // 1} \end{tabular}};
+%% \path (t1) edge node {} (t3);
+%% \path (t2) edge node {$\co$} (t3);
+%% \path (t1) edge node {} (t2);
+%% \path (t3_1) edge node {$\po$} (t3_2);
+%\end{tikzpicture}  
+%}
+% \caption{$\mathsf{Conflict}$ violation.}
+% \label{conf_example:1}
+%\end{subfigure}
+%\begin{subfigure}{.22\textwidth}
+%\resizebox{\textwidth}{!}{
+%\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+% semithick, transform shape]
+% % \node[draw, rounded corners=2mm] (t1) at (0, 0) {\begin{tabular}{l} \texttt{x = 1;} \\ \texttt{y = 1;}\end{tabular}};
+% \node[draw, rounded corners=2mm] (t2) at (-1.7, -1.5) {\begin{tabular}{l} \texttt{print(x); // 0} \\ \texttt{print(y); // 0} \\ \texttt{x = 1;} \end{tabular}};
+% \node[draw, rounded corners=2mm] (t3) at (1.7, -1.5) {\begin{tabular}{l} \texttt{print(x); // 0} \\ \texttt{print(y); // 0} \\ \texttt{y = 1;} \end{tabular}};
+%% \node[draw, rounded corners=2mm] (t3) at (1.7, -1.5) {\begin{tabular}{l} \texttt{print(y); // 1} \\ \texttt{y = 2;} \end{tabular}};
+%% \node[draw, rounded corners=2mm] (t3) at (1.5, 0) {\begin{tabular}{l} \texttt{print(x); // 2} \\ \texttt{print(y); // 1} \end{tabular}};
+%% \path (t1) edge node {} (t3);
+%% \path (t2) edge node {$\so$} (t3);
+%% \path (t1) edge node {} (t2);
+%% \path (t3_1) edge node {$\po$} (t3_2);
+%\end{tikzpicture}  
+%}
+% \caption{$\mathsf{Serializability}$ violation.}
+% \label{ser_example:1}
+%\end{subfigure}
+%
+%  \caption{Examples of histories. For readability, the $\wro$ relation is defined by the values written in comments with each {\tt read}.}
+%  \label{counter_example:1}
+%\end{figure}
+
+
+
+\begin{figure}
+  
+   \centering
+   \begin{subfigure}{.23\textwidth}
+  \resizebox{\textwidth}{!}{
+\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+    semithick, transform shape]
+    \node[draw, rounded corners=2mm] (t1) at (0, 0) {\begin{tabular}{l} $\wrt{\key_1}{1}$ \end{tabular}};
+   \node[draw, rounded corners=2mm,outer sep=0] (t2) at (0, -1.5) {\begin{tabular}{l} $\wrt{\key_1}{2}$ \\ $\wrt{\key_2}{2}$\end{tabular}};
+   \node[draw, rounded corners=2mm, minimum width=1.8cm, minimum height=2.5cm] (t3) at (3, -0.75) {};
+   \node[style={inner sep=0,outer sep=0}] (t3_1) at (3, 0) {\begin{tabular}{l} $\rd{\key_2}{2}$ \end{tabular}};
+   \node[style={inner sep=0,outer sep=0}] (t3_2) at (3, -1.5) {\begin{tabular}{l} $\rd{\key_1}{1}$ \end{tabular}};
+   % \path (t1) edge node {} (t3_2);
+   % \path (t2) edge node {} (t3_1);
+   \path (t1) edge node {$\co$} (t2);
+   \path (t3_1) edge node {$\po$} (t3_2);
+   \path (t1) edge[below] node[yshift=-4,xshift=4] {$\wro$} (t3_2);
+   \path (t2) edge node[yshift=-2,xshift=7] {$\wro$} (t3_1);
+  \end{tikzpicture}  
+    }
+    \caption{$\mathsf{Read\ Committed}$ violation.}
+    \label{rc_example:1}
+\end{subfigure}
+\begin{subfigure}{.23\textwidth}
+\resizebox{\textwidth}{!}{
+\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+ semithick, transform shape]
+ \node[draw, rounded corners=2mm,outer sep=0] (t1) at (0, 1.5) {$\wrt{\key_1}{1}$};
+\node[draw, rounded corners=2mm,outer sep=0] (t2) at (3, 1.5) {\begin{tabular}{l} $\rd{\key_1}{1}$ \\ $\wrt{\key_1}{2}$ \end{tabular}};
+\node[draw, rounded corners=2mm,outer sep=0] (t3) at (3, 0) {\begin{tabular}{l} $\rd{\key_1}{1}$ \\ $\rd{\key_2}{1}$ \end{tabular}};
+\node[draw, rounded corners=2mm,outer sep=0] (t4) at (0, 0) {\begin{tabular}{l} $\rd{\key_1}{2}$ \\ $\wrt{\key_2}{1}$\end{tabular}};
+
+\path (t1) edge[above] node[yshift=0,xshift=0] {$\wro$} (t2);
+
+\path (t1) edge[below] node[yshift=-5,xshift=7] {$\wro$} (t3);
+
+\path (t2) edge[above] node[yshift=-6,xshift=-14] {$\wro$} (0,0.58);
+
+\path (t4) edge[below] node[yshift=0,xshift=0] {$\wro$} (t3);
+% \path (t1) edge node {} (t3);
+% \path (t2) edge node {$\so$} (t3);
+% \path (t1) edge node {} (t2);
+% \path (t3_1) edge node {$\po$} (t3_2);
+\end{tikzpicture}  
+}
+ \caption{$\mathsf{Causal}$ violation.}
+ \label{cc_example:1}
+\end{subfigure}
+\vspace{-3mm}
+  \caption{Histories used to explain the axioms in Figure~\ref{consistency_defs}.}
+  \label{counter_example:1}
+\vspace{-3mm}
+\end{figure}
+
+The axiom defining $\mathsf{Causal}$ Consistency~\cite{DBLP:journals/cacm/Lamport78} states that for any transaction $\tr_1$ writing a key $\key$ that is read in a transaction $\tr_3$, the set of $(\wro\cup \so)^+$ predecessors of $\tr_3$ writing $\key$ must precede $\tr_1$ in commit order ($(\wro\cup \so)^+$ is usually called the \emph{causal} order). A violation of this axiom can be found in Figure~\ref{cc_example:1}: the transaction $\tr_2$ writing 2 to $\key_1$ is a $(\wro\cup \so)^+$ predecessor of the transaction $\tr_3$ reading 1 from $\key_1$ because the transaction $\tr_4$, writing 1 to $\key_2$, reads $\key_1$ from $\tr_2$ and $\tr_3$ reads $\key_2$ from $\tr_4$. This implies that $\tr_2$ should precede in commit order the transaction $\tr_1$ writing 1 to $\key_1$, which again, is inconsistent with the write-read relation ($\tr_2$ reads from $\tr_1$).
+
+Finally, $\mathsf{Serializability}$~\cite{DBLP:journals/jacm/Papadimitriou79b} requires that for any transaction $\tr_1$ writing to a key $\key$ that is read in a transaction $\tr_3$, the set of $\co$ predecessors of $\tr_3$ writing $\key$ must precede $\tr_1$ in commit order. This ensures that each transaction observes the effects of all the $\co$ predecessors. 
+
+%It was shown in~\cite{DBLP:journals/pacmpl/BiswasE19} that as expected, $\mathsf{Serializability}$ implies $\mathsf{Causal}$, which implies $\mathsf{Read\ Committed}$ (when interpreted as first-order formulas).
+
+\begin{definition}
+For an isolation level $I$ defined by a set\footnote{Isolation levels like Snapshot Isolation require more than one axiom.} of axioms $X$, a history $\hist=\tup{T, \so, \wro}$ \emph{satisfies} $I$ iff there is a strict total order $\co$ s.t. $\wro\cup\so\subseteq \co$ and $\tup{h,\co}$ satisfies $X$.
+ % Given a $\CO$(\textit{commit order}), a total order on $T$ which extends $\wro \cup \so$, we can define consistency axioms from table \ref{consistency_defs}. For each axiom, the situation in the table implies, $\Path{\tr_2}{\CO}{\tr_1}$.
+ \label{axiom-criterion}
+\end{definition}
+
+
+%Definition~\ref{axiom-criterion} and Lemma~\ref{axioms-rel} imply that each consistency criterion in Table~\ref{weakconsistency:2} is stronger than its predecessors (reading them from top to bottom), e.g., CC is stronger than RA and RC. This relation is known to be strict~\cite{DBLP:conf/concur/Cerone0G15}, e.g., RA is not stronger than CC. 
+%stronger from top to bottom order. Infact each criteria is strictly stronger than its previously weaker criteria, \ie \textsf{Snapshot Isolation} does not imply \textsf{Serializability}. 
+ % (see Appendix~\ref{app:gotsman}).
+
+%\begin{table}
+% \begin{tabular}{|c|c|}
+%  \hline
+%  Axioms          & Anomaly                                  \\
+%  \hline
+%  Causal          & Causal violation                         \\
+%  \hline
+%  Prefix          & Causal violation, Long fork              \\
+%  \hline
+%  Conflict        & Lost update                              \\
+%  \hline
+%  Serializability & \shortstack{Causal violation, Long fork, \\ Lost update, Write Skew}\\
+%  \hline 
+% \end{tabular}
+% \caption{Axioms and anomalies}
+% \label{axiom_anomaly}
+%\end{table}
+
+%\begin{definition}
+% We define consistency criteria using the definitions in table \ref{weakconsistency:2}.
+%\end{definition}
+
+
+
+% For simplicity, in all the following definitions, when we say, there exists a $\CO$\textit{(commit order)}, we will implicitly mean, $\CO$ is a total order on $T$ which extends $\WR \cup \SO$.
+% 
+% \begin{definition}
+%  By our definition of history, history is Read committed.
+% \end{definition}
+% 
+% 
+% \begin{definition}
+%  A history is Locking Read Committed, if there exists a $\CO$, such that for any variables $x,y$ and transactions $\tr_1$, $\tr_2$ and two operations $\op_1$, $\op_2$ in any situation illustrated in figure \ref{lock_rc_def}, $\Path{\tr_2}{\CO}{\tr_1}$ always.
+% \end{definition}
+% 
+% \begin{definition}
+%  A history is Read atomic, resp., Causal consistency, Prefix consistency, Conflict consistency, Serializability, if there exists a $\CO$, such that for any variable $\xvar$ and transactions $\tr_1$, $\tr_2$, $\tr_3$ in the resp. situations illustrated in figure \ref{consistency_defs}, $\Path{\tr_2}{\CO}{\tr_1}$ always.
+% \end{definition}
+
+% \begin{definition}
+%  The sets of histories and schedules allowed by a particular weak model - `wm' can be defined as:
+% \end{definition}
+% 
+% \begin{itemize}
+%  \item $\textsf{Sche}_{wm} = \left\{ \mathcal{S} \mid S \models \text{axioms of } wm \right\}$
+%  \item $\textsf{Hist}_{wm} = \left\{ \mathcal{H} \mid \exists \VIS, \CO, (\mathcal{H}, VIS, CO)\right\}$
+% \end{itemize}
+% 
+% So to verify a history for a consistency model, it suffices to find a schedule, in particular, \VIS, \CO for that history, which satisfies the axioms for that consistency model.
+
+
+% \begin{table*}
+%  \centering
+%  \resizebox{\textwidth}{!}{
+%   \begin{tabular}{|c|l|l|c|c|c|c|c|}
+%    \hline
+%    $\Phi$       & \shortstack{Consistency model                                                                                                                            \\ (strong session)} & Axioms & \shortstack{Fractured \\ reads} & \shortstack{Causality \\ violation} & \shortstack{Lost \\ update} & \shortstack{Long \\ fork} & \shortstack{Write \\ skew} \\
+%    \hline
+%    \textbf{RA}  & Read atomic                   & \textsc{Int} $\wedge$ \textsc{Ext} $\wedge$ \textsc{Session} & \ding{55} & \ding{51} & \ding{51} & \ding{51} & \ding{51} \\
+%    \hline
+%    \textbf{CC}  & Causal consistency            & \textbf{RA} $\wedge$ \textsc{TransVis}                       & \ding{55} & \ding{55} & \ding{51} & \ding{51} & \ding{51} \\
+%    \hline
+%    \textbf{PC}  & Prefix consistency            & \textbf{RA} $\wedge$  \textsc{Prefix}                        & \ding{55} & \ding{55} & \ding{51} & \ding{55} & \ding{51} \\
+%    \hline
+%    \textbf{SI}  & Snapshot isolation            & \textbf{PC} $\wedge$ \textsc{NoConflict}                     & \ding{55} & \ding{55} & \ding{55} & \ding{55} & \ding{51} \\
+%    \hline
+%    \textbf{SER} & Serializability               & \textbf{RA} $\wedge$ \textsc{TotalVis}                       & \ding{55} & \ding{55} & \ding{55} & \ding{55} & \ding{55} \\
+%    \hline
+%    \multicolumn{8}{|c|}{
+%     $\textbf{RA} \supset \textbf{CC} \supset \textbf{PC} \supset \textbf{SI} \supset \textbf{SER}$
+%    }                                                                                                                                                                       \\
+%    \hline
+%   \end{tabular}
+%  }
+%  \caption{Consistency model definitions, anomalies and relationship}
+%  \label{weakconsistency:2}
+% \end{table*}
+
+
+%$T \xrightarrow{\VIS} S$ means all the writes of $T$ are visible to $S$. $T \xrightarrow{\CO} S$ means all the writes of $T$ are committed before $S$ committed all its writes. $\VIS \subseteq \CO$ ensures a transaction $T$ can be visible to another transaction $S$, if only $T$ is committed before $S$.
+

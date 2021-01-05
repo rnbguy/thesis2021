@@ -1,0 +1,25 @@
+%!TEX root = Thesis.tex
+
+\section{Polynomial-Time Algorithms for Sets and Flags}
+\label{sec:ptime:sets}
+
+While Theorem~\ref{thm:3sat-to-flags} shows that the admissibility problem is NP-complete for replicated sets and flags even if the number of replicas is fixed, we show that this problem becomes polynomial time when additionally, the number of values added to the set, or the number of flags, is also fixed. Note that this doesn't limit the number of operations in the input history which can still be arbitrarily large. In the following, we focus on the Add-Wins Set, the other cases being very similar.
+
+We propose an algorithm for checking consistency which is actually an extension of the one presented in Section~\ref{sec:counter} for replicated counters.
+%In this section, we show that checking consistency for the replicated OR-Set datatype becomes polynomial time assuming the number of replicas and number of values added in the set in the input history is fixed (i.e. the width of the replica order $\RO$ is fixed and total number of values added in the set is fixed). We present a similar algorithm to replicated Counter where we constructs a happens-before order incrementally by progressing a replica or merging a replica to another.
+The additional complexity in checking consistency for the Add-Wins Set comes from the validity of {\sf contains}($x$) return values which requires identifying the maximal predecessors in the happens-before relation that add or remove $x$ (which are not necessarily the maximal $\hb$-predecessors all-together). In the case of counters, it was enough just to count happens-before predecessors.
+%We use the similar notations from Counter CRDT. But the extra work here is, while verifying that an extension of the happens-before is valid, i.e., the return values of newly-added {\sf read} operations satisfy the {\sc RetvalSet} axiom, it depends on the maximal {\sf add} and {\sf remove} operations in that prefix.
+Therefore, we extend the algorithm for replicated counters such that along with the prefix map, we also keep track of the $\hb$-maximal {\sf add}($x$) and {\sf remove}($x$) operations for each element $x$ and each replica $i$.
+When extending a prefix map with a {\sf contains} operation, these $\hb$-maximal operations (which define a witness for the read-from relation) are enough to verify the {\sc RetValSet} axiom. Extending the prefix of a replica with an {\sf add} or {\sf remove} operation (issued on the same replica), or by merging the prefix of another replica, may require an update of these $\hb$-maximal predecessors.
+% Appendix~\ref{sec:ptime:sets:appendix} describes the details of this algorithm.
+
+When the number of replicas and elements are fixed, the number of read-from maps is polynomial in the size of the history — recall that the number of operations associated by a read-from map to a replica and set element is bounded by the number of replicas. Combined with the number of prefix maps being polynomial when the number of replicas is fixed, we obtain the following result.
+
+\vspace{-.5mm}
+\begin{theorem}
+  \label{thm:ptime:sets}
+
+  Checking whether a history is admitted by the Add-Wins Set, Remove-Wins Set, Enable-Wins Flag, or the Disable-Wins Flag is polynomial time provided that the number of replicas and elements/flags is fixed.
+
+\vspace{-1.5mm}
+\end{theorem}

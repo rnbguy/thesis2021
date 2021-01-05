@@ -1,0 +1,32 @@
+%!TEX root = Thesis.tex
+
+\section{Overview}
+
+% EXPLAIN HISTORIES (HOW THEY REPRESENT EXECUTIONS)
+
+When a client sends a transactional request to a database, typically she receives an update to the request, \eg for a write request, she may receive \textsf{true} or \textsf{false} representing whether the database was able to make the changes. To process that request, the database may need to do very complicated work - there can be parallel requests or the data may need to be replicated in different locations. But to a client's perspective, the database should simply behave in a way, as if all requests are committed to the database in a \textit{meaningful} sequence which is   \textit{consistent} to what she saw.
+
+Whatever the clients saw, we call it a History. Given a history, we try to see if the database behaved in a way where the \textit{commit sequence} is \textit{consistent} to the History. We call a history and its possible commit sequence an Execution.
+
+% EXPLAIN CONSISTENCY CRITERIA (THROUGH EXAMPLES)
+When we say, the execution is consistent, we mean, the commit sequence satisfies some \textit{criteria} with the history. A programmer may want to have all the transactions to be committed in series - Serializability. But in practical, a programmer usually only need something weak, \eg Read Committed, Snapshot Isolation - but it depends on what kind of behavior the programmer expects.
+
+% TODO: refine examples - make them better and not boring.
+% TODO: add figures
+
+\input{Sources/transaction/eg_anomaly.tex}
+
+Let's look at some anomalies that can happen in database applications. Alice, Bob and Charles are in a Whatsapp group. Alice asks everyone to come at 8 o'clock. Bob sees it and replies, he will be late. But as illustracted in \ref{causal_violation_demo}, Charles cannot see Alice's message but sees Bob's message and thinks Bob is saying he will be late for nothing. This anomaly is called \textit{Causality Violation}.
+
+Even such anomalies can happen in bank operations. Say Alice and Bob are trying to send money to Charles. Alice sends \$15 and Bob sends \$20. But as illustrated in \ref{lost_update_demo}, Alice's deposit is lost. This anomaly is called \textit{Lost Update}.
+
+Suppose Alice and Bob trying to book a cinema ticket. First Alice and Bob both publish they want to book a seat and check the response of other person so that they know they have a conflict. But as illustrated in \ref{long_fork_demo}, they can't see each other's reponse and ends up booking the same seat. This anomaly is called \textit{Long Fork}. 
+
+Consider Amazon is giving out cashback for purchases. But it has to also check sum of total cashback is not more than \$200 before giving away a cashback. Otherwise, it may end up giving away too much cashback to make profit. So if Alice and Bob both become eligible for a cashback, as illustrated in \ref{write_skew_demo}, even if the total cashback value crosses the limit, the situation can let both of them have the cashback. This anomaly is called \textit{Write Skew}.
+
+Modern databases support different levels of consistency, allowing the programmer to modify the isolation level according to her concurrent and consistency need.
+
+% ROADMAP OF THE DIFFERENT ALGORITHMS/COMPLEXITY RESULTS (FIXED NUMBER OF SESSIONS)
+First we will formally define history. Then we will define some consistency axioms and criteria over history. Then we deduce the complexity classes to verify history against respective consistency criteria. We will see Serializability, Snapshot Isolation and Prefix consistency are in NP-Complete. Then we will show for fixed number of sessions, the respective problems are in NL complexity class.
+
+% EXPLAIN COMMUNICATION GRAPHS  

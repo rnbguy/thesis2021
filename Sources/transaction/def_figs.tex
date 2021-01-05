@@ -1,0 +1,190 @@
+%!TEX root = Thesis.tex
+
+\tikzset{transaction state/.style={draw=black!0}}
+
+
+ \begin{figure}
+   \resizebox{\textwidth}{!}{
+   \footnotesize
+  \begin{tabular}{|c|c|c|}
+   \hline &  & \\
+   \begin{subfigure}[t]{.3\textwidth}
+    \centering
+    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=1cm,
+      semithick, transform shape]
+     \node[transaction state, text=red] at (0,0)       (t_1)           {$\tr_1$};
+     \node[transaction state, text=red, label={above:\textcolor{red}{$\writeVar{ }{\xvar}$}}] at (-0.5,1.5) (t_2) {$\tr_2$};
+     \node[transaction state, text=red] at (2,0)       (o_1)           {$\alpha$};
+     \node[transaction state] at (1.5,1.5) (o_2) {$\beta$};
+     \path (t_1) edge[red] node {$\wro[\xvar]$} (o_1);
+     % \path (t_2) edge[blue] node {$\CO$} (t_1);
+     \path (t_2) edge node {$\wro$} (o_2);
+     \path (o_2) edge node {$\po$} (o_1);
+     \path (t_2) edge[left,double] node {$\co$} (t_1);
+    \end{tikzpicture}
+    \parbox{\textwidth}{
+     $\forall \xvar,\ \forall \tr_1, \tr_2,\ \forall \alpha.\ \tr_1\neq \tr_2\ \land$
+     
+     \hspace{4mm}$\tup{\tr_1,\alpha}\in \wro[\xvar] \land \writeVar{\tr_2}{\xvar}\ \land$ 
+     
+     \hspace{9mm}$\tup{\tr_2,\alpha}\in\wro\circ\po$
+     
+     \hspace{14mm}$\implies \tup{\tr_2,\tr_1}\in\co$
+    }
+    %\end{align*}
+    
+    \caption{$\mathsf{Read\ Committed}$}
+    \label{lock_rc_def}
+   \end{subfigure}
+   
+          &     
+   
+   \begin{subfigure}[t]{.3\textwidth}
+    \centering
+    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+      semithick, transform shape]
+     \node[transaction state, text=red] at (0,0)       (t_1)           {$\tr_1$};
+     \node[transaction state] at (2,0)       (t_3)           {$\tr_3$};
+     \node[transaction state, text=red,label={above:\textcolor{red}{$\writeVar{ }{\xvar}$}}] at (-.5,1.5) (t_2) {$\tr_2$};
+     \path (t_1) edge[red] node {$\wro[\xvar]$} (t_3);
+     % \path (t_2) edge[blue] node {$\CO$} (t_1);
+     \path (t_2) edge[bend left] node {$\wro \cup \so$} (t_3);
+     \path (t_2) edge[left,double] node {$\co$} (t_1);
+    \end{tikzpicture}
+    \parbox{\textwidth}{
+     $\forall \xvar,\ \forall \tr_1, \tr_2,\ \forall \tr_3.\ \tr_1\neq \tr_2\ \land$
+     
+     \hspace{4mm}$\tup{\tr_1,\tr_3}\in \wro[\xvar] \land \writeVar{\tr_2}{\xvar}\ \land$ 
+     
+     \hspace{9mm}$\tup{\tr_2,\tr_3}\in\wro\cup\so$
+     
+     \hspace{14mm}$\implies \tup{\tr_2,\tr_1}\in\co$
+    }
+    
+    \caption{$\mathsf{Read\ Atomic}$}
+    \label{ra_def}
+   \end{subfigure}
+   
+   &
+   
+   \begin{subfigure}[t]{.3\textwidth}
+    \centering
+    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+      semithick, transform shape]
+     \node[transaction state, text=red] at (0,0)       (t_1)           {$\tr_1$};
+     \node[transaction state] at (2,0)       (t_3)           {$\tr_3$};
+     \node[transaction state, text=red,label={above:\textcolor{red}{$\writeVar{ }{\xvar}$}}] at (-.5,1.5) (t_2) {$\tr_2$};
+     \path (t_1) edge[red] node {$\wro[\xvar]$} (t_3);
+     % \path (t_2) edge[blue] node {$\CO$} (t_1);
+     \path (t_2) edge[dashed, bend left] node {$(\wro \cup \so)^+$} (t_3);
+     %   \path [->, decoration={snake}] (t_2) edge[decorate] node[auto] {F} (t_3);
+     \path (t_2) edge[left,double] node {$\co$} (t_1);
+    \end{tikzpicture}
+    \parbox{\textwidth}{
+     $\forall \xvar,\ \forall \tr_1, \tr_2,\ \forall \tr_3.\ \tr_1\neq \tr_2\ \land$
+     
+     \hspace{4mm}$\tup{\tr_1,\tr_3}\in \wro[\xvar] \land \writeVar{\tr_2}{\xvar}\ \land$ 
+     
+     \hspace{9mm}$\tup{\tr_2,\tr_3}\in(\wro\cup\so)^+$
+     
+     \hspace{14mm}$\implies \tup{\tr_2,\tr_1}\in\co$
+    }
+    
+    \caption{$\mathsf{Causal}$}
+    \label{cc_def}
+   \end{subfigure}
+   
+   
+   \\ \hline & & \\
+    
+   \begin{subfigure}[t]{.3\textwidth}
+    \centering
+    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+      semithick, transform shape]
+     \node[transaction state, text=red] at (0,0)       (t_1)           {$\tr_1$};
+     \node[transaction state] at (2,0)       (t_3)           {$\tr_3$};
+     \node[transaction state, text=red,label={above:\textcolor{red}{$\writeVar{ }{\xvar}$}}] at (-0.5,1.5) (t_2) {$\tr_2$};
+     \node[transaction state] at (1.5,1.5) (t_4) {$\tr_4$};
+     \path (t_1) edge[red] node {$\wro[\xvar]$} (t_3);
+     % \path (t_2) edge[blue] node {$\CO$} (t_1);
+     \path (t_2) edge node {$\co^*$} (t_4);
+     \path (t_4) edge[left] node {$(\wro \cup \so)$} (t_3);
+     \path (t_2) edge[left,double] node {$\co$} (t_1);
+    \end{tikzpicture}
+    \parbox{\textwidth}{
+     $\forall \xvar,\ \forall \tr_1, \tr_2,\ \forall \tr_3.\ \tr_1\neq \tr_2\ \land$
+     
+     \hspace{4mm}$\tup{\tr_1,\tr_3}\in \wro[\xvar] \land \writeVar{\tr_2}{\xvar}\ \land$ 
+     
+     \hspace{9mm}$\tup{\tr_2,\tr_3}\in\co^*\circ\,(\wro\cup\so)$
+     
+     \hspace{14mm}$\implies \tup{\tr_2,\tr_1}\in\co$
+    }
+    
+    \caption{$\mathsf{Prefix}$}
+    \label{pre_def}
+   \end{subfigure}
+          
+   
+   &
+   \begin{subfigure}[t]{.32\textwidth}
+    \centering
+    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+      semithick, transform shape]
+     \node[transaction state, text=red] at (0,0)       (t_1)           {$\tr_1$};
+     \node[transaction state, label={below:$\writeVar{ }{\yvar}$}] at (2,0)       (t_3)           {$\tr_3$};
+     \node[transaction state, text=red,label={above:\textcolor{red}{$\writeVar{ }{\xvar}$}}] at (-.5,1.5) (t_2) {$\tr_2$};
+     \node[transaction state, label={above:{$\writeVar{}{\yvar}$}}] at (1.5,1.5) (t_4) {$\tr_4$};
+     \path (t_1) edge[red] node {$\wro[\xvar]$} (t_3);
+     % \path (t_2) edge[blue] node {$\CO$} (t_1);
+     \path (t_2) edge node {$\co^*$} (t_4);
+     \path (t_4) edge node {$\co$} (t_3);
+     \path (t_2) edge[left,double] node {$\co$} (t_1);
+    \end{tikzpicture}
+    \parbox{\textwidth}{
+     $\forall \xvar,\ \forall \tr_1, \tr_2,\ \forall \tr_3, \tr_4,\ \forall \yvar.\ \tr_1\neq \tr_2\ \land$
+     
+     \hspace{4mm}$\tup{\tr_1,\tr_3}\in \wro[\xvar] \land \writeVar{\tr_2}{\xvar}\ \land$ 
+     
+     \hspace{9mm}$\writeVar{\tr_3}{\yvar}\ \land \writeVar{\tr_4}{\yvar}\ \land$ 
+     
+     \hspace{12mm}$\tup{\tr_2,\tr_4}\in\co^*\ \land \tup{\tr_4,\tr_3}\in\co$
+     
+     \hspace{16mm}$\implies \tup{\tr_2,\tr_1}\in\co$
+    }
+    
+    \caption{$\mathsf{Conflict}$}
+    \label{confl_def}
+   \end{subfigure}
+          &     
+   \begin{subfigure}[t]{.3\textwidth}
+    \centering
+    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+      semithick, transform shape]
+     \node[transaction state, text=red] at (0,0)       (t_1)           {$\tr_1$};
+     \node[transaction state] at (2,0)       (t_3)           {$\tr_3$};
+     \node[transaction state, text=red, label={above:\textcolor{red}{$\writeVar{ }{\xvar}$}}] at (-.5,1.5) (t_2) {$\tr_2$};
+     \path (t_1) edge[red] node {$\wro[\xvar]$} (t_3);
+     % \path (t_2) edge[blue] node {$\CO$} (t_1);
+     \path (t_2) edge[bend left] node {$\CO$} (t_3);
+     \path (t_2) edge[left,double] node {$\co$} (t_1);
+    \end{tikzpicture}
+    \parbox{\textwidth}{
+     $\forall \xvar,\ \forall \tr_1, \tr_2,\ \forall \tr_3.\ \tr_1\neq \tr_2\ \land$
+     
+     \hspace{4mm}$\tup{\tr_1,\tr_3}\in \wro[\xvar] \land \writeVar{\tr_2}{\xvar}\ \land$ 
+     
+     \hspace{9mm}$\tup{\tr_2,\tr_3}\in\co$
+     
+     \hspace{14mm}$\implies \tup{\tr_2,\tr_1}\in\co$
+    }
+    
+    \caption{$\mathsf{Serializability}$}
+    \label{ser_def}
+   \end{subfigure}
+   \\ \hline
+  \end{tabular}
+  }
+  \caption{Definitions of consistency axioms. The reflexive and transitive, resp., transitive, closure of a relation $rel$ is denoted by $rel^*$, resp., $rel^+$. Also, $\circ$ denotes the composition of two relations, i.e., $rel_1 \circ rel_2 = \{\tup{a, b} | \exists c. \tup{a, c} \in rel_1 \land \tup{c, b} \in rel_2\}$.}
+  \label{consistency_defs}
+ \end{figure}

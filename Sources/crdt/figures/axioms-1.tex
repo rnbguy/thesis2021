@@ -1,0 +1,16 @@
+\begin{align*}
+  & \text{\underline{{\sc ReadFrom}$(R)$}} \\
+  & \forall o_1,o_2.\ \rf(o_1,o_2) \implies R(o_1,o_2)
+  \\[1em]
+  & \text{\underline{{\sc ReadFromMaximal}$(R)$}} \\
+  & \forall o_1,o_2,o_3.\ \rf(o_1,o_2) \land R(o_3,o_2) \implies \\
+  & \lnot\hb(o_1,o_3) \lor \lnot\hb(o_3,o_2)
+  \\[1em]
+  & \text{\underline{{\sc ReadAllMaximals}$(R)$}} \\
+  & \forall o_1,o_2.\ \hb(o_1,o_2)\land R(o_1,o_2) \\
+  & \implies \exists o_3.\ \hb^*(o_1,o_3)\land  \rf(o_3,o_2)
+  \\[1em]
+  & \text{\underline{{\sc ClosedRF}$(R)$}} \\
+  & \forall o_1, o_2, o_3.\ R(o_1,o_2) \land \hb(o_1,o_3) \\
+  & \land \rf(o_3,o_2) \implies \rf(o_1,o_2)
+\end{align*}

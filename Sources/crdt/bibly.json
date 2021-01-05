@@ -1,0 +1,9 @@
+{
+  "latex": "main.tex",
+  "databases": {
+    "DBLP": {
+      "url": "http://dblp.uni-trier.de/rec/bibtex1",
+      "file": "dblp.bib"
+    }
+  }
+}

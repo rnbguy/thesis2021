@@ -1,0 +1,202 @@
+\documentclass[sigplan,10pt,review,anonymous]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
+%% use defaults for review submission.
+\acmConference[PL'18]{ACM SIGPLAN Conference on Programming Languages}{January 01--03, 2018}{New York, NY, USA}
+\acmYear{2018}
+\acmISBN{} % \acmISBN{978-x-xxxx-xxxx-x/YY/MM}
+\acmDOI{} % \acmDOI{10.1145/nnnnnnn.nnnnnnn}
+\startPage{1}
+\setcopyright{none}
+
+%% Bibliography style
+\bibliographystyle{ACM-Reference-Format}
+
+
+\usepackage{tikz}
+\usetikzlibrary{arrows,automata,positioning,backgrounds,calc,patterns}
+
+\usepackage{mathpartir}
+
+
+\newcommand{\dipnote}[1]{{\color{red}{#1}}}
+\newcommand{\constantin}[1]{{\color{red}{Constantin: #1}}}
+\newcommand{\akash}[1]{{\color{blue}{Akash: #1}}}
+
+\newcommand{\figref}[1]{Figure~\ref{fig:#1}}
+\newcommand{\sectref}[1]{\S\ref{sec:#1}}
+
+\newcommand{\eg}{e.g., }
+\newcommand{\ie}{i.e., }
+
+\newcommand{\key}{k}
+\newcommand{\Keys}{\mathsf{Keys}}
+
+\newcommand{\PO}{\textcolor{red}{\textsf{po}}}
+\newcommand{\SO}{\textcolor{red}{\textsf{so}}}
+\newcommand{\WR}{\textcolor{red}{\textsf{WR}}}
+\newcommand{\WW}{\textcolor{red}{\textsf{WW}}}
+\newcommand{\RW}{\textcolor{red}{\textsf{RW}}}
+\newcommand{\VIS}{\textcolor{red}{\textsf{vis}}}
+\newcommand{\CO}{\textcolor{red}{\textsf{co} }}
+
+\newcommand{\axpre}{\mathsf{Prefix}}
+\newcommand{\axconf}{\mathsf{Conflict}}
+\newcommand{\axsi}{\textsc{Si}}
+\newcommand{\axser}{\mathsf{Serializability}}
+
+\newcommand{\ext}{\textsc{Ext}}
+\newcommand{\session}{\textsc{Session}}
+\newcommand{\transvis}{\textsc{TransVis}}
+\newcommand{\prefix}{\textsc{Prefix}}
+\newcommand{\noconflict}{\textsc{NoConflict}}
+\newcommand{\totalvis}{\textsc{TotalVis}}
+
+\newcommand{\set}[1]{{\{{#1}\}}}
+\newcommand{\mset}[1]{{\{\!\{ #1 \}\!\}}}
+\newcommand{\tup}[1]{{\left\langle{#1}\right\rangle}}
+\renewcommand{\implies}{\Rightarrow}
+\newcommand{\pto}{\rightharpoonup}
+\newcommand{\To}{\Rightarrow}
+\newcommand{\Path}[3]{{#1}\xrightarrow{#2}{#3}}
+
+
+\newcommand{\Obj}{\mathsf{Obj}}
+\newcommand{\Var}{\mathsf{Vars}}
+\newcommand{\Vars}{\mathsf{Vars}}
+\newcommand{\Val}{\mathsf{Vals}}
+\newcommand{\Vals}{\mathsf{Vals}}
+\newcommand{\Columns}{\mathbb{C}}
+\newcommand{\Rows}{\mathbb{R}}
+\newcommand{\Tables}{\mathbb{T}}
+\newcommand{\OId}{\mathsf{OpId}}
+\newcommand{\Op}{\mathsf{Op}}
+\newcommand{\xvar}{{x}}
+\newcommand{\prog}{{\mathsf{P}}}
+\newcommand{\histOf}[2][]{{\mathsf{hist}_{#1}({#2})}}
+
+
+\newcommand{\yvar}{{y}}
+\newcommand{\val}{{v}}
+\newcommand{\id}{{i}}
+\newcommand{\rd}[3][]{\textsf{read}_{#1}({#2},{#3})}
+\newcommand{\rdo}{\textsf{read}}
+\newcommand{\wrt}[3][]{\textsf{write}_{#1}({#2},{#3})}
+\newcommand{\op}{{o}}
+\newcommand{\Tr}{{\mathcal{T}}}
+\newcommand{\tr}{{t}}
+\newcommand{\Hist}{{\mathcal{H}}}
+\newcommand{\hist}{{h}}
+\newcommand{\po}{\textcolor{red}{\mathsf{po}}}
+\newcommand{\so}{\textcolor{red}{\mathsf{so}}}
+\newcommand{\co}{\textcolor{red}{\mathsf{co}}}
+\newcommand{\wro}[1][]{\textcolor{red}{\mathsf{wr}_{#1}}}
+\newcommand{\rwo}{\mathsf{RW}}
+\newcommand{\wrosi}{\mathsf{WR}}
+\newcommand{\readOp}[1]{\mathsf{reads}({#1})}
+\newcommand{\tlogs}[1]{\mathsf{TLogs}({#1})}
+\newcommand{\transC}[1]{\mathsf{compTrans}({#1})}
+\newcommand{\vars}[1]{\mathsf{vars}({#1})}
+\newcommand{\writeOp}[1]{\mathsf{writes}({#1})}
+\newcommand{\writeVar}[2]{{#1}\ \mathsf{writes}\ {#2}}
+\newcommand{\readVar}[2]{{#1}\ \mathsf{reads}\ {#2}}
+\renewcommand{\hist}{{h}}
+\newcommand{\lin}{\textcolor{red}{\mathsf{lin}}}
+\newcommand{\vis}{\textcolor{red}{\mathsf{vis}}}
+\newcommand{\aread}{\mathsf{r}}
+\newcommand{\none}{\mathsf{None}}
+\newcommand{\btrue}{\mathsf{true}}
+\newcommand{\bfalse}{\mathsf{false}}
+
+\newcommand{\eqdef}{::=}
+\newcommand{\tab}{\mathit{tab}}
+\newcommand{\pkey}{\mathit{pkey}}
+\newcommand{\pkeyVal}{\mathit{pkeyVal}}
+\newcommand{\ibegin}{\mathtt{begin}}
+\newcommand{\iadd}{\mathtt{add}}
+\newcommand{\iremove}{\mathtt{remove}}
+\newcommand{\ielements}{\mathtt{elements}}
+\newcommand{\icontains}{\mathtt{has}}
+\newcommand{\icommit}{\mathtt{commit}}
+\newcommand{\iif}[2]{\mathtt{if}({#1}) \{ {#2} \}}
+\newcommand{\iread}{\mathtt{read}}
+\newcommand{\iwrite}{\mathtt{write}}
+\newcommand{\iselect}[4]{\mathtt{SELECT}\ {#1}\ \mathtt{AS}\ {#2}\ \mathtt{FROM}\ {#3}\ \mathtt{WHERE}\ {#4}}
+\newcommand{\iinsert}[2]{\mathtt{INSERT\ INTO}\ {#1}\ \mathtt{VALUES}\ {#2}}
+\newcommand{\idelete}[2]{\mathtt{DELETE\ FROM}\ {#1}\ \mathtt{WHERE}\ {#2}}
+\newcommand{\iupdate}[3]{\mathtt{UPDATE}\ {#1}\ \mathtt{SET}\ {#2}\ \mathtt{WHERE}\ {#3}}
+\newcommand{\KVProgs}{\mathcal{P}_{KV}}
+\newcommand{\SQLProgs}{\mathcal{P}_{SQL}}
+\newcommand{\DBschema}{\mathcal{S}}
+\newcommand{\DBinst}{\mathcal{D}}
+
+
+\usepackage{listings}
+\lstset{columns=fullflexible,keepspaces=true,basicstyle=\ttfamily\footnotesize}
+\lstset{commentstyle=\color{gray}}
+
+\lstdefinelanguage{MyLang}{%
+  keywords = { delete, do, each, else, export, finally, for, foreach, function, if, in, let, of, return, void, while, with, yield, elements, read, write, insert, remove, add, AddItem, DeleteItem, Push, Pop, Enroll, Tweet, Timeline, NewsFeed, Begin, Commit},
+  morecomment = [l]{//},
+  morecomment = [s]{/*}{*/},
+  morestring  = [b]',
+  morestring  = [b]",
+  sensitive   = true,
+}
+
+\lstdefinelanguage{Java10}{
+  language      = Java,
+  morekeywords  ={ var },
+}
+
+
+\input{header}
+\begin{document}
+
+%% Title information
+\title[MonkeyDB]{MonkeyDB: Effectively Testing Correctness against Weak Isolation Levels}         %% [Short Title] is optional;
+                                        %% when present, will be used in
+                                        %% header instead of Full Title.
+%\titlenote{with title note}             %% \titlenote is optional;
+                                        %% can be repeated if necessary;
+                                        %% contents suppressed with 'anonymous'
+%\subtitle{Subtitle}                     %% \subtitle is optional
+%\subtitlenote{with subtitle note}       %% \subtitlenote is optional;
+                                        %% can be repeated if necessary;
+
+%% Abstract
+\begin{abstract}
+\input{abstract}
+\end{abstract}
+
+%% Keywords
+%\keywords{Weak Isolation Levels, Storage Systems, Causal Consistency, Read Committed, Randomized Testing}  %% \keywords are mandatory in final camera-ready submission
+\maketitle
+
+\sloppy
+\input{intro}
+\input{prog_lang}
+\input{ax-kv}
+\input{op-kv}
+\input{formal}
+\input{impl}
+\input{microbenchmark}
+\input{oltp}
+\input{related}
+\input{concl}
+
+
+%%% Acknowledgments
+%\begin{acks}                            %% acks environment is optional
+%ack
+%\end{acks}
+
+\newpage
+
+%% Bibliography
+\bibliography{main,dblp}
+
+\newpage
+% Appendix
+\appendix
+\input{appendix}
+
+\end{document}

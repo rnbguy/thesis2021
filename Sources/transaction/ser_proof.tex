@@ -1,0 +1,35 @@
+%!TEX root = Thesis.tex
+
+\begin{proof}
+\renewcommand{\qedsymbol}{}
+Let $\co'$ be the partial commit order for $T'$ which satisfies the serializable prefix conditions. We extend $\co'$ to a partial order $\co = \co' \cup \{ \tup{\tr,\tr'} | \tr' \not\in T'\uplus\{\tr'\} \}$. We show that $\tup{\hist, \co} \models \mathsf{Serialization}$. The other conditions for $T'\uplus\{t\}$ being a serializable prefix are satisfied trivially by $\co$. 
+%$\co$ satisfies the conditions of serializable prefix for $T' \cup \{t\}$. We
+%\begin{itemize}
+% \item There is no $\tr_1 \in T' \cup \{\tr\}$, such that $\tup{\tr_1, \tr} \in \wro \cup \so \cup \co'$.
+%       \begin{itemize}
+%        \item $T' \cup \{\tr\}$ is a prefix, so if $\tr_1 \in \so^{-1}(\tr)$ it is in $T' \cup \{\tr\}$. So if $\tr_1 \not\in T' \cup \{\tr\}$, $\tup{\tr_1, \tr} \not\in \so$.
+%        \item Since $T' \vartriangleright T' \cup \{\tr\}$, for all $\tr_1 \not\in T' \subseteq T' \cup \{\tr\}$, $\tup{\tr_1, \tr} \not\in \wro$.
+%        \item By definition of serializable prefix, $\co'$ does not order any two transactions $\tr_1, \tr_2 \not\in T'$. Therefore, there is no $\tr_1 \not\in T' \cup \{\tr\}$ s.t. $\tup{\tr_1, \tr} \in \co'$.
+%       \end{itemize}
+% \item First condition of serialization prefix, $\wro \cup \so \cup \co$ is acyclic. Because $\cup \wro \cup \so \cup \co'$ is acyclic. If $\co$ contains a cycle, then it must involve a $\co$ relation of the form $\tup{\tr, \tr_1}$ where $\tr_1 \not\in T' \cup \{\tr\}$. So there is a minimal path of $\wro \cup \so \cup \co$ from $\tr_1$ to $\tr$, $\tr_1 \xrightarrow{} \tr_2 \xrightarrow{} \cdots \xrightarrow{} \tr_k \xrightarrow{} \tr$. $\tr \neq \tr_i$, therefore, infact $\tup{\tr_i, \tr_j} \in \wro \cup \so \cup \co'$. But, Now, $\tr_1 \not\in T' \cup \{\tr\}$ and $\tr_k \in T'$ because there is no $\tr' \in T' \cup \{\tr\}$ s.t. $\tup{\tr', t} \not\in T' \cup \{\tr\}$. But $\tup{\tr_k, \tr_1} \in \co'$ because $\tr_k \in T'$ and $\tr_1 \not\in T'$. Then we have a cycle in $\wro \cup \so \cup \co'$ from $\tr_1$ to $\tr_k$, $\tr_1 \xrightarrow{} \tr_2 \xrightarrow{} \cdots \xrightarrow{} \tr_k \xrightarrow{} \tr_1$. This contradicts acyclicity of $\wro \cup \so \cup \co'$. So $\co$ must not contain any cycle.
+% \item For the second condition, we have to show the totality on $T' \cup \{\tr\}$. Assume $\tr_1, \tr_2$ are two unique transactions in $T' \cup \{\tr\}$.
+%       \begin{itemize}
+%        \item If $\tr_1, \tr_2 \in T'$ then, they are ordered my $\co'$, therefore, they must be ordered with $\co$, because $\co \subseteq \co'$.
+%        \item For the other case, without loss of generality, say $\tr_1 = \tr$ then $\tr_2 \in T'$. $\tr \not\in T'$, therefore, $\tup{\tr_2, \tr} \in \co' \subseteq \co$.
+%       \end{itemize}
+% \item For the third condition, we have to show $\co$ pairwise orders elements inside and outside of $T' \cup \{\tr\}$. Assume $\tr_1 \in T' \cup \{\tr\}$ and $\tr_2 \not\in T' \cup \{\tr\}$.
+%       \begin{itemize}
+%        \item If $\tr_1 \in T'$, then $\tr_2 \not\in T' \cup \{\tr\} \subseteq T'$. Hence, $\tup{\tr_1, \tr_2} \in \co' \subseteq \co$.
+%        \item If $\tr_1 = \tr$, then by definition of $\co$ $\tup{\tr, \tr_2} \in \{ \tup{\tr, \tr'} | \tr' \not\in T' \cup \{\tr\} \} \subseteq \co'$
+%       \end{itemize}
+% \item For forth condition, we have to show any two transactions $\tr_1, \tr_2 \not\in T' \cup \{\tr\}$, $\co$ does not order them. Because $\co'$ does not order them and the new relations in $\co$ is the form $\tup{\tr, \_}$ where $\tr \in T' \cup \{\tr\}$.
+ %\item Lastly, we have to show $\co$ satisfies serialization. 
+ 
+Assume by contradiction that $\tup{\hist, \co}$ does not satisfy the axiom $\mathsf{Serialization}$. Then, there exists $\tr_1, \tr_2, \tr_3$, $\xvar \in \vars{\hist}$ s.t. $\tup{\tr_1, \tr_3} \in \wro[\xvar]$ and $\tr_2$ writes on $\xvar$ and $\tup{\tr_1, \tr_2}, \tup{\tr_2, \tr_3} \in \co$. Since $\tup{\hist,\co'}$ satisfies this axiom, at least one of these two $\co$ ordering constraints are of the form $\tup{\tr, \tr'}$ where $\tr' \not\in T' \uplus \{\tr\}$:
+       \begin{itemize}
+        \item the case $\tr_1 = \tr$ and $\tr_2 \not\in T' \uplus \{\tr\}$ is not possible because $\co'$ contains no pair of the form $\tup{\tr', \_} \in \co'$ with $\tr' \not\in T'$ (recall that $\tup{\tr_2, \tr_3}$ should be also included in $\co$). 
+        \item If $\tr_2 = \tr$ then, $\tup{\tr_1, \tr_2} \in \co'$ and $\tup{\tr_2, \tr_3}$ for some $\tr_3 \not\in T' \uplus \{\tr\}$. But, by the definition of valid extension, for all variables $\xvar$ written by $\tr$, there exists no transaction $\tr_3 \not\in T' \uplus \{\tr\}$ such that it reads $\xvar$ from $\tr_1 \in T'$. Therefore, this is also a contradiction.\hfill $\Box$
+       \end{itemize}
+%\end{itemize}
+ \vspace{-3mm}
+\end{proof}

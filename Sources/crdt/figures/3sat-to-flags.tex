@@ -1,0 +1,40 @@
+\setlength{\tabcolsep}{2em}
+\begin{tabular}{rlll}
+
+  & Replica 0 & Replica 1 & Replica 2 \\
+  \cmidrule(lr){2-2}
+  \cmidrule(lr){3-3}
+  \cmidrule(lr){4-4}
+
+  \ldelim\{{3}{2em}[Round 0]
+  & $\mathrm{Enable}(x_1)$  & $\mathrm{Disable}(x_1)$ & \\
+  & \ldots                  & \ldots                  & \\
+  & $\mathrm{Enable}(x_n)$  & $\mathrm{Disable}(x_n)$ & \\[1em]
+
+  \ldelim\{{3}{2em}[Barrier 1]
+  & $\mathrm{Enable}(y_0)$      & $\mathrm{Enable}(y_1)$      & $\mathrm{Enable}(y_2)$      \\
+  & $\mathrm{Read}(y_1) = \mathit{true}$ & $\mathrm{Read}(y_0) = \mathit{true}$ & $\mathrm{Read}(y_0) = \mathit{true}$ \\
+  & $\mathrm{Read}(y_2) = \mathit{true}$ & $\mathrm{Read}(y_2) = \mathit{true}$ & $\mathrm{Read}(y_1) = \mathit{true}$ \\[1em]
+
+  \ldelim\{{5}{2em}[Round 1]
+  & $\mathrm{Read}(\alpha_1) = \mathit{true}$  & $\mathrm{Read}(\alpha_1) = \mathit{false}$  & $\mathrm{Read}(\alpha_1) = \mathit{false}$  \\
+  & $\mathrm{Read}(\beta_1) = \mathit{false}$   & $\mathrm{Read}(\beta_1) = \mathit{true}$   & $\mathrm{Read}(\beta_1) = \mathit{false}$   \\
+  & $\mathrm{Read}(\gamma_1) = \mathit{false}$  & $\mathrm{Read}(\gamma_1) = \mathit{false}$  & $\mathrm{Read}(\gamma_1) = \mathit{true}$  \\
+  & $\mathrm{Disable}(\alpha_1)$      & $\mathrm{Disable}(\beta_1)$       & $\mathrm{Disable}(\gamma_1)$      \\
+  & $\mathrm{Enable}(\beta_1)$        & $\mathrm{Enable}(\gamma_1)$       & $\mathrm{Enable}(\alpha_1)$       \\[1em]
+
+  \ldelim\{{3}{2em}[Barrier 2]
+  & $\mathrm{Disable}(y_0)$     & $\mathrm{Disable}(y_1)$     & $\mathrm{Disable}(y_2)$      \\
+  & $\mathrm{Read}(y_1) = \mathit{false}$ & $\mathrm{Read}(y_0) = \mathit{false}$ & $\mathrm{Read}(y_0) = \mathit{false}$ \\
+  & $\mathrm{Read}(y_2) = \mathit{false}$ & $\mathrm{Read}(y_2) = \mathit{false}$ & $\mathrm{Read}(y_1) = \mathit{false}$ \\[1em]
+
+  & \ldots & \ldots & \ldots \\[1em]
+
+  \ldelim\{{5}{2em}[Round m]
+  & $\mathrm{Read}(\alpha_m) = \mathit{true}$  & $\mathrm{Read}(\alpha_m) = \mathit{false}$  & $\mathrm{Read}(\alpha_m) = \mathit{false}$  \\
+  & $\mathrm{Read}(\beta_m) = \mathit{false}$   & $\mathrm{Read}(\beta_m) = \mathit{true}$   & $\mathrm{Read}(\beta_m) = \mathit{false}$   \\
+  & $\mathrm{Read}(\gamma_m) = \mathit{false}$  & $\mathrm{Read}(\gamma_m) = \mathit{false}$  & $\mathrm{Read}(\gamma_m) = \mathit{true}$  \\
+  & $\mathrm{Disable}(\alpha_m)$      & $\mathrm{Disable}(\beta_m)$       & $\mathrm{Disable}(\gamma_m)$      \\
+  & $\mathrm{Enable}(\beta_m)$        & $\mathrm{Enable}(\gamma_m)$       & $\mathrm{Enable}(\alpha_m)$       \\
+
+\end{tabular}

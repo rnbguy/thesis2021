@@ -1,0 +1,166 @@
+%!TEX root = Thesis.tex
+
+\section{Compiling SQL to Key-Value API}
+\label{sec:SQL-to-KV}
+
+We define an operational semantics for SQL programs (in $\SQLProgs$) based on a compiler that rewrites SQL queries to Key-Value $\iread$ and $\iwrite$ instructions. For presentation reasons, we use an intermediate representation where each table of a database instance is represented using a \emph{set} variable that stores values of the primary key\footnote{For simplicity, we assume that primary keys correspond to a single column in the table.} (identifying uniquely the rows in the table) and a set of key-value pairs, one for each cell in the table. In a second step, we define a rewriting of the API used to manipulate set variables into Key-Value $\iread$ and $\iwrite$ instructions.
+
+\paragraph{Intermediate Representation}
+
+Let $\DBschema:\Tables\rightharpoonup 2^\Columns$ be a database schema (recall that $\Tables$ and $\Columns$ are the set of table names and column names, resp.). For each table $\tab$, let $\tab.\pkey$ be the name of the primary key column. We represent an instance $\DBinst: \mathsf{dom}(\DBschema)\rightarrow 2^{\Rows}$ using:
+\begin{itemize}
+	\item for each table $\tab$, a set variable $\tab$ (with the same name) that contains the primary key value $r(\tab.\pkey)$ of every row $r\in \DBinst(\tab)$, 
+	\item for each row $r\in \DBinst(\tab)$ with primary key value $\pkeyVal = r(\tab.\pkey)$, and each column $c\in \DBschema(\tab)$, a key $\tab.\pkeyVal.c$ associated with the value $r(c)$.
+\end{itemize}
+
+\begin{figure}[t]
+%\hspace{-4mm}
+{\footnotesize
+\begin{minipage}[t]{3cm}
+\setlength{\tabcolsep}{3pt}
+\begin{center}
+Table:
+\end{center}
+
+\begin{tabular}{|c|c|c|} \hline
+\multicolumn{3}{|c|}{A} \\ \hline\hline
+Id & Name & City \\ \hline
+1 & Alice & Paris \\ \hline
+2 & Bob & Bangalore \\ \hline
+3 & Charles & Bucharest \\ \hline
+\end{tabular}
+\end{minipage}
+\begin{minipage}[t]{5cm}
+\begin{center}
+Intermediate representation:
+\end{center}
+\setlength{\tabcolsep}{1pt}
+\begin{tabular}{lll} 
+\multicolumn{3}{l}{A = \{ 1, 2, 3 \}} \\
+\\[1mm]
+A.1.Id: 1, & A.1.Name: Alice, & A.1.City: Paris \\
+A.2.Id: 2, & A.2.Name: Bob, & A.2.City: Bangalore \\
+A.3.Id: 3, & A.3.Name: Charles, & A.3.City: Bucharest
+\end{tabular}
+\end{minipage}}
+ \vspace{-2mm}
+\caption{Representing tables with set variables and key-value pairs. We write a key-value pair as key:value.}
+\label{fig:sql-example}
+ \vspace{-2mm}
+\end{figure}
+
+\begin{example}
+
+The table A on the left of Figure~\ref{fig:sql-example}, where the primary key is defined by the Id column, is represented using a set variable A storing the set of values in the column Id, and one key-value pair for each cell in the table.
+
+\end{example}
+
+\begin{figure}[t]
+\small
+%\begin{minipage}{6cm}
+\begin{flushleft}
+\texttt{SELECT}/\texttt{DELETE}/\texttt{UPDATE}
+\end{flushleft}
+\vspace{-2mm}
+\begin{lstlisting}[xleftmargin=5mm,language=MyLang,escapeinside={(*}{*)}]
+rows := elements(tab)
+for ( let pkeyVal of rows ) {
+   for ( let c of (*$\vec{c_2}$*) ) {
+      val[c] := read(tab.pkeyVal.c)
+   if ( (*$\phi[\texttt{c}\mapsto \texttt{val[c]}: \texttt{c}\in\vec{c_2}]$*) true )
+      // (*$\iselect{\vec{c_1}}{\xvar}{\tab}{\phi(\vec{c_2})}$*)
+      for ( let c of (*$\vec{c_1}$*) )
+         out[c] := read(tab.pkeyVal.c)
+      x := x (*$\cup$*) out
+      // (*$\idelete{\tab}{\phi(\vec{c_2})}$*)
+      remove(tab, pkeyVal);
+      // (*$\iupdate{\tab}{\vec{c_1}=\vec{x}}{\phi(\vec{c_2})}$*)
+      for ( let c of (*$\vec{c_1}$*) )
+         write( tab.pkeyVal.c, (*$\gamma$*)((*$\vec{x}$*)[c]) )
+\end{lstlisting}
+%\end{minipage}
+%\begin{minipage}{3cm}
+
+\begin{flushleft}
+$\iinsert{\tab}{\vec{x}}$
+\end{flushleft}
+\vspace{-2mm}
+\begin{lstlisting}[xleftmargin=5mm,language=MyLang,escapeinside={(*}{*)}]
+pkeyVal := (*$\gamma$*)((*$\vec{x}$*)[0])
+if ( add(tab,pkeyVal) ) {
+   for ( let c of (*$\DBschema(\texttt{tab})$*) ) {
+      write( tab.pkeyVal.c, (*$\gamma$*)((*$\vec{x}$*)[c]) )
+\end{lstlisting}
+\vspace{-4mm}
+    \caption{Compiling SQL queries to the intermediate representation. Above, $\gamma$ is a valuation of local variables. Also, in the case of $\mathtt{INSERT}$, we assume that the first element of $\vec{x}$ represents the value of the primary key.}
+    \label{fig:sql-ir}
+\vspace{-3mm}
+\end{figure}
+
+Figure~\ref{fig:sql-ir} lists our rewriting of SQL queries over a database instance $\DBinst$ to programs that manipulate the set variables and key-value pairs described above. This rewriting contains the minimal set of accesses to the cells of a table that are needed to implement an SQL query according to its conventional specification. To manipulate set variables, we use $\iadd$ and $\iremove$ for adding and removing elements, respectively (returning $\btrue$ or $\bfalse$ when the element is already present or deleted from the set, respectively), and $\ielements$ that returns all of the elements in the input set\footnote{$\iadd(s,e)$ and $\iremove(s,e)$ add and remove the element $e$ from $s$, respectively. $\ielements(s)$ returns the content of $s$.}. 
+
+$\mathsf{SELECT}$, $\mathsf{DELETE}$, and $\mathsf{UPDATE}$ start by reading the contents of the set variable storing primary key values and then, for every row, the columns in $\vec{c_2}$ needed to check the Boolean condition $\phi$ (the keys corresponding to these columns). For every row satisfying this Boolean condition, $\mathsf{SELECT}$ continues by reading the keys associated to the columns that need to be returned, $\mathsf{DELETE}$ removes the primary key value associated to this row from the set $\tab$, and $\mathsf{UPDATE}$ writes to the keys corresponding to the columns that need to be updated. In the case of $\mathsf{UPDATE}$, we assume that the values of the variables in $\vec{x}$ are obtained from a valuation $\gamma$ (this valuation would be maintained by the operational semantics of the underlying Key-Value store). $\mathsf{INSERT}$ adds a new primary key value to the set variable $\tab$ (the call to $\iadd$ checks whether this value is unique) and then writes to the keys representing columns of this new row.
+
+
+
+\paragraph{Manipulating Set Variables}
+
+\begin{figure}[t]
+\small
+\begin{minipage}[t]{4.2cm}
+\begin{flushleft}
+$\iadd(tab,pkeyVal)$:
+\end{flushleft}
+\vspace{-2mm}
+\begin{lstlisting}[language=MyLang,escapeinside={(*}{*)}] 
+if (read((*$tab$*).has.(*$pkeyVal$*))) 
+   return false;
+write((*$tab$*).has.(*$pkeyVal$*),true)
+return true;
+\end{lstlisting}
+\end{minipage}
+%\begin{minipage}{3cm}
+%
+%\begin{flushleft}
+%$\iremove(tab, pkeyVal)$:
+%\end{flushleft}
+%
+%\begin{lstlisting}[xleftmargin=5mm,language=MyLang,escapeinside={(*}{*)}]
+%if ( !read((*$tab$*).contains.(*$pkeyVal$*)) ) 
+%   return false;
+%write((*$tab$*).contains.(*$pkeyVal$*), false)
+%return true;
+%\end{lstlisting}
+%
+\begin{minipage}[t]{4cm}
+\begin{flushleft}
+$\ielements(tab)$:
+\end{flushleft}
+\vspace{-2mm}
+\begin{lstlisting}[language=MyLang,escapeinside={(*}{*)}]
+ret := (*$\emptyset$*)
+for ( let (*$pkeyVal$*) of (*$\Vals$*) )
+   if (read((*$tab$*).has.(*$pkeyVal$*))) 
+      ret := ret (*$\cup$*) {(*$pkeyVal$*)}
+return ret;
+\end{lstlisting}
+\end{minipage}
+\vspace{-4mm}
+    \caption{Manipulating set variables using key-value pairs.}
+    \label{fig:ir-key}
+\vspace{-3mm}
+\end{figure}
+
+Based on the standard representation of a set using its characteristic function, we implement each set variable $\tab$ using a set of keys $\tab.\icontains.\pkeyVal$, one for each value $\pkeyVal\in\Vals$. These keys are associated with Boolean values, indicating whether $\pkeyVal$ is contained in $\tab$. In a concrete implementation, this set of keys need not be fixed a-priori, but can grow during the execution with every new instance of an $\mathtt{INSERT}$. Figure~\ref{fig:ir-key} lists the implementations of $\iadd$/$\ielements$, which are self-explanatory ($\iremove$ is analogous).
+
+%Here, we describe a simple SQL language, an IR over set variables and keys, and the API of key-value stores (see SQLtoKV.pdf).
+%
+%We show how to compile SQL to IR, and IR to the API of key-value stores.
+%
+%The first translation mimics concrete implementation: using a search structure (B-tree) indexed by primary keys, where values are pointers to disk/memory regions containing column values. This compilation corresponds to the "worst-case", when every column value is stored independently of others (vs an approach where one reads a whole row in one shot).
+%
+%End this section defining transactional SQL and Key-Value programs, and conclude the compilation (begin/end session/transaction is not touched and every SQL statement is compiled as explained above). Say that we simplify programs and ignore the manipulation or tests over values that are read from the store.
+
+
+
+%\subsection{Operational Semantics}

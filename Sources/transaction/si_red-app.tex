@@ -1,0 +1,206 @@
+%!TEX root = Thesis.tex
+
+\section{Proofs of Section~\ref{ssec:si}}\label{app:si_red}
+
+ \begin{figure}[t]
+  \centering
+  \begin{subfigure}{.27\textwidth}
+   \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+      semithick, transform shape]
+     \node[transaction state] at (0,0)       (t_1)           {$W_{\tr_1}$};
+     \node[transaction state, label={below:{$\writeVar{ }{\xvar_{3,4}}$}}] at (2,0)       (t_3)           {$R_{\tr_3}$};
+     \node[transaction state, label={below:{$\writeVar{ }{\yvar}$}}] at (4,0)       (t_3_w)           {$W_{\tr_3}$};
+     \node[transaction state,label={above:$\writeVar{ }{\xvar}$}] at (-0.5,1.5) (t_2) {$W_{\tr_2}$};
+     \node[transaction state, label={above:{$\writeVar{ }{\yvar,\xvar_{3,4}}$}}] at (1.5,1.5) (t_4) {$W_{\tr_4}$};
+     \path (t_1) edge node {$\wro[\xvar]$} (t_3);
+     % \path (t_2) edge[blue] node {$\CO$} (t_1);
+     \path (t_2) edge[red] node {$\co'^*_1$} (t_4);
+     \path (t_4) edge[right, red] node[pos=.9] {$\wrosi(\co'_1)$} (t_3);
+     \path (t_4) edge node {$\co'_1$} (t_3_w);
+     \path (t_3) edge[below] node {$\wro[\xvar_{3,4}]'$} (t_3_w);
+     \path (t_1) edge[left] node {$\co'_1$} (t_2);
+     \path (t_3) edge[left, red] node[pos=0.1, rotate=-30, yshift=2.5mm] {$\rwo(\co'_1)$} (t_2);
+    \end{tikzpicture}
+   }
+   \caption{Minimal cycle in $\tup{\hist', \co'_2}$}
+   \label{si_p_proof:2a}
+  \end{subfigure}
+  \begin{subfigure}{0.20\textwidth}
+   \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+      semithick, transform shape]
+     \node[transaction state, text=red] at (0,0)       (t_1)           {$\tr_1$};
+     \node[transaction state, label={below:{$\writeVar{ }{\yvar}$}}] at (2,0)       (t_3)           {$\tr_3$};
+     \node[transaction state, text=red,label={above:\textcolor{red}{$\writeVar{ }{\xvar}$}}] at (-0.5,1.5) (t_2) {$\tr_2$};
+     \node[transaction state, label={above:{$\writeVar{ }{\yvar}$}}] at (1.5,1.5) (t_4) {$\tr_4$};
+     \path (t_1) edge[red] node {$\wro[\xvar]$} (t_3);
+     % \path (t_2) edge[blue] node {$\CO$} (t_1);
+     \path (t_2) edge node {$\co^*$} (t_4);
+     \path (t_4) edge node {$\co$} (t_3);
+     \path (t_1) edge[left] node {$\co$} (t_2);
+    \end{tikzpicture}
+   }
+   \caption{$\mathsf{Conflict}$ violation in $\tup{\hist, \co}$}
+   \label{si_p_proof:2b}
+  \end{subfigure}
+  \caption{Cycles in $\co_2'$ corresponding to $\mathsf{Conflict}$ violations.}
+  \label{si_p_proof:2}
+ \end{figure}
+
+\begin{theorem}\label{th:si:app}
+A history $\hist$ satisfies snapshot isolation iff $\hist_{R|W}^c$ is serializable.
+\end{theorem}
+\begin{proof}
+For the ``only-if'' direction, we define partial commit orders $\co_1'$ and $\rwo(\co_1')$ as in the case of prefix consistency. Along with them, we define a partial commit order $\wrosi(\co_1')$ 
+\begin{align*}
+ \wrosi(\co'_1) = \{\tup{W_{\tr_1}, R_{\tr_2}}| & \exists \xvar_{2,1} \in \vars{\hist_{R|W}^c}.\                             \\
+                                & \tup{R_{\tr_2},W_{\tr_2}} \in \wro[\xvar_{2,1}]', \\
+                                & \tup{W_{\tr_1}, W_{\tr_2}} \in \co'_1, \writeVar{W_{\tr_1}}{\xvar_{2,1}} \} 
+\end{align*}
+which intuitively, enforces that the read part $R_{\tr_2}$ of a transaction $\tr_2$ observes the effects of the write part $W_{\tr_1}$ of a transaction $\tr_1$ when $\tr_1$ and $\tr_2$ write on a common variable and the commit order in $\hist$ orders $\tr_1$ before $\tr_2$ (which implies that the corresponding write transactions are ordered in the same way in $\co'_1$). We define $\co_2' = \co_1' \cup \rwo(\co_1') \cup \wrosi(\co'_1)$. 
+
+The characterization of minimal cycles of $\co_1'$ and ultimately, the fact that it is acyclic can be proved as in Lemma~\ref{lem:co1}. The proof that $\co_2'$ is acyclic goes as follows. As for PC, since $\co'_1$ is acyclic, a cycle in $\co'_2$, and in particular a minimal one, must  necessarily contain a dependency from $\rwo(\co'_1)$ or $\wrosi(\co'_1)$. Note that a minimal cycle cannot contain two dependencies in either $\rwo(\co'_1)$ or $\wrosi(\co'_1)$ since this would imply that it contains two non-consecutive write transactions. Differently from the previous case, the cycle in $\co_2'$ here can also contains the dependencies in $\wrosi(\co'_1)$ which are from write transactions to read transactions. % (by the definition of $\hist_{R|W}^c$, a write transaction may read a variable and a read transaction may write the same variable). 
+The case of minimal cycles in $\co'_2$ that contain only a dependency from $\rwo(\co'_1)$, and no dependencies from $\wrosi(\co'_1)$, can be dealt with as in the case of PC. 
+
+% First we will prove, $\hist$ is snapshot isolation if and only if $\hist'$ is serializable. Formally we are trying to prove,
+% 
+% \begin{align}
+%  \forall \co, \exists \co' \tup{\hist, \co} \models \axpre \land \axconf \Rightarrow \tup{\hist', \co'} \models \axser \label{si_leftright}
+% \end{align}
+% 
+% 
+% Consider a total order $\so$ for $\hist$ which satisfies snapshot isolation. We will show there exists a $\co'$ for $\hist'$ which satisfies serialization. To find such $\co'$, first we construct a partial order $\co'_1$ on $\Tr'$ and then try to extend $\co'_1$ to $\co'$.
+% \begin{align*}
+%  \co'_1 = & \{\tup{R_{\tr}, W_{\tr}} | \tr \in \Tr\} \cup                        \\
+%           & \{\tup{W_{\tr_1}, W_{\tr_2}} | \tup{\tr_1, \tr_2} \in \co\} \cup     \\ 
+%           & \{\tup{W_{\tr_1},R_{\tr_2}} | \tup{\tr_1, \tr_2} \in \wro \cup \so\} 
+% \end{align*}
+% 
+% Similarly as prefix consistent case, we can say a minimal cycle in $\co'_1$ contains atleast one but atmost two $W_{\_}$ transactions and one $R_{\_}$ transaction and $\co'_1$ is acyclic.
+ 
+% Now we want to remove the choices for which any acyclic extension of $\co'_1$ will violate $\axser$. The extension will be a total order, so if we do not want a relation $\tup{\tr_1, \tr_2}$ in $\co'$, then $\tup{\tr_2, \tr_1}$ must be in it. So we collect all such relations implied by $\co'_1$ in $\co'_2$.
+% 
+% \begin{align*}
+%  \co'_2 = \{\tup{\tr_3, \tr_2}| & \exists \xvar \in \vars{h'}. \exists \tr_1, \tr_2, \tr_3 \in \Tr'.                            \\
+%                                 & \tup{\tr_1,\tr_3} \in \wro[\xvar]', \tup{\tr_1, \tr_2} \in \co'_1, \writeVar{\tr_2}{\xvar} \} 
+% \end{align*}
+ 
+% Note, any minimal cycle in $\co'_1 \cup \co'_2$ still satisfies the properties of minimal cycle in $\co'_1$ because all $W_{\_}$ transactions are still totally ordered and $\co'_2$ does not contain relations of the form $\tup{R_{\_}, R_{\_}}$ - $\co'_2$ has relations of the form $\tup{R_{\_}, W_{\_}}$ or $\tup{W_{\_}, R_{\_}}$. So, a minimal cycle in $\co'_1 \cup \co'_2$ contains atleast one but atmost two $W_{\_}$ transactions and one $R_{\_}$ transaction.
+% 
+% $\co'_1$ was acyclic. All the relations in $\co'_2$ are of the form $\tup{R_{\_}, W_{\_}}$ or $\tup{W_{\_}, R_{\_}}$. If $(\co'_1 \cup \co'_2)$ has a cycle, then the cycle must contain atleast one relation from $\co'_2$. But two $\tup{R_{\_}, W_{\_}}$ or two $\tup{W_{\_}, R_{\_}}$ in a cycle implies, two non-consecutive $W_{\_}$ in a cycle. So a simple cycle in $(\co'_1 \cup \co'_2)$ would contain at most one of one relation from $\co'_2$.
+% 
+% Note, the minimal cycle contains only one relation of the form $\tup{R_{\_}, W_{\_}}$ from $\co'_2$, then similarly as the case of prefix consistency, we can prove, it contradicts the serializablity of $\co'$ for $\hist'$.
+
+Consider a minimal cycle of $\co_2'$ that contains a dependency $\tup{W_{\tr_4}, R_{\tr_3}}$ in $\wrosi(\co'_1)$, which implies that $W_{\tr_4}, W_{\tr_3}$ must write on some common variable $y$. Because the minimal cycle contains at most two write transactions and one read transaction, it must also contain a dependency from read transactions to write transactions. Note that such a dependency can come only from $\rwo(\co'_1)$.
+% So a minimal cycle in $\co'_2$ contains one relation from $\wrosi(\co'_1)$ of the form $\tup{W_{\tr_4}, R_{\tr_3}}$, where $W_{\tr_4}, W_{\tr_3}$ both write on same variable. Because the minimal cycle also contains at most two write transactions and one read transaction, it must contain a dependency from a read transaction to a write transaction as well - which must come from $\rwo(\co_1')$ also.
+The red edges in Figure~\ref{si_p_proof:2a} show such a cycle. By the definition of $\hist_{R|W}^c$, we have that $W_{\tr_4}$ and $R_{\tr_3}$ write on a variable $\xvar_{3,4}$ and $\tup{R_{\tr_3}, W_{\tr_3}} \in \wro[\xvar_{3,4}]'$. Since $\tup{R_{\tr_3}, W_{\tr_2}}\in \rwo(\co'_1)$, we have that there exists a write transaction $W_{\tr_1}$ s.t. $\tup{W_{\tr_1}, R_{\tr_3}}\in \wro'[\xvar]$, for some $\xvar$, and $\tup{W_{\tr_1}, W_{\tr_2}}\in \co'_1$.
+The relations between these transactions of $\hist_{R|W}^c$ imply that the corresponding transactions of $\hist$ are related as shown in Figure~\ref{si_p_proof:2b}, which implies a violation of $\mathsf{Conflict}$, a contradiction of the hypothesis.
+
+
+% So if we have a minimal cycle because of $\tup{R_{\tr_3}, W_{\tr_2}} \in \rwo(\co_1'), \tup{W_{\tr_4}, R_{\tr_3}} \in \wrosi(\co_1')$ and $\tup{W_{\tr_2}, W_{\tr_4}} \in \co'^*_1$ (red cycle in figure \ref{si_p_proof:2a}), we have $W_{\tr_4}, R_{\tr_3}$ write on $\xvar_{3,4}$ and $\tup{R_{\tr_3}, W_{\tr_3}} \in \wro[\xvar_{3,4}]'$. 
+% The relations between these transactions of $\hist_{R|W}^c$ imply that the corresponding transactions of $\hist$ are related as shown in Figure~\ref{si_p_proof:2b}, which represents a violation of $\axconf$. 
+%  Then if we look at the corresponding transactions $\tr_1, \tr_2, \tr_3, \tr_4$ in $\hist$. 
+% The relations in figure \ref{si_p_proof:2a} will imply the relations in \ref{si_p_proof:2b}. 
+% But to satisfy $\axconf$, $\tup{\tr_1, \tr_2}, \tup{\tr_4, \tr_3} \in \co$ and $\tup{\tr_2, \tr_4} \in \co^*$ and $\tup{\tr_1, tr_3} \in \wro[\xvar]'$ and $\tr_2$ writes on $\xvar$ and $\tr_3, \tr_4$ write on some same variable $\yvar$, implies $\tup{\tr_2, \tr_1} \in \co$ - which clearly contradicts figure \ref{si_p_proof:2b}.  
+ 
+% So $\co'_2$ is acyclic. We take $\co'$ to be any topological order of $\co'_2$. Similarly as prefix consistency case, we can show it must satisfy $\axser$ and it proves our claim in predicate (\ref{si_leftright}).
+
+For the ``if'' direction, let $\co'$ be a commit (total) order on transactions of $\hist_{R|W}^c$ which satisfies the serializability axiom. Let $\co$ be a commit order on transactions of $\hist$ defined by $\co = \{\tup{\tr_1, \tr_2} | \tup{W_{\tr_1}, W_{\tr_2}} \in \co'\}$ ($\co$ is clearly a total order). Showing that $\co$ is an extension of $\wro \cup \so$ and that it doesn't expose a $\axpre$ violation can be done as for prefix consistency. Now, assume by contradiction that there exists a $\axconf$ violation between $\tr_1$, $\tr_2$, $\tr_3$, $\tr_4$ (shown in Figure~\ref{si_p_proof:3a}). Then, the corresponding transactions $W_{\tr_1}, W_{\tr_2}, W_{\tr_4}, R_{\tr_3}, W_{\tr_3}$ in $\hist_{R|W}^c$, shown in Figure~\ref{si_p_proof:3b}, would be related as follows: (1) since $\tup{\tr_1, \tr_3} \in \wro[\xvar]$ and $\tup{\tr_1, \tr_2} \in \co$, we have that $\tup{W_{\tr_1}, R_{\tr_3}} \in \wro[\xvar]'$ and $\tup{W_{\tr_1}, W_{\tr_2}} \in \co'$, (2) since $\co'$ satisfies $\axser$, then $\tup{R_{\tr_3}, W_{\tr_2}} \in \co'$, (3) $\tup{\tr_2, \tr_4} \in \co^*$ implies $\tup{W_{\tr_2}, W_{\tr_4}} \in \co'^*$, (4) $\tup{\tr_4, \tr_3} \in \co$ and $\tr_4, \tr_3$ write on a common variable $y$ implies that $\tup{W_{\tr_4}, W_{\tr_3}} \in \co'$, $\tup{R_{\tr_3}, W_{\tr_3}} \in \wro'[\xvar_{3,4}]$, and $W_{\tr_4}$ writes the variable $\xvar_{3,4}$, which by the serializability axiom, implies $\tup{W_{\tr_4}, R_{\tr_3}} \in \co'$. Therefore, $\co'$ contains a cycle, a contradiction to the hypthesis.
+%
+%
+%Therefore, $\co'_2$ is acyclic. As in the prefix consistency case, it can be shown that any total order $\co'$ consistent with $\co_2'$ satisfies the serializability axiom (together with $\hist_{R|W}^c$).
+% 
+% 
+% \vspace{2em}
+% 
+% Now we will prove, if $\hist'$ is serializable, then $\hist$ is snapshot isolation. Formally we are trying to prove,
+% 
+% \begin{align}
+%  \forall \co', \exists \co \tup{\hist', \co'} \models \axser \Rightarrow \tup{\hist, \co} \models \axpre \land \axconf \label{si_rightleft}
+% \end{align}
+% 
+% Consider a total order $\co'$ for $\hist'$ which satisfies serialization. We will show there exists a $\co$ for $h$ which satisfies snapshot isolation. We construct $$\co = \{\tup{\tr_1, \tr_2} | \tup{W_{\tr_1}, W_{\tr_2}} \in \co'\}$$
+ % 
+% \begin{itemize}
+%  \item Clearly, $\co$ is total order.
+%  \item If $\tup{\tr_1, \tr_2} \in \wro \cup \so$ and $\tup{\tr_2, \tr_1} \in \co$, that means, $\tup{W_{\tr_1}, R_{\tr_2}} , \tup{R_{\tr_2}, W_{\tr_2}} \in \wro \cup \so$ and $\tup{W_{\tr_2}, W_{\tr_1}} \in \co'$ which violates acylicity of $\co'$. So $\co$ is an extension of $\wro \cup \so$.
+%  \item If we have a $\axpre$ violation, we can show similar way from prefix consistency case, that it contradicts the acylicity of $\co'$.
+%  \item If we have a $\axconf$ violation between $\tr_1$, $\tr_2$, $\tr_3$, $\tr_4$ (in figure \ref{si_p_proof:3a}) \ie for some $\xvar \in \vars{\hist}$, $\tup{\tr_1, \tr_3} \in \wro[\xvar]$ and $\writeVar{\tr_2}{\xvar}$, $\tup{\tr_1, \tr_2} \in \co$, $\tup{\tr_2, \tr_4} \in \co^*$ and $\tup{\tr_4, \tr_3} \in \co$ and $\tr_4, \tr_3$ writes on common variable,
+%        We take a look at the corresponding transactions in $\hist'$ - $W_{\tr_1}, W_{\tr_2}, W_{\tr_4}, R_{\tr_3}, W_{\tr_3}$.
+%        We will have have $\tup{W_{\tr_1}, W_{\tr_2}} \in \co'$ and $\tup{W_{\tr_1}, R_{\tr_3}} \in \wro[\xvar]'$ because $\tup{\tr_1, \tr_3} \in \wro[\xvar]$ and $\tup{\tr_1, \tr_2} \in \co$.
+%        Since $\co'$ satisfies $\axser$, then $\tup{R_{\tr_3}, W_{\tr_2}} \in \co'$.
+%        But $\tup{\tr_2, \tr_4} \in \co^*$ implies $\tup{W_{\tr_2}, W_{\tr_4}} \in \co'^*$.
+%        Also $\tup{\tr_4, \tr_3} \in \co$ and $\tr_4, \tr_3$ write on common variable implies $\tup{W_{\tr_4}, W_{\tr_3}} \in \co'$ and $\tup{R_{\tr_3}, W_{\tr_3}} \in \wro[\xvar_{\tr_3\tr_4}]$ and $writeVar{\tr_4}{\xvar_{\tr_3\tr_4}}$. Since $\co'$ satisfies $\axser$, $\tup{W_{\tr_4}, R_{\tr_3}} \in \co'$.
+%        This implies we have a cycle in $\co'$ (red cycle in figure \ref{si_p_proof:3b}) which contradicts the acylicity of $\co'$.
+% \end{itemize}
+% 
+% 
+% 
+% Therefore $\co$ must satisfy $\axpre$ and $\axconf$ for $\hist$ and proves our claim in predicate \ref{si_rightleft}.
+ %
+ % If $\hist$ is snapshot isolation, then there exists a total order $\co$ on $\Tr$ s.t. $\tup{\hist, \co} \models \text{snapshot isolation}$.
+ % 
+ % We construct a partial order $\co'_1$ on $\Tr'$, $\co'_1 = \{\tup{R_{\tr}, W_{\tr}} | \tr \in \Tr\} \cup \{\tup{W_{\tr_1}, W_{\tr_2}} | \tup{\tr_1, \tr_2} \in \co\} \cup \{\tup{W_{\tr_1},R_{\tr_2}} | \tup{\tr_1, \tr_2} \in \wro \cup \so\}$. $\co'_1$ is acyclic. TODO: EXPLAIN WHY ACYCLE.
+ % 
+ % Now we construct $\co'_2 = \co'_1 \cup \{\tup{\tr_3, \tr_2}|\exists \xvar \in \vars{h'}. \exists \tr_1, \tr_2, \tr_3 \in \Tr'.\tup{\tr_1,\tr_3} \in \wro[\xvar]', \tup{\tr_1, \tr_2} \in \co'_1, \writeVar{\tr_2}{\xvar} \}$.
+ % 
+ % Similarly like the case of prefix consistency, we can say, minimal cycles in $\co'_2$ contains maximum two $W_{\_}$ and one $R_{\_}$.
+ % 
+ % Now $\co'_1$ was acyclic. So any cycle in $\co'_2$ must contains the newly added relations. If we have a minimal cycle in $\co'_2$, from figure \ref{si_p_proof:1} we see, it either violates prefix consistency or conflict consistency. Hence, $\co'_2$ is acyclic. We take $\co'$ to be a topological order on $\co'_2$ and proof Similarly as the case of prefix consistency $\tup{\hist', \co'}$ satisfies serializable axiom.
+ % 
+ % 
+ % 
+ % If $\hist'$ is serializable, then there exists a total order $\co'$ on $\Tr'$ s.t. $\tup{\hist', \co'} \models \mathsf{Serializable}$.
+ % 
+ % We construct $\co = \{\tup{\tr_1, \tr_2} | \tup{W_{\tr_1}, W_{\tr_2}} \in \co'\}$. Clearly, $\co$ is total order. It is easy to see $\tup{\hist, \co}$ satisfies prefix consistency, similarly as the case of prefix consistency(figure \ref{pc_p_proof:3}). If we have a conflict violation from figure \ref{si_p_proof:3}, we have a cycle in $\tup{\hist', \co'}$ - which is a contradiction. Hence, $\tup{\hist, \co} \models \axpre \land \axconf$ \ie snapshot isolation.
+\end{proof}
+
+ \begin{figure}[t]
+  \centering
+  \begin{subfigure}{.20\textwidth}
+   \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+      semithick, transform shape]
+     \node[transaction state, text=red] at (0,0)       (t_1)           {$\tr_1$};
+     \node[transaction state, label={below:{$\writeVar{ }{\yvar}$}}] at (2,0)       (t_3)           {$\tr_3$};
+     \node[transaction state, text=red,label={above:\textcolor{red}{$\writeVar{ }{\xvar}$}}] at (-0.5,1.5) (t_2) {$\tr_2$};
+     \node[transaction state, label={above:{$\writeVar{ }{\yvar}$}}] at (1.5,1.5) (t_4) {$\tr_4$};
+     \path (t_1) edge[red] node {$\wro[\xvar]$} (t_3);
+     % \path (t_2) edge[blue] node {$\CO$} (t_1);
+     \path (t_2) edge node {$\co^*$} (t_4);
+     \path (t_4) edge node {$\co$} (t_3);
+     \path (t_1) edge[left] node {$\co$} (t_2);
+    \end{tikzpicture}
+   }
+   \caption{Prefix violation in $\tup{\hist, \co}$}
+   \label{si_p_proof:3a}
+  \end{subfigure}
+  \begin{subfigure}{.20\textwidth}
+   \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+      semithick, transform shape]
+     \node[transaction state] at (0,0)       (t_1)           {$W_{\tr_1}$};
+     \node[transaction state] at (2,0)       (t_3)           {$R_{\tr_3}$};
+     \node[transaction state, label={below:{$\writeVar{ }{\yvar}$}}] at (3,0)       (t_3_w)           {$W_{\tr_3}$};
+     \node[transaction state,label={above:$\writeVar{ }{\xvar}$}] at (-0.5,1.5) (t_2) {$W_{\tr_2}$};
+     \node[transaction state, label={above:{$\writeVar{ }{\yvar}$}}] at (1.5,1.5) (t_4) {$W_{\tr_4}$};
+     \path (t_1) edge node[below] {$\wro[\xvar]$} (t_3);
+     % \path (t_2) edge[blue] node {$\CO$} (t_1);
+     \path (t_2) edge[red] node {$\co'^*$} (t_4);
+     \path (t_4) edge[red, left] node {$\co'$} (t_3);
+     \path (t_4) edge node {$\co'$} (t_3_w);
+     \path (t_3) edge[below] node {$\co'$} (t_3_w);
+     \path (t_1) edge[left] node {$\co'$} (t_2);
+     \path (t_3) edge[red, below left] node[pos=0.4] {$\co'$} (t_2);
+    \end{tikzpicture}
+   }
+   \caption{Cycle in $\tup{\hist', \co'_2}$}
+   \label{si_p_proof:3b}
+  \end{subfigure}
+  
+  \caption{$\forall \co'. \exists \co.\tup{\hist', \co'} \models \axser \Rightarrow \tup{\hist, \co} \models \axpre \land \axconf$}
+  \label{si_p_proof:3}
+ \end{figure}
+
+

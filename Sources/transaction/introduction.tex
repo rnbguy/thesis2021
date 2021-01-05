@@ -1,0 +1,76 @@
+%!TEX root = Thesis.tex
+
+\section{Introduction}
+
+Transactions simplify concurrent programming by enabling computations on shared data that are isolated from other concurrent computations and resilient to failures. Modern databases provide transactions in various forms corresponding to different tradeoffs between consistency and availability. The strongest level of consistency is achieved with \emph{serializable} transactions~\cite{DBLP:journals/jacm/Papadimitriou79b} whose outcome in concurrent executions is the same as if the transactions were executed atomically in some order. Unfortunately, serializability carries a significant penalty on the availability of the system assuming, for instance, that the database is accessed over a network that can suffer from partitions or failures. For this reason, modern databases often provide weaker guarantees about transactions, formalized by weak consistency models, e.g., causal consistency~\cite{DBLP:journals/cacm/Lamport78} and snapshot isolation~\cite{DBLP:conf/sigmod/BerensonBGMOO95}.
+
+Implementations of large-scale databases providing transactions are difficult to build and test. For instance, distributed (replicated) databases must account for partial failures, where some components or the network can fail and produce incomplete results. Ensuring fault-tolerance relies on intricate protocols that are difficult to design and reason about. The black-box testing framework Jepsen~\cite{jepsen} found a remarkably large number of subtle problems in many production distributed databases. %\footnote{https://www.infoq.com/presentations/partitioning-comparison}.
+
+Testing a transactional database raises two issues: (1) deriving a suitable set of testing scenarios, e.g., faults to inject into the system and the set of transactions to be executed, and (2) deriving efficient algorithms for checking whether a given execution satisfies the considered consistency model. The Jepsen framework aims to address the first issue by using randomization, 
+%shows that the first issue can be solved using randomization, 
+e.g., introducing faults at random and choosing the operations in a transaction randomly. The effectiveness of this approach has been proved formally in recent work~\cite{DBLP:journals/pacmpl/OzkanMNBW18}. The second issue is, however, largely unexplored. Jepsen checks consistency in a rather ad-hoc way, focusing on specific classes of violations to a given consistency model, e.g., dirty reads (reading values from aborted transactions). This problem is challenging because the consistency specifications are non-trivial and they cannot be checked using, for instance, standard local assertions added to the client's code. 
+
+Besides serializability, the complexity of checking correctness of an execution w.r.t. some consistency model is unknown. Checking serializability has been shown to be NP-complete~\cite{DBLP:journals/jacm/Papadimitriou79b}, and checking causal consistency in a \emph{non-transactional} context is known to be polynomial time~\cite{DBLP:conf/popl/BouajjaniEGH17}. In this work, we try to fill this gap by investigating the complexity of this problem w.r.t. several consistency models and, in the case of NP-completeness, devising algorithms that are polynomial time assuming fixed bounds for certain parameters of the input executions, e.g., the number of sessions. 
+
+%
+%The only result that explores the complexity of this problem 
+%
+%Except for  serializability, in which case it has been shown that checking  be NP-complete~\cite{DBLP:journals/jacm/Papadimitriou79b}
+%% testing, i.e., randomly choosing the faults injected into the system and the transactions to be executed is enough to reveal a
+%
+%
+%The success of Jepsen relies on random transactions as well as randomly introduced partition faults, therefore it is solved. We tackle the second issue for a series of consistency models (Jepsen implements a test of linearizability https://github.com/jepsen-io/knossos and an ad-hoc test for causal consistency restricted to bounded executions, \url{https://github.com/jepsen-io/jepsen/blob/f345226dba1266bc37487d734a02caddf7d1d125/jepsen/src/jepsen/tests/causal.clj})
+We consider several consistency models that are the most prevalent in practice. The weakest of them, \emph{Read Committed} (RC)~\cite{DBLP:conf/sigmod/BerensonBGMOO95}, requires that every value read in a transaction is written by a committed transaction. \emph{Read Atomic} (RA)~\cite{DBLP:conf/concur/Cerone0G15} requires that successive reads of the same variable in a transaction return the same value (also known as Repeatable Reads~\cite{DBLP:conf/sigmod/BerensonBGMOO95}), and that a transaction ``sees'' the values written by previous transactions in the same session. In general, we assume that transactions are organized in \emph{sessions}~\cite{DBLP:conf/pdis/TerryDPSTW94}, an abstraction of the sequence of transactions performed during the execution of an application.
+\emph{Causal Consistency} (CC)~\cite{DBLP:journals/cacm/Lamport78} requires that if a transaction~$\tr_1$ ``affects'' another transaction $\tr_2$, e.g., $\tr_1$ is ordered before $\tr_2$ in the same session or $\tr_2$ reads a value written by $\tr_1$, then these two transactions are observed by any other transaction in this order. \emph{Prefix Consistency} (PC)~\cite{DBLP:conf/ecoop/BurckhardtLPF15} requires that there exists a total commit order between all the transactions such that each transaction observes a prefix of this sequence. \emph{Snapshot Isolation} (SI)~\cite{DBLP:conf/sigmod/BerensonBGMOO95} further requires that two different transactions observe different prefixes if they both write to a common variable.
+%Two different transactions $\tr_1$ and $\tr_2$ may observe the same prefix, which is not allowed under \emph{Snapshot Isolation} (SI)~\cite{DBLP:conf/sigmod/BerensonBGMOO95} when these two transactions write on a common variable. 
+Finally, we also provide new results concerning the problem of checking serializability (SER) that complement the known result about its NP-completeness. 
+
+The algorithmic issues we explore in this paper have led to a new specification framework for these consistency models that relies on the fact that the \emph{write-read} relation in an execution (also known as \emph{read-from}), relating reads with the transactions that wrote their value, can be defined effectively. The write-read relation can be extracted easily from executions where each value is written at most once (a variable can be written an arbitrary number of times). This can be easily enforced by tagging values with unique identifiers (e.g., a local counter that is incremented with every new write coupled with a client/session identifier)\footnote{This is also used in Jepsen, e.g., checking dirty reads in Galera~\cite{jepsen-galera}.}. Since practical database implementations are data-independent~\cite{DBLP:conf/popl/Wolper86}, i.e., their behavior doesn't depend on the concrete values read or written in the transactions, any potential buggy behavior can be exposed in executions where each value is written at most once. Therefore, this assumption is without loss of generality.
+
+Previous work~\cite{DBLP:conf/popl/BouajjaniEGH17,DBLP:conf/popl/BurckhardtGYZ14,DBLP:conf/concur/Cerone0G15} has formalized such consistency models using two auxiliary relations: a \emph{visibility} relation defining for each transaction the set of transactions it observes, and a \emph{commit order} defining the order in which transactions are committed to the ``global'' memory. An execution satisfying some consistency model is defined as the existence of a visibility relation and a commit order obeying certain axioms. In our case, the write-read relation derived from the execution plays the role of the visibility relation. This simplification allows us to state a series of axioms defining these consistency models, which have a common shape. Intuitively, they define lower bounds on the set of transactions $\tr_1$ that \emph{must} precede in commit order a transaction $\tr_2$ that is read in the execution. Besides shedding a new light on the differences between these consistency models, these axioms are essential for the algorithmic issues we investigate afterwards.
+
+%Based on our formalization of these criteria, 
+We establish that checking whether an execution satisfies RC, RA, or CC is polynomial time, while the same problem is NP-complete for PC and SI. Moreover, in the case of the NP-complete consistency models (PC, SI, SER), we show that their verification problem becomes polynomial time provided that, roughly speaking, the number of sessions in the input executions is considered to be fixed (i.e., not counted for in the input size). In more detail, we establish that checking SER reduces to a search problem in a space that has polynomial size when the number of sessions is fixed. (This algorithm applies to arbitrary executions, but its complexity would be exponential in the number of sessions in general.) Then, we show that checking PC or SI can be reduced in polynomial time to checking SER using a transformation of executions that, roughly speaking, splits each transaction in two parts: one part containing all the reads, and one part containing all the writes (SI further requires adding some additional variables in order to deal with transactions writing on a common variable).
+We extend these results even further by relying on an abstraction of executions called \emph{communication graphs}~\cite{DBLP:journals/pacmpl/ChalupaCPSV18}. Roughly speaking, the vertices of a communication graph correspond to sessions, and the edges represent the fact that two sessions access (read or write) the same variable. We show that all these criteria are polynomial-time checkable provided that the \emph{biconnected} components of the communication graph are of fixed size.
+
+We provide an experimental evaluation of our algorithms on executions of CockroachDB~\cite{cockroach}, which claims to implement serializability~\cite{cockroach-claim} acknowledging however the possibility of anomalies, Galera~\cite{galera}, whose documentation contains contradicting claims about whether it implements snapshot isolation~\cite{galera-claim,galera-notclaim}, and AntidoteDB~\cite{antidote}, which claims to implement causal consistency~\cite{antidote-claim}.
+%Galera~\cite{galera}, and AntidoteDB~\cite{antidote}, which claim to implement serializability~\cite{cockroach-claim}, snapshot isolation~\cite{galera-claim} and causal consistency~\cite{antidote-claim}, respectively (in the default configuration). 
+Our implementation reports violations of these criteria in all cases. 
+%In the case of CockroachDB, the documentation admits possible anomalies while in the case of Galera we confirm an open issue submitted on Github~\cite{galera-issue}. 
+The consistency violations we found for AntidoteDB are novel and have been confirmed by its developers. We show that our algorithms are efficient and scalable.
+%and they outperform an encoding to boolean satisfiability of the consistency models. 
+In particular, we show that, although the asymptotic complexity of our algorithms is exponential in general (w.r.t. the number of sessions), the worst-case behavior is not exercised in practice.
+
+To summarize, the contributions of this work are fourfold:
+\begin{itemize}
+
+  \item We develop a new specification framework for describing common transactional-consistency criteria (§\ref{sec:def});
+
+  \item We show that checking RC, RA, and CC is polynomial time while checking PC and SI is NP-complete (§\ref{sec:general});
+
+  \item We show that PC, SI, and SER are polynomial-time checkable assuming that the communication graph of the input execution has fixed-size biconnected components (§\ref{sec:bounded_width} and §\ref{sec:communication});
+  
+  \item We perform an empirical evaluation of our algorithms on executions generated by production databases (§\ref{sec:exp});
+
+\end{itemize}
+Combined, these contributions form an effective algorithmic framework for the verification of transactional-consistency models. To the best of our knowledge, we are the first to investigate the asymptotic complexity for most of these consistency models, despite their prevalence in practice.
+
+Additional material can be found in~\cite{arxiv}. 
+
+%a simple and effective specification methodology for weakly-consistent operations which is applicable to modern platforms like Java and C++. Furthermore, they outline the foundational principles for developing weak-consistency specification mechanisms for other platforms, to which alternate consistency models may apply. To the best of our knowledge, we are the first to develop a generic methodology capable of specifying arbitrary software APIs with operations of varying consistencies, despite their prevalence in practice, e.g., in Java.
+
+%Aside from the sections mentioned above, we end by discussing related work and conclusions in Sections~\ref{sec:related} and~\ref{sec:conclusion}.
+
+
+
+
+
+
+
+% \subsection{definition}
+
+%Parallel programs use shared variables in multiple concurrent computations. Using shared variables in multiple computations may lead to unexpected behavior. Transactions are introduced to solve that problem. A transaction does a computation on variables such that progress of the transaction remains isolated from the other concurrent computation in the program. They are commonly offered by databases.
+%
+%Usually, the programmer wants strong guarantees about the isolation of computations in each transaction, which can be formalized in terms of serialization. But, ensuring serialization introduces severe performance reduction. This is why transaction systems offer weaker isolation guarantees, which are formalized as weak consistency models. Snapshot isolation is most popular of them all. It is implemented by the major distributed database systems, such as MS SQL Server, Oracle, Galera etc.
+%
+%Although, the idea of the transaction is very simple, ensuring a perfectly safe transaction system is challenging. So it is imperative that we have a way of verifying them.

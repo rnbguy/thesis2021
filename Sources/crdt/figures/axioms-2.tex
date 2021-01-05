@@ -1,0 +1,15 @@
+\begin{align*}
+  & \text{\underline{{\sc RetvalSet}$(X,v,Y)$}} \\
+  & \forall o_1.\ {\sf meth}(o_1) = X\land {\sf ret}(o_1) = v \\
+  & \Leftrightarrow \exists o_2.\ \rf(o_2,o_1) \land {\sf meth}(o_2) = Y \\
+  & \quad \quad \quad \land {\sf arg}(o_1)={\sf arg}(o_2)
+  \\[1em]
+  & \text{\underline{\sc RetvalCounter}} \\
+  & \forall o_1.\ {\sf meth}(o_1) = {\sf read} \\
+  & \implies {\sf ret}(o_1) = |\{o_2: {\sf meth}(o_2) = {\sf inc}\land \rf(o_2,o_1)\}| \\
+  & - |\{o_2: {\sf meth}(o_2) = {\sf dec}\land \rf(o_2,o_1)\}|
+  \\[1em]
+  & \text{\underline{\sc LinLWW}} \\
+  & \forall o_1, o_2, o_3.\ \rf(o_1,o_2) \land {\sf meth}(o_3)={\sf write} \\
+  & \land {\sf arg}_1(o_3)={\sf arg}(o_2)\land \hb(o_3,o_2) \implies \lin(o_3,o_1)
+\end{align*}

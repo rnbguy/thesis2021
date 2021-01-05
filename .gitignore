@@ -34,3 +34,6 @@
 *.pgf-plot.*
 
 Figures/External/
+
+*pdf
+*gz

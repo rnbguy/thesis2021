@@ -1,0 +1,162 @@
+%\documentclass{article}
+\documentclass[runningheads]{llncs}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{microtype}
+\usepackage{url}
+\usepackage[numbers,sectionbib]{natbib}
+
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+%\usepackage{amsthm}
+\usepackage{mathrsfs}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+%\usepackage{subcaption}
+\usepackage{tikz}
+\usetikzlibrary{arrows,automata,positioning,backgrounds,calc}
+
+\usepackage{pifont}
+\usepackage[boxed,linesnumbered,noend]{algorithm2e}
+
+\usepackage{bigdelim}
+\usepackage{booktabs}
+\usepackage{array}
+
+%\let\llncssubparagraph\subparagraph
+%\let\subparagraph\paragraph
+%\usepackage[compact]{titlesec}
+%\let\subparagraph\llncssubparagraph
+%
+%\titlespacing{\section}{0pc}{1pc}{0.8pc}
+%\titlespacing{\subsection}{0pc}{1pc}{0.7pc}
+
+%\newtheorem{theorem}{Theorem}[section]
+%\newtheorem{example}{Example}[section]
+%\newtheorem{lemma}{Lemma}[section]
+%\newtheorem{corollary}{Corollary}[section]
+%\newtheorem{remark}{Remark}[section]
+%\newtheorem{definition}{Definition}[section]
+
+
+\newcommand{\eg}{\textit{e.g.} }
+\newcommand{\ie}{\textit{i.e.} }
+
+\newcommand{\RO}{\mathsf{ro}}
+\newcommand{\PO}{\textsf{po} }
+\newcommand{\SO}{\textsf{so} }
+\newcommand{\WR}{\textsf{WR} }
+\newcommand{\WW}{\textsf{WW} }
+\newcommand{\RW}{\textsf{RW} }
+%\newcommand{\VIS}{\textsf{vis} }
+\newcommand{\CO}{\textsf{co} }
+
+\newcommand{\rf}{\textsf{rf} }
+\newcommand{\hb}{\textsf{hb}}
+\newcommand{\vis}{\textsf{vis}}
+\newcommand{\ro}{\mathsf{ro}}
+
+\newcommand{\axpre}{\mathsf{Prefix}}
+\newcommand{\axconf}{\mathsf{Conflict}}
+\newcommand{\axsi}{\textsc{Si}}
+\newcommand{\axser}{\mathsf{Serializability}}
+
+\newcommand{\ext}{\textsc{Ext}}
+\newcommand{\session}{\textsc{Session}}
+\newcommand{\transvis}{\textsc{TransVis}}
+\newcommand{\prefix}{\textsc{Prefix}}
+\newcommand{\noconflict}{\textsc{NoConflict}}
+\newcommand{\totalvis}{\textsc{TotalVis}}
+
+\newcommand{\set}[1]{{\{{#1}\}}}
+\newcommand{\mset}[1]{{\{\!\{ #1 \}\!\}}}
+\newcommand{\tup}[1]{{\left\langle{#1}\right\rangle}}
+\renewcommand{\implies}{\Rightarrow}
+\newcommand{\pto}{\rightharpoonup}
+\newcommand{\To}{\Rightarrow}
+\newcommand{\Path}[3]{{#1}\xrightarrow{#2}{#3}}
+
+
+\newcommand{\Obj}{\mathsf{Obj}}
+\newcommand{\Var}{\mathsf{Var}}
+\newcommand{\Val}{\mathsf{Val}}
+\newcommand{\OId}{\mathsf{OId}}
+\newcommand{\Op}{\mathsf{Op}}
+\newcommand{\xvar}{{x}}
+\newcommand{\yvar}{{y}}
+\newcommand{\val}{{v}}
+\newcommand{\id}{{i}}
+\newcommand{\rd}[3][]{\textsf{read}_{#1}({#2},{#3})}
+\newcommand{\wrt}[3][]{\textsf{write}_{#1}({#2},{#3})}
+\newcommand{\op}{{o}}
+\newcommand{\Tr}{{\mathcal{T}}}
+\newcommand{\tr}{{t}}
+\newcommand{\Hist}{{\mathcal{H}}}
+\newcommand{\hist}{{h}}
+\newcommand{\exec}{{e}}
+\newcommand{\po}{\mathsf{po}}
+\newcommand{\so}{\mathsf{so}}
+\newcommand{\co}{\mathsf{co}}
+\newcommand{\wro}[1][]{\mathsf{wr}_{#1}}
+\newcommand{\rwo}{\mathsf{RW}}
+\newcommand{\wrosi}{\mathsf{WR}}
+\newcommand{\readOp}[1]{\mathsf{reads}({#1})}
+\newcommand{\vars}[1]{\mathsf{vars}({#1})}
+\newcommand{\writeOp}[1]{\mathsf{writes}({#1})}
+\newcommand{\writeVar}[2]{{#1}\ \mathsf{writes}\ {#2}}
+\newcommand{\readVar}[2]{{#1}\ \mathsf{reads}\ {#2}}
+\renewcommand{\hist}{{h}}
+\newcommand{\lin}{\mathsf{lin}}
+%\newcommand{\vis}{\mathsf{vis}}
+\newcommand{\aread}{\mathsf{r}}
+\newcommand{\none}{\mathsf{None}}
+
+\input{macros}
+
+\begin{document}
+  \pagestyle{plain}
+  \bibliographystyle{splncs04}
+  \renewcommand{\bibname}{References}
+
+  \title{On the Complexity of Checking Consistency for Replicated Data Types\thanks{This work is supported in part by the European Research Council (ERC) under the European Union's Horizon 2020 research and innovation programme (grant agreement No 678177).}}
+
+  \author{}
+  \institute{}
+
+  \author{Ranadeep Biswas\inst{1} \and Michael Emmi\inst{2} \and Constantin Enea\inst{1}}
+
+  \institute{
+    Université de Paris, IRIF, CNRS, F-75013 Paris, France \\
+    \email{ranadeep@irif.fr}, \email{cenea@irif.fr}
+    \and SRI International, New York, NY, USA,
+    \email{michael.emmi@sri.com}
+  }
+
+  \maketitle
+
+  \begin{abstract}
+
+    Recent distributed systems have introduced variations of familiar abstract data types (ADTs) like counters, registers, flags, and sets, that provide high availability and partition tolerance. These \emph{conflict-free replicated data types} (CRDTs) utilize mechanisms to resolve the effects of concurrent updates to replicated data. Naturally these objects weaken their consistency guarantees to achieve availability and partition-tolerance, and various notions of \emph{weak consistency} capture those guarantees.
+
+    In this work we study the tractability of CRDT-consistency checking. To capture guarantees precisely, and facilitate symbolic reasoning, we propose novel logical characterizations. By developing novel reductions from propositional satisfiability problems, and novel consistency-checking algorithms, we discover both positive and negative results. In particular, we show intractability for replicated flags, sets, counters, and registers, yet tractability for replicated growable arrays. Furthermore, we demonstrate that tractability can be redeemed for registers when each value is written at most once, for counters when the number of replicas is fixed, and for sets and flags when the number of replicas and variables is fixed.
+
+  \end{abstract}
+
+  \input{intro}
+  \input{definitions}
+  \input{npc}
+  \input{differentiated}
+  \input boundednpcalgo
+  \input{orset}
+  \input{related}
+  \input{conclusion}
+
+  \bibliography{misc,dblp}
+
+  % \appendix
+  % \newpage
+  % \input orset-appendix
+
+\end{document}

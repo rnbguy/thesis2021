@@ -1,0 +1,1021 @@
+%!TEX root = Thesis.tex
+
+% \section{Algorithms}
+% 
+% \subsection{Dependency Graph}
+% 
+% To formally reason about these consistencies over a history, we represent transactions as vertices in a graph and the relation dependencies using edges.
+% 
+% \begin{definition}
+%  A tuple $\mathcal{G} = (\mathcal{T}, \SO, \WR, \WW, \RW)$ is a \textbf{dependency graph} for a history $\mathcal{H} = (\mathcal{T}, \SO, \WR)$, where
+% \end{definition}
+% 
+% \begin{itemize}
+%  \item $\SO$ is just session order of the history.
+%  \item $\WR = \left\{ \WR_x \mid \text{x is a variable}\right\}$ where $T \xrightarrow{\WR_x} S \Leftrightarrow \exists n. T \models \texttt{write}(x, n) \land S \models \texttt{read}(x, n)$
+%  \item $\WW = \left\{ \WW_x \mid \text{x is a variable}\right\}$ where $\WW_x$ is a total order on the set $\textsf{Write}_x$.
+%  \item $\RW = \left\{ \RW_x \mid \text{x is a variable}\right\}$ where $T \xrightarrow{\RW_x} S \Leftrightarrow T \models \texttt{read}(x, \_) \land (\exists T'. T' \xrightarrow{\WR_x} T \Rightarrow T'\xrightarrow{\WW_x} S)$
+% \end{itemize}
+% 
+% But not all such edge combinations are valid for a consistent schedule. For a Read Atomic consistent schedule, the edge dependencies must satisfy some properties.
+% 
+% \begin{definition}
+%  \label{dependency}
+%  Given a \textbf{schedule}, we can extract different type of dependencies between each transaction.
+% \end{definition}
+% 
+% \begin{itemize}
+%  \item \textbf{\textit{session dependency}} $T \xrightarrow{\SO} S \Leftrightarrow$ $T$, $S$ are in same session and $T$ happens before $S$.
+%  \item \textbf{\textit{write-read dependency}} $T \xrightarrow{\WR_x} S \Leftrightarrow S \models \texttt{read}(x, \_) \land T = max_{\CO}(\VIS^{-1}(S) \cap \textsf{Write}_x)$
+%  \item \textbf{\textit{write-write dependency}} $T \xrightarrow{\WW_x} S \Leftrightarrow T, S \in \textsf{Write}_x \land T \xrightarrow{\CO} S$
+%  \item \textbf{\textit{read-write dependency}} $T \xrightarrow{\RW_x} S \Leftrightarrow T \models \texttt{read}(x, \_) \land (\exists T'. T' \xrightarrow{\WR_x} T \Rightarrow T'\xrightarrow{\WW_x} S)$
+% \end{itemize}
+% 
+% \begin{corollary}
+%  For any Read Atomic schedule $\mathcal{S}$, $graph(\mathcal{S}) = (\mathcal{T}_{\mathcal{S}}, \SO_{\mathcal{S}}, \WR_{\mathcal{S}}, \WW_{\mathcal{S}}, \RW_{\mathcal{S}})$ is a dependency graph for $\mathcal{H}_{\mathcal{S}}$.
+% \end{corollary}
+% 
+% 
+% % Now we have a characterization of weak consistent models using these dependencies. So verifying a history for a consistency model, becomes a problem for finding appropriate dependencies between the transactions, rather than visibility and commit order. To do that, we will extend these dependencies to \emph{dependency graphs} which includes edges representing the dependencies.
+% 
+% Intuitively, we can now represent the problem of finding a $wm$-consistent schedule using the problem of finding a dependency graph which satisfies such properties. Using this characterization for \textsc{Ext}, we have more stronger properties for each consistency criteria \cite{gotsmanpodc16, gotsmanconcur16}.
+% 
+% \begin{lemma}
+%  If a schedule $\mathcal{S}$ satisfies $wm$-consistency, $graph(\mathcal{S})$ satisfies following properties.
+% \end{lemma}
+% 
+% \begin{itemize}
+%  \item \textbf{Causal consistency}: All cycles in $graph(\mathcal{S})$ must have at least one \RW edge and one another \RW or \WW edge.
+%  \item \textbf{Prefix consistency}: All cycles in $graph(\mathcal{S})$ must have at least one $\RW$ edge with either a preceding $\WW$ edges or an another preceding $\RW$ edge.
+%  \item \textbf{Snapshot isolation}: All cycles in $graph(\mathcal{S})$ must have at least two adjacent $\RW$ edges.
+%  \item \textbf{Serialization}: $graph(\mathcal{S})$ has no cycle.
+% \end{itemize}
+% 
+% 
+% 
+% To explain the cycles,
+% 
+% \begin{itemize}
+%  \item First note, there should not be any cycle of the form $T \xrightarrow{\VIS} S \xrightarrow{\RW_x} T$. Because, then $\exists T', T' \xrightarrow{\WW_x} T, T' \xrightarrow{\WR_x} S$ and $T' = max_{\CO}(\VIS^{-1}(S) \cap \textsf{Write}_x)$. Since $T \in \VIS^{-1}(S)$, then we will have $T \xrightarrow{\CO} T' \xrightarrow{\WW_x} T$ which is not possible.
+%  \item Also $\SO \cup \WR \subseteq \VIS$ and $\SO \cup \WR \cup \WW \subseteq \CO$.
+%  \item To break the cycles in \CO, each cycle must have one dependency edge from \RW. But in causal consistency \SO and \WR must be included in \VIS and it must be transitive. So $(\SO \cup \WR)^+ ; \RW$ can not be cyclic. So, we need another \RW or \WW dependency edge.
+%  \item Prefix consistency says, $\CO; \VIS \subseteq \VIS$ which imposes, $\VIS; \RW \subseteq \CO$. Which means, to break the cycles in \CO, extra \RW or \WW edge must precede \RW edge in all cycles.
+%  \item Snapshot isolation says, $\WW_x \subseteq \VIS$ so $\WW_x$ can not break paths in \VIS anymore. So \RW edge must precede another \RW edges in all cycles.
+%  \item Serialization says $\VIS = \CO$. So if $T \xrightarrow{\RW_x} S$ and $S \xrightarrow{\CO} T$ then, $S \xrightarrow{\VIS} T \xrightarrow{\RW_x} S$ which is not allowed. So $T \xrightarrow{\RW_x} S \Rightarrow T \xrightarrow{\VIS} S$ or $\RW \subseteq \VIS = \CO$. Hence $(\SO \cup \WR \cup \WW \cup \RW) \subseteq \CO = \VIS$.
+% \end{itemize}
+% 
+% 
+% 
+% Now we say, this properties are are also enough for a dependency graph of a history to find respective $wm$-consistent schedule. In table \ref{depgraphcovis:1}, we have defined \CO and \VIS for $wm$-consistencies in terms of \SO, \WR, \WW, \RW.
+% 
+% \begin{lemma}
+%  If a dependency graph $\mathcal{G}$ of a history $\mathcal{H}$, satisfies following properties, it is also $wm$-consistent.
+% \end{lemma}
+% 
+% \begin{itemize}
+%  \item $\mathcal{H}$ is \textbf{Causal consistent}, if all cycles in $\mathcal{G}$ must have at least one \RW edge and one another \RW or \WW edge, then
+%  \item $\mathcal{H}$ is \textbf{Prefix consistent}, if all cycles in $\mathcal{G}$ must have at least one $\RW$ edge with either a preceding $\WW$ edges or an another preceding $\RW$ edge, then $\mathcal{H}$ is Serializable.
+%  \item $\mathcal{H}$ is \textbf{Snapshot isolation}, if all cycles in $\mathcal{G}$ must have at least two adjacent $\RW$ edges, then $\mathcal{H}$ is Serializable.
+%  \item $\mathcal{H}$ is \textbf{Serializable}, if $\mathcal{G}$ has no cycle.
+% \end{itemize}
+% 
+% \begin{table*}
+%  \centering
+%  \resizebox{\textwidth}{!}{
+%   \begin{tabular}{|c|c|c|}
+%    \hline
+%    Consistency model  & \CO                                                                    & \VIS                                                        \\
+%    \hline
+%    Causal consistency & $(\SO \cup \WR \cup \WW)^{total}$                                      & $(\SO \cup \WR)^+$                                          \\
+%    \hline
+%    Prefix consistency & $((\SO \cup \WR \cup \WW) \cup ((\SO \cup \WR);\RW))^{total}$          & $(\SO \cup \WR) \cup (\CO;(\SO \cup \WR))$                  \\
+%    \hline
+%    Snapshot isolation & $((\SO \cup \WR \cup \WW) \cup ((\SO \cup \WR \cup \WW);\RW))^{total}$ & $(\SO \cup \WR\cup \WW) \cup (\CO;(\SO \cup \WR \cup \WW))$ \\
+%    \hline
+%    Serialization      & $(\SO \cup \WR \cup \WW \cup \RW)^{total}$                             & \CO                                                         \\
+%    \hline
+%   \end{tabular}
+%  }
+%  \caption{\CO and \VIS relation from dependency graph}
+%  \label{depgraphcovis:1}
+% \end{table*}
+% 
+% \begin{proof}
+%  We will show the \CO, \VIS relations from table. \ref{depgraphcovis:1} satisfies the axioms of respective consistencies.
+%  \begin{itemize}
+%   \item \CO is total. We will just show underlying graph is acyclic. \CO is just any total order on that acyclic graph.
+%         \begin{itemize}
+%          \item Causal consistency. Any cycle in $(\SO \cup \WR \cup \WW)$ would imply a cycle without any \RW edge.
+%          \item Prefix consistency.
+%                \begin{itemize}
+%                 \item Any cycle in $(\SO \cup \WR \cup \WW)$ would imply cycle without any \RW edge.
+%                 \item Any cycle in $((\SO \cup \WR);\RW)$ or $((\SO \cup \WR \cup \WW) \cup ((\SO \cup \WR);\RW))$ would a cycle with all \RW edges preceded by \SO or \WR edge.
+%                \end{itemize}
+%          \item Snapshot isolation.
+%                \begin{itemize}
+%                 \item Any cycle in $(\SO \cup \WR \cup \WW)$ would imply cycle without any \RW edge.
+%                 \item Any cycle in $((\SO \cup \WR \cup \WW);\RW)$ or $((\SO \cup \WR \cup \WW) \cup ((\SO \cup \WR \cup \WW);\RW))$ would imply a cycle with all \RW edges preceded by \SO or \WR or \WW edge.
+%                \end{itemize}
+%          \item Serialization. $(\SO \cup \WR \cup \WW \cup \RW)$ does not have any cycle.
+%         \end{itemize}
+%   \item $\VIS \subseteq \CO$.
+%         \begin{itemize}
+%          \item Causal consistency. $(\SO \cup \WR) \subseteq \CO$. Then, also $(\SO \cup \WR)^+ \subseteq \CO^+ = \CO$.
+%          \item Prefix consistency. $(\SO \cup \WR) \subseteq \CO$. Then, also $(\CO; (\SO \cup \WR)) \subseteq (\CO;\CO) = \CO$.
+%          \item Snapshot isolation. $(\SO \cup \WR \cup \WW) \subseteq \CO$. Then, also $(\CO; (\SO \cup \WR \cup \WW)) \subseteq (\CO;\CO) = \CO$.
+%          \item Serialization. $\VIS = \CO$
+%         \end{itemize}
+%   \item Read atomic:
+%         \begin{itemize}
+%          \item \session. $\SO \subseteq \VIS$.
+%          \item \ext. $\VIS; \RW$ is acyclic.
+%                \begin{itemize}
+%                 \item Causal consistency. A cycle in $\VIS; \RW = (\SO \cup \WR)^+; \RW$ would imply a cycle with single \RW edge and no \WW edge.
+%                 \item Prefix consistency. A cycle in $\VIS; \RW$ implies either cycle in $(\SO \cup \WR); \RW$ or $(\CO; (\SO \cup \WR); \RW)$.
+%                       \begin{itemize}
+%                        \item A cycle in $(\SO \cup \WR); \RW$ would imply a cycle with single \RW edge and no \WW edge.
+%                        \item A cycle in $(\CO; (\SO \cup \WR); \RW)$ would imply $T_1 \xrightarrow{\CO} T_2 \xrightarrow{\SO \cup \WR} T_3 \xrightarrow{\RW} T_1$. But $((\SO \cup \WR); \RW) \subseteq \CO$. So $T_1 \xrightarrow{\CO} T_2 \xrightarrow{\CO} T_1$. But \CO is acylic.
+%                       \end{itemize}
+%                 \item Snapshot isolation. A cycle in $\VIS; \RW$ implies either cycle in $(\SO \cup \WR \cup \WW); \RW$ or $(\CO; (\SO \cup \WR \cup \WW); \RW)$.
+%                       \begin{itemize}
+%                        \item A cycle in $(\SO \cup \WR \cup \WW); \RW$ would imply a cycle with single \RW edge.
+%                        \item A cycle in $(\CO; (\SO \cup \WR \cup \WW); \RW)$ would imply $T_1 \xrightarrow{\CO} T_2 \xrightarrow{\SO \cup \WR \cup \WW} T_3 \xrightarrow{\RW} T_1$. But $((\SO \cup \WR \cup \WW); \RW) \subseteq \CO$. So $T_1 \xrightarrow{\CO} T_2 \xrightarrow{\CO} T_1$. But \CO is acylic.
+%                       \end{itemize}
+%                 \item Serialization. $\RW \subseteq \VIS$ and \VIS is acyclic.
+%                \end{itemize}
+%         \end{itemize}
+%   \item Satisfies respective axioms for other consistencies.
+%         \begin{itemize}
+%          \item Causal consistency.
+%                \begin{itemize}
+%                 \item \textsc{TransVis}. $\VIS$ is transitive by construction.
+%                \end{itemize}
+%          \item Prefix consistency.
+%                \begin{itemize}
+%                 \item \textsc{Prefix}.
+%                       \begin{equation*}
+%                        \begin{split}
+%                         \CO; \VIS &= \CO; ((\SO \cup \WR) \cup (\CO;(\SO \cup \WR))) \\
+%                         &= (\CO;(\SO \cup \WR)) \cup (\CO;\CO;(\SO \cup \WR)) \\
+%                         &= (\CO;(\SO \cup \WR)) \\
+%                         &= \VIS\\
+%                        \end{split}
+%                       \end{equation*}
+%                \end{itemize}
+%          \item Snapshot isolation.
+%                \begin{itemize}
+%                 \item \prefix.
+%                       \begin{equation*}
+%                        \begin{split}
+%                         \CO; \VIS &= \CO; ((\SO \cup \WR \cup \WW) \cup (\CO;(\SO \cup \WR \cup \WW))) \\
+%                         &= (\CO;(\SO \cup \WR \cup \WW)) \cup (\CO;\CO;(\SO \cup \WR \cup \WW)) \\
+%                         &= (\CO;(\SO \cup \WR \cup \WW)) \\
+%                         &= \VIS\\
+%                        \end{split}
+%                       \end{equation*}
+%                \end{itemize}
+%                \begin{itemize}
+%                 \item \noconflict. $\WW \subseteq \VIS$
+%                \end{itemize}
+%          \item Serialization. $\VIS = \CO$.
+%         \end{itemize}
+%  \end{itemize}
+% \end{proof}
+% 
+% Now, we can define,
+% $$\textsf{DepGraph}_{wm} = \left\{\mathcal{G} = (\mathcal{T}, \SO, \WR, \WW, \RW) | \text{all cycles in } \mathcal{G} \text{ are allowed in $wm$-consistency}\right\}$$
+% 
+% Then we have,
+% \begin{itemize}
+%  \item $\forall \mathcal{S} \in \textsf{Sche}_{wm}. graph(\mathcal{S}) \in \textsf{DepGraph}_{wm}$
+%  \item $\forall \mathcal{G} \in \textsf{DepGraph}_{wm}. \exists \mathcal{S} \in \textsf{Sche}_{wm}. graph(\mathcal{S}) = \mathcal{G}$
+% \end{itemize}
+
+\section{Checking Consistency Criteria}\label{sec:general}
+
+% So we have reduced the problem of verifying a history to the problem of finding appropriate dependencies between transactions of dependency edges in a dependency graph which satisfies the semantic definition of a consistency.
+
+This section establishes the complexity of checking the different consistency criteria in Table~\ref{weakconsistency:2} for a given history. More precisely, we show that \textsc{Read Committed}, \textsc{Read Atomic}, and \textsc{Causal Consistency} can be checked in polynomial time while the problem of checking the rest of the criteria is NP-complete. 
+
+\begin{figure}
+% \begin{subfigure}{.22\textwidth}
+%  \resizebox{\textwidth}{!}{
+%   \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+%     semithick, transform shape]
+%    \node[draw, rounded corners=2mm] (t1) at (0, .2) {\begin{tabular}{l} \texttt{x = 1;} \\ \texttt{y = 1;} \end{tabular}};
+%    \node[draw, rounded corners=2mm] (t2) at (0, -1.7) {\begin{tabular}{l} \texttt{x = 2;} \\ \texttt{y = 2;} \end{tabular}};
+%    \node[draw, rounded corners=2mm, minimum width=3.5cm, minimum height=3.2cm] (t3) at (3, -0.7) {};
+%    \node[draw=black!50, rounded corners=2mm, dashed] (t3_1) at (3, .4) {\begin{tabular}{l} \texttt{read(x); // 1} \end{tabular}};
+%    \node[draw=black!50, rounded corners=2mm, dashed] (t3_2) at (3, -.7) {\begin{tabular}{l} \texttt{read(y); // 2} \end{tabular}};
+%    \node[draw=black!50, rounded corners=2mm, dashed] (t3_3) at (3, -1.8) {\begin{tabular}{l} \texttt{read(x); // 1} \end{tabular}};
+%    \path (t3_1) edge[red] node {$\po$} (t3_2);
+%    \path (t1) edge[red, bend left] node {$\co$} (t2);
+%    \path (t3_2) edge[blue] node {$\po$} (t3_3);
+%    \path (t2) edge[blue, bend left] node {$\co$} (t1);
+%   \end{tikzpicture}  
+%  }
+%  \caption{\emph{not} Read committed}
+%  \label{rc_algo_counter_example:1}
+% \end{subfigure}
+% 
+% \begin{subfigure}{.22\textwidth}
+%  \resizebox{\textwidth}{!}{
+%   \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+%     semithick, transform shape]
+%    \node[draw, rounded corners=2mm] (t1) at (0, .2) {\begin{tabular}{l} \texttt{x = 1;} \\ \texttt{y = 1;} \end{tabular}};
+%    \node[draw, rounded corners=2mm] (t2) at (0, -1.3) {\begin{tabular}{l} \texttt{x = 2;} \\ \texttt{y = 2;} \end{tabular}};
+%    \node[draw, rounded corners=2mm] (t3) at (0, -2.6) {\begin{tabular}{l} \texttt{z = 2;} \end{tabular}};
+%    \node[draw, rounded corners=2mm, minimum width=3.5cm, minimum height=3.2cm] (t4) at (3, -1) {};
+%    \node[draw=black!50, rounded corners=2mm, dashed] (t4_1) at (3, .0) {\begin{tabular}{l} \texttt{read(x); // 1} \end{tabular}};
+%    \node[draw=black!50, rounded corners=2mm, dashed] (t4_2) at (3, -1) {\begin{tabular}{l} \texttt{read(y); // 2} \end{tabular}};
+%    \node[draw=black!50, rounded corners=2mm, dashed] (t4_3) at (3, -2) {\begin{tabular}{l} \texttt{read(z); // 2} \end{tabular}};
+%    \path (t4_1) edge[red] node {$\po$} (t4_2);
+%    \path (t1) edge[red] node {$\co$} (t2);
+%    \path (t4_2) edge[blue] node {$\po$} (t4_3);
+%    \path (t2) edge[blue] node {$\co$} (t3);
+%   \end{tikzpicture}  
+%  }
+%  \caption{Read committed}
+%  \label{rc_algo_example:1}
+% \end{subfigure}
+ \begin{subfigure}{.32\textwidth}
+  \resizebox{\textwidth}{!}{
+   \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+     semithick, transform shape]
+    \node[draw, rounded corners=2mm] (t1) at (0, .2) {\begin{tabular}{l} \texttt{x = 1;} \\ \texttt{y = 1;} \end{tabular}};
+    \node[draw, rounded corners=2mm] (t2) at (0, -1.3) {\begin{tabular}{l} \texttt{x = 2;} \\ \texttt{y = 2;} \end{tabular}};
+    \node[draw, rounded corners=2mm] (t3) at (0, -2.6) {\begin{tabular}{l} \texttt{z = 2;} \end{tabular}};
+    \node[draw, rounded corners=2mm, minimum width=3.5cm, minimum height=3.2cm] (t4) at (3, -1) {};
+    \node (t4_1) at (3, .0) {\begin{tabular}{l} \texttt{read(x); // 1} \end{tabular}};
+    \node (t4_2) at (3, -1) {\begin{tabular}{l} \texttt{read(y); // 2} \end{tabular}};
+    \node (t4_3) at (3, -2) {\begin{tabular}{l} \texttt{read(z); // 2} \end{tabular}};
+    \path (t4_1) edge node {$\po$} (t4_2);
+    \path (t1) edge[red, bend left] node {$\co$} (t2);
+    \path (t4_2) edge node {$\po$} (t4_3);
+    \path (t2) edge[blue, bend left] node {$\co$} (t1);
+   \end{tikzpicture}  
+  }
+  \caption{Violation of \textsc{Read Atomic}}
+  \label{ra_algo_counter_example:1}
+ \end{subfigure}
+  \hspace{.05cm}
+ \begin{subfigure}{.29\textwidth}
+  \resizebox{\textwidth}{!}{
+   \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+     semithick, transform shape]
+    \node[draw, rounded corners=2mm] (s11) at (0, 0) {\begin{tabular}{l} \texttt{x = 1;} \end{tabular}};
+    \node[draw, rounded corners=2mm] (s12) at (0, -1.2) {\begin{tabular}{l} \texttt{x = 2;} \end{tabular}};
+    \node[draw, rounded corners=2mm] (t1) at (2.8, 0) {\begin{tabular}{l} \texttt{read(x); // 2} \\ \texttt{y = 1;} \end{tabular}};
+    \node[draw, rounded corners=2mm] (t2) at (2.8, -1.6) {\begin{tabular}{l} \texttt{read(x); // 1} \\ \texttt{read(y); // 1} \end{tabular}};
+    \path (s11) edge node {$\so$} (s12);
+    % \path (s11) edge[red, below] node {$\wro[\xvar]$} (t2);
+    % \path (s12) edge[dashed, red, bend left] node {$\co$} (s11);
+    % \path (s12) edge[red, bend right, left] node {$\wro^+$} (t2);
+   \end{tikzpicture}  
+  }
+  \caption{Valid w.r.t. \textsc{Read Atomic}}
+  \label{ra_algo_example:1}
+ \end{subfigure}
+ \hspace{.05cm}
+ \begin{subfigure}{.36\textwidth}
+  \resizebox{.93\textwidth}{!}{
+   \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+     semithick, transform shape]
+    \node[draw, rounded corners=2mm] (s11) at (0, 0) {\begin{tabular}{l} \texttt{x = 1;} \end{tabular}};
+    \node[draw, rounded corners=2mm] (s12) at (0, -1.7) {\begin{tabular}{l} \texttt{x = 2;} \end{tabular}};
+    \node[draw, rounded corners=2mm] (t1) at (3.5, 0) {\begin{tabular}{l} \texttt{read(x); // 2} \\ \texttt{y = 1;} \end{tabular}};
+    \node[draw, rounded corners=2mm] (t2) at (3.5, -2.1) {\begin{tabular}{l} \texttt{read(x); // 1} \\ \texttt{read(y); // 1} \end{tabular}};
+    \path (s11) edge node {$\so$} (s12);
+    \path (s11) edge[red, right] node[pos=0.6] {$\wro[\xvar]$} (t2);
+    \path (s12) edge[dashed, red, bend left] node {$\co$} (s11);
+    \path (s12) edge[red, left,rotate=10] node[pos=.7,yshift=-6] {$\wro[\xvar] \circ \wro[\yvar]$} (t2);
+    \path (s12) edge[red, left,rotate=17] node[pos=0.4,yshift=4] {$\wro[\xvar]$} (t1);
+    \path (t1) edge[red, left] node {$\wro[\yvar]$} (t2);
+   \end{tikzpicture}  
+  }
+  \caption{Violation of \textsc{Causal Consistency}}
+  \label{cc_algo_counter_example:1}
+ \end{subfigure}
+ \caption{Applying the RA and CC checking algorithms.}
+ \vspace{-3mm}
+ \label{ptime_algo_examples}
+\end{figure}
+
+
+Intuitively, the polynomial time results are based on the fact that the axioms defining those consistency criteria do not contain the commit order ($\co$) on the left-hand side of the entailment. Therefore, proving the existence of a commit order satisfying those axioms can be done using a saturation procedure that builds a ``partial'' commit order based on instantiating the axioms on the write-read relation and the session order in the given history. Since the commit order must be an extension of the write-read relation and the session order, it contains those two relations from the beginning. 
+This saturation procedure stops when the order constraints derived this way become cyclic. For instance, let us consider applying such a procedure corresponding to RA on the histories in Figure~\ref{ra_algo_counter_example:1} and Figure~\ref{ra_algo_example:1}. Applying the axiom in Figure~\ref{ra_def} on the first history, since the transaction on the right reads 2 from $\yvar$, we get that its $\wro[\xvar]$ predecessor (i.e., the first transaction on the left) must precede the transaction writing 2 to $\yvar$ in commit order (the red edge). This holds because the $\wro[\xvar]$ predecessor writes on $\yvar$. Similarly, since the same transaction reads 1 from $\xvar$, we get that its $\wro[\yvar]$ predecessor must precede the transaction writing 1 to $\xvar$ in commit order (the blue edge). This already implies a cyclic commit order, and therefore, this history does not satisfy RA. On the other hand, for the history in Figure~\ref{ra_algo_example:1}, all the axiom instantiations are vacuous, i.e., the left part of the entailment is false, and therefore, it satisfies RA. Checking CC on the history in Figure~\ref{cc_algo_counter_example:1} requires a single saturation step: since the transaction on the bottom right reads 1 from $\xvar$, its $\wro[\xvar]\circ\wro[\yvar]$ predecessor that writes on $\xvar$ (the transaction on the bottom left) must precede in commit order the transaction writing 1 to $\xvar$. Since this is already inconsistent with the session order, we get that this history violates CC.
+
+\begin{algorithm}[t]
+{\footnotesize
+ \SetKwInOut{KwInput}{Input}
+ \SetKwInOut{KwOutput}{Output}
+ \KwIn{A history $\hist = \tup{T, \so, \wro}$}
+ \KwOut{$\mathit{true}$ iff $\hist$ satisfies \textsc{Causal consistency}}
+ \BlankLine
+ \If{$\so\cup\wro$ is cyclic} {
+  \Return{false}\;
+ }
+ $\co \leftarrow \so\cup\wro$\;
+ \ForEach{$\xvar \in \vars{\hist}$}{
+  \ForEach{$\tr_1 \neq \tr_2 \in T$ s.t. $\tr_1$ and $\tr_2$ write $\xvar$}{
+   \If{$\exists \tr_3.\ \tup{\tr_1,\tr_3}\in \wro[\xvar]\land \tup{\tr_2,\tr_3}\in (\so\cup\wro)^+$} { %\Path{\tr_2}{E_1^+}{\tr_3}, \Path{\tr_1}{\wro[\xvar]}{\tr_3}
+    $\co \leftarrow \co \cup \{\tup{\tr_2, \tr_1}\}$\;
+   }
+  }
+ }
+ \eIf{$\co$ is cyclic}{
+  \Return{false}\;
+ }{
+  \Return{true}\;
+ }}
+ \caption{Checking \textsc{Causal consistency}.}
+ \label{ccalgo:1}
+\end{algorithm}
+
+Algorithm~\ref{ccalgo:1} lists our procedure for checking CC. As explained above, $\CO$ is initially set to $\so\cup \wro$, and then, it is saturated with other ordering constraints implied by non-vacuous instantiations of the axiom $\mathsf{Causal}$ (where the left-hand side of the implication evaluates to true). The algorithms concerning RC and RA are defined in a similar way by essentially changing the test at line 6 so that it corresponds to the left-hand side of the implication in the corresponding axiom. Algorithm~\ref{ccalgo:1} can be rewritten as a Datalog program containing straightforward Datalog rules for computing transitive closures and relation composition, and a rule of the form\footnote{We write Datalog rules using a standard notation $\mathit{head}\text{ :- }\mathit{body}$ where $\mathit{head}$ is a relational atom (written as $\tup{a,b}\in R$ where $a$, $b$ are elements and $R$ a binary relation) and $\mathit{body}$ is a list of relational atoms.}
+\begin{align*}
+\tup{\tr_2, \tr_1} \in \CO \text{ :- } \tr_1\neq\tr_2, \tup{\tr_1,\tr_3}\in \wro[\xvar], \tup{\tr_2,\tr_3}\in (\so\cup\wro)^+
+\end{align*}
+to represent the $\mathsf{Causal}$ axiom.
+%specification using the predicate from line 6-7; $\forall \tr_1, \tr_2, \tr_3.~uniq(\tr_1, \tr_2, \tr_3)$\footnote{$uniq(\tr_1, \tr_2, \tr_3) = \tr_1 \neq \tr_2 \land \tr_2 \neq \tr_3 \land \tr_3 \neq \tr_1$}~$\land \tup{\tr_1,\tr_3}\in \wro[\xvar]\land \tup{\tr_2,\tr_3}\in (\so\cup\wro)^+ \implies \tup{\tr_2, \tr_1} \in \CO$. 
+The following is a consequence of the fact that these algorithms run in polynomial time (or equivalently, the corresponding Datalog programs can be evaluated in polynomial time over a database that contains the $\wro$ and $\so$ relations in a given history).%(see Appendix~\ref{app:sec:general}).
+%The algorithms for checking \textsc{Read Committed}, \textsc{Read Atomic}, and \textsc{Causal Consistency} are given in Algorithm~\ref{} (TODO). 
+
+\begin{theorem}
+For any criterion $C \in \{\emph{\textsc{Read Committed}}, \emph{\textsc{Read Atomic}}, \emph{\textsc{Causal consistency}} \}$, 
+the problem of checking whether a given history satisfies $C$ % \emph{\textsc{Read Committed}}, \emph{\textsc{Read Atomic}}, or \emph{\textsc{Causal consistency}} 
+is polynomial time.
+\end{theorem}
+
+On the other hand, checking PC, SI, and SER is NP-complete in general. We show this using a reduction from boolean satisfiability (SAT) that covers uniformly all the three cases. In the case of SER, it provides a new proof of the NP-completeness result by \cite{DBLP:journals/jacm/Papadimitriou79b}, which uses a reduction from the so-called \emph{non-circular} SAT and which cannot be extended to PC and SI.
+
+\begin{theorem}
+ \label{npcproof:0}
+\hspace{-2mm}
+For any criterion $C \hspace{-.7mm}\in\hspace{-.7mm} \{\emph{\textsc{Prefix Consistency}},\hspace{-.5mm}\emph{\textsc{Snapshot Isolation}},\hspace{-.5mm}\emph{\textsc{Serializability}} \}$
+the problem of checking whether a given history satisfies $C$ 
+is NP-complete.
+%The problem of checking whether a history satisfies any criteria between \emph{\textsc{Prefix Consistency}} and \emph{\textsc{Serializability}}, is NP-complete.
+\end{theorem}
+\input{Sources/transaction/npc_proof.tex}
+
+\section{Checking Consistency of Bounded-Width Histories}\label{sec:bounded_width}
+
+% Given a history it takes polynomial time to check for \textsc{Int} and \textsf{Ext}. Transactions, in a read atomic consistent history, can be assumed to read and write each variable at max once - just take the first read and last write of each variable. So for the rest of the paper, we will assume this.
+
+In this section, we show that checking prefix consistency, snapshot isolation, and serializability becomes polynomial time under the assumption that the \emph{width} of the given history, i.e., the maximum number of mutually-unordered transactions w.r.t. the session order, is bounded by a fixed constant. If we consider the standard case where the session order is a union of transaction sequences (modulo the fictitious transaction writing the initial values), i.e., a set of sessions, then the width of the history is the number of sessions. We start by presenting an algorithm for checking serializability that is polynomial time when the width is bounded by a fixed constant. In general, the asymptotic complexity of this algorithm is exponential in the width of the history, but this worst-case behavior is not exercised in practice as shown in Section~\ref{sec:exp}. Then, we prove that checking prefix consistency and snapshot isolation can be reduced in polynomial time to the problem of checking serializability. 
+
+% \subsection{Serialization and Linearization}
+\subsection{Checking Serializability}\label{ssec:ser_checking}
+
+We present an algorithm for checking serializability of a given history which constructs a valid commit order (satisfying $\mathsf{Serialization}$), if any, by 
+``linearizing'' transactions one by one in an order consistent with the session order. At any time, the set of already linearized transactions is uniquely determined by an antichain of the session order (i.e., a set of mutually-unordered transactions w.r.t. $\so$), and the next transaction to linearize is chosen among the immediate $\so$ successors of the transactions in this antichain. The crux of the algorithm is that the next transaction to linearize can be chosen such that it does not produce violations of $\mathsf{Serialization}$ in a way that  does not depend on the order between the already linearized transactions. Therefore, the algorithm can be seen as a search in the space of $\so$ antichains. If the width of the history is bounded (by a fixed constant), then the number of possible $\so$ antichains is polynomial in the size of the history, which implies that the search can be done in polynomial time.
+
+\begin{figure}
+  
+  \begin{subfigure}{.4\textwidth}
+  \resizebox{\textwidth}{!}{
+  \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+   semithick, transform shape]
+   \node[draw, rounded corners=2mm,label={$\tr_0$}] (t1) at (0, 1.2) {\begin{tabular}{l} \texttt{x = 0;} \end{tabular}};
+   \node[draw, rounded corners=2mm,label=left:{$\tr_1$}] (t2r) at (-1.6, 0) {\begin{tabular}{l} \texttt{read(x); // 0} \end{tabular}};
+   \node[draw, rounded corners=2mm,label=left:{$\tr_3$}] (t2w) at (-1.6, -1.2) {\begin{tabular}{l}  \texttt{x = 1;} \end{tabular}};
+   \node[draw, rounded corners=2mm,label=right:{$\tr_2$}] (t3r) at (1.6, 0) {\begin{tabular}{l} \texttt{read(x); // 0} \end{tabular}};
+   \node[draw, rounded corners=2mm,label=right:{$\tr_4$}] (t3w) at (1.6, -1.2) {\begin{tabular}{l} \texttt{x = 2;} \end{tabular}};
+  \path (t2r) edge node {$\so$} (t2w);
+  \path (t3r) edge node {$\so$} (t3w);
+  \path (t1) edge node[left] {$\so$} (t2r);
+  \path (t1) edge node {$\so$} (t3r);
+  \end{tikzpicture}  
+  }
+   \caption{ }
+   \label{ser_algo_example:1}
+  \end{subfigure}
+  \hspace{1cm}
+   \begin{subfigure}{.19\textwidth}
+    \resizebox{\textwidth}{!}{
+     \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+       semithick, transform shape]
+      \node[draw, rounded corners=2mm] (v00) at (0, 0) {$\left\langle \tr_0 \right\rangle$};
+      \node[draw, rounded corners=2mm] (v10) at (-.9, -1) {$\left\langle \tr_1  \right\rangle$};
+      \node[draw, rounded corners=2mm] (v20) at (-2, -2) {$\left\langle \tr_3 \right\rangle$};
+      \node[draw, rounded corners=2mm] (v11) at (-.4, -2) {$\left\langle \tr_1, \tr_2  \right\rangle$};
+      \node[draw, rounded corners=2mm] (v21) at (-.9, -3) {$\left\langle \tr_3, \tr_2  \right\rangle$};
+      \node[draw, rounded corners=2mm] (v22) at (0, -4) {$\left\langle \tr_3, \tr_4  \right\rangle$};
+      % \pic (v10) at (-3.5, -4)    {ser_history=v10};
+      % \pic (v20) at (-7, -8)    {ser_history=v20};
+      % \pic (v11) at (0, -8)    {ser_history=v11};
+      % \pic (v21) at (-3.5, -12)    {ser_history=v21};
+      % \pic (v22) at (0, -16)    {ser_history=v22};
+      \path (v00) edge[blue] node {} (v10); 
+      \path (v10) edge[red] node {} (v20); 
+      \path (v10) edge[blue] node {} (v11); 
+      \path (v11) edge[blue] node {} (v21); 
+      \path (v21) edge[blue] node {} (v22);
+      
+      % \draw[-, blue, dashed] plot[smooth, tension=2] coordinates { (-1.5,1.5) (0, .5) (1.5, 1.5)};
+      % \draw[-, blue, dashed] plot coordinates { (-1.2,1.7) (-1.2, .7) (1.2, .7) (1.2, 1.7)};
+      % \draw[-, blue, dashed] plot coordinates { (-7,-2.3) (-7,-4.5) (-3.5,-4.5) (-3.5,-3.5) (-1.5,-3.5) (-1.5,-2.3) };
+      % \draw[-, blue, dashed] plot coordinates { (-3.5,-6.3) (-3.5,-8.5) (3.4,-8.5) (3.4,-6.3) };
+      % % \draw[-, blue, dashed] plot coordinates { (-10.5,-6.5) (-10.5,-10) (-7, -10) (-7, -7.5) (-3.6,-7.5) (-3.6,-6.5) };
+      % \draw[-, blue, dashed] plot coordinates { (-10.5,-6.3) (-10.5,-8.5) };
+      % \draw[-, red, dashed] plot coordinates { (-10.5,-8.5) (-10.5,-10) (-7,-10) (-7, -8.5) };
+      % \draw[-, blue, dashed] plot coordinates { (-7, -8.5) (-7, -7.5) (-3.6,-7.5) (-3.6,-6.3) };
+      % \draw[-, blue, dashed] plot coordinates { (-7,-10.3) (-7,-14) (-3.5, -14) (-3.5, -12.5) (-.1,-12.5) (-.1,-10.3) };
+      % \draw[-, blue, dashed] plot coordinates { (-3.5,-14.3) (-3.5,-17.9) (3.4, -17.9) (3.4,-14.3) };
+      % \draw[-, blue, dashed] plot coordinates { (-10.5,-6.5) (-10.5,-8.5) (-3.5,-8.5) (-3.5,-6.5) };
+      
+     \end{tikzpicture}  
+    }
+    \caption{ }
+    \label{ser_algo_example:3}
+   \end{subfigure}
+   \vspace{-4mm}
+  \caption{Applying the serializability checking algorithm \textsf{checkSER} (Algorithm~\ref{seralgo:2}) on the serializable history on the left. The right part pictures a search for valid extensions of serializable prefixes, represented by their boundaries. The red arrow means that the search is blocked (the prefix at the target is not a valid extension), while blue arrows mean that the search continues.}
+  \label{ser_algo_example}
+  \vspace{-4mm}
+\end{figure}
+
+A \emph{prefix} of a history $\hist = \tup{T, \so, \wro}$ is a set of transactions $T'\subseteq T$ such that all the $\so$ predecessors of transactions in $T'$ are also in $T'$, i.e., $\forall \tr\in T.\ \so^{-1}(\tr)\in T$. A prefix $T'$ is uniquely determined by the set of transactions in $T'$ that are maximal w.r.t. $\so$. This set of transactions forms an \emph{antichain} of $\so$, i.e., any two elements in this set are incomparable w.r.t. $\so$. Given an antichain $\{\tr_1,\ldots,\tr_n\}$ of $\so$, we say that $\{\tr_1,\ldots,\tr_n\}$ is the \emph{boundary} of the prefix $T'=\{t:\exists i.\ \tup{t,t_i}\in \so\lor t = t_i\}$. For instance, given the history in Figure~\ref{ser_algo_example:1}, the set of transactions $\{\tr_0,\tr_1,\tr_2\}$ is a prefix with boundary $\{\tr_1,\tr_2\}$ (the latter is an antichain of the session order).
+
+%TODO SHOW THE ALGORITHM RUNNING ON A HISTORY: GIVE A SERIALIZABLE HISTORY, A GRAPH WHERE NODES ARE ANTICHAINS AND EDGES ARE "VALID EXTENSION" (WE SHOULD HAVE SOME PATH THAT BLOCKS, AN ANTICHAIN WHICH CANNOT BE EXTENDED). FOR HERE, CIRCLE A PREFIX ON THAT HISTORY AND REFER TO IT.
+
+A prefix $T'$ of a history $\hist$ is called \emph{serializable} iff there exists a \emph{partial} commit order $\co$ on the transactions in $\hist$ such that the following hold:
+\begin{itemize}
+  \item $\co$ does not contradict the session order and the write-read relation in $\hist$, i.e., $ \wro \cup \so\cup \co$ is acyclic, 
+ \item $\co$ is a total order on transactions in $T'$, 
+ \item $\co$ orders transactions in $T'$ before transactions in $T\setminus T'$, i.e., $\tup{\tr_1,\tr_2}\in \co$ for every $\tr_1\in T'$ and $\tr_2\in T\setminus T'$,  
+ \item $\co$ does not order any two transactions $\tr_1, \tr_2 \not\in T'$
+ \item the history $\hist$ along with the commit order $\co$ satisfies the axiom defining serializability, i.e., $\tup{\hist, \co} \models \mathsf{Serialization}$.
+\end{itemize}
+
+For the history in Figure~\ref{ser_algo_example:1}, the prefix $\{\tr_0,\tr_1,\tr_2\}$ is serializable since there exists a partial commit order $\co$ that orders 
+$\tr_0$, $\tr_1$, $\tr_2$ in this order, and both $\tr_1$ and $\tr_2$ before $\tr_3$ and $\tr_4$. The axiom $\mathsf{Serialization}$ is satisfied trivially, since the prefix contains a single transaction writing $\xvar$ and all the transactions outside of the prefix do not read $\xvar$.
+
+
+
+A prefix $T'\uplus\{\tr\}$ of $\hist$ is called a \emph{valid extension}\footnote{We assume that $\tr\not\in T'$ which is implied by the use of the disjoint union $\uplus$.} of a serializable prefix $T'$ of $\hist$, denoted by $T'\vartriangleright T'\uplus\{\tr\}$%\footnote{Since $T'\cup\{\tr\}$ is required to be a prefix, $\tr$ is necessarily an $\so$ successor of some transaction in the boundary of $T'$ or an $\so$ successor of the transaction writing the initial values.}, 
+if:
+\begin{itemize}
+ \item $\tr$ does not read from a transaction outside of $T'$, i.e., for every $\tr'\in T\setminus T'$, $\tup{\tr',\tr}\not\in\wro$, and
+ \item for every variable $\xvar$ written by $\tr$, there exists no transaction $\tr_2\neq \tr$ outside of $T'$ that reads a value of $\xvar$ written by a transaction $\tr_1$ in $T'$, i.e., for every $\xvar$ written by $\tr$ and every $\tr_1\in T'$ and $\tr_2\in T\setminus (T'\uplus\{\tr\})$, $\tup{\tr_1,\tr_2}\not\in\wro$.
+\end{itemize}
+
+For the history in Figure~\ref{ser_algo_example:1}, we have $\{\tr_0,\tr_1\}\vartriangleright \{\tr_0,\tr_1\}\uplus\{\tr_2\}$ because $\tr_2$ reads from $\tr_0$ and it does not write any variable. On the other hand $\{\tr_0,\tr_1\}\not\vartriangleright \{\tr_0,\tr_1\}\uplus\{\tr_3\}$ because $\tr_3$ writes $\xvar$ and the transaction $\tr_2$, outside of this prefix, reads from the transaction $\tr_0$ included in the prefix.
+
+Let $\vartriangleright^*$ denote the reflexive and transitive closure of $\vartriangleright$.
+
+The following lemma is essential in proving that iterative valid extensions of the initial empty prefix can be used to show that a given history is serializable.
+
+%\begin{theorem}
+% \label{serptime:1}
+% Deciding whether a histry with bounded number of sessions is serializable, is in \emph{\textsf{PTIME}}.
+%\end{theorem}
+%
+%% Each session order can be viewed as total order on chains from left to right. Since we have bounded a number of session orders, we will try to merge them from left to right.
+%
+%We introduce \emph{Frontier}, $\mathcal{F}$, a collection of transactions - at max one from each season. We say, $\leq_\mathcal{F} = \{\tr_i | \exists\tr_j\in\mathcal{F}. \tup{\tr_i,\tr_j} \in \so \lor \tr_i = \tr_j\}$. Similarly, we define $>_\mathcal{F} = \Tr \setminus <_\mathcal{F}$
+%
+%We now define \emph{serializable prefix} using frontier. Serializable prefix represents a possible prefix of a serialization order. Given a $\leq_\mathcal{F}$ we can find a partial $\co$ which totally orders $\leq_\mathcal{F}$ and orders the transactions between $\leq_\mathcal{F}$ and $>_\mathcal{F}$. If that partial $\co$ satisfies $\mathsf{Serialization}$, then we say that is a serializable prefix. In the algorithm we will try to extend a serializable prefix till the last frontier of the history and thus have a complete serializable $\co$ for the whole history.
+%
+%% We introduce \textit{Serializable prefix}, $\mathcal{P}$, which is collection of prefix of each session such that they together make a serializable sub-history which agrees with the original history. This means, for each variable $\xvar$ if there are any $\wro[\xvar]$ from prefix to non-prefix, they all must be sourced from one single transaction. If there are two different transactions, they would violate Serializable axiom.
+%% Formally, if $\Path{\tr_1}{\wro[\xvar]}{\tr_2}$ and $\tr_1 \neq \tr_3 \in \textsf{Write}_x$ then in all serialization of the prefix $\Path{\tr_1}{\co}{\tr_2}$.
+%
+%\begin{definition}
+% A \emph{serializable prefix}, $\mathcal{P}$, for a history $\hist = (\Tr, \so, \wro)$ is $\leq_\mathcal{F}$ for a \emph{frontier}, $\mathcal{F}$, such that there exists a $\co = totalorder_{\leq_\mathcal{F}} \cup \{\tup{\tr_1, \tr_2}|\tr_1 \in \leq_\mathcal{F}, \tr_2 \in >_\mathcal{F}\}$ and $\tup{\tr_1, \tr_2} \in \wro \cup \so \Rightarrow \tup{\tr_2, \tr_1} \not\in \co$ for which $\tup{\hist, \co} \models \mathsf{Serialization}$.
+%\end{definition}
+
+\begin{lemma}
+ \label{serpref:1}
+ % $\mathcal{P}$ is a serializable prefix and $\tr \not\in \mathcal{P}$. $\mathcal{P} \cup \{\tr\}$ is also a serializable prefix if $\tup{\mathcal{P}, \tr}$ satisfies \textsc{SerializableStep}.
+ For a serializable prefix $T'$ of a history $h$, a prefix $T'\uplus\{\tr\}$ is serializable if it is a valid extension of $T'$.
+\end{lemma}
+%$\textsc{SerializableStep}(\mathcal{P}, \tr) = 
+% \forall \tr' \not\in \mathcal{P}, \tup{\tr', \tr} \not\in \wro \cup \so \land
+% \forall \xvar \in \vars{\hist}.  \forall \tr_1 \in \mathcal{P}. \forall \tr_2 \not\in \mathcal{P}. \tup{\tr_1, \tr_2} \in \wro[\xvar] \land \writeVar{\tr}{x} \Rightarrow \tr_2 = \tr$
+  \input{Sources/transaction/ser_proof.tex}
+% TODO REWRITE THIS PROOF: WE DON'T UNDERSTAND WHAT YOU ARE PROVING. TRY TO IDENTIFY A SEQUENCE OF PRECISE LOGICAL STEPS IN YOUR REASONING. SAY FIRST WHAT IS THE CO IN $T'\cup\{\tr\}$ AND THEN, TAKE THE FOUR ITMES IN THE DEFINITION OF SERIALIZABLE PREFIX AND PROVE THEM ONE BY ONE.
+% 
+% \textsc{SerializableStep} says, if there is a $\wro[\xvar]$ relation outgoing from a prefix and $\writeVar{\tr}{\xvar}$ then, it must end at $\tr$ and there is no incoming $\wro$ or $\so$ relation to $\tr$ from out of prefix. 
+% 
+% If $\mathcal{P}$ was a serializable prefix, then there exists a partial order $\co_\mathcal{P}$ for the definition which induces a total order on $\mathcal{P}$. Say $\mathcal{P} \cup \{\tr\}$ satisfies \textsc{SerializableStep}.
+% 
+% Consider, a $\co$ for $\mathcal{P} \cup \{\tr\}$ where the total order on the $\mathcal{P} \cup \{\tr\}$ is the one induced by $\co_\mathcal{P}$. Note, only new relations in $\co$ are of the form $\tup{\tr, \_}$.
+% 
+% If $\mathcal{P} \cup \{\tr\}$ is a not serializable prefix with $\co$, then
+% \begin{itemize}
+%  \item $\exists. \tup{\tr_1, \tr_2} \in \wro \cup \so \land \tup{\tr_2, \tr_1} \in \co$. If $\tr_2 \neq \tr$ then, $\tup{\tr_2, \tr_1} \in \co_{\mathcal{P}}$, but $\mathcal{P}$ was serializable prefix. If $\tr_2 = \tr$, then $\tr_1 \not\in \mathcal{P} \cup \{\tr\}$. But, \textsc{SerializableStep} says, then $\tup{\tr_1, \tr_2} \not\in \wro \cup \so$.
+%  \item It violates \textsc{Serialization} \ie, $\exists \xvar \in \vars{\hist}. \exists \tr_1, \tr_2, \tr_3. \tup{\tr_1, \tr_3} \in \wro[\xvar] \land \tup{\tr_2, \tr_3}, \tup{\tr_1, \tr_2} \in \co$ and $\writeVar{\tr_2}{\xvar}$. If $\tr_1, \tr_2 \neq \tr$, then $\tup{\tr_2, \tr_3}, \tup{\tr_1, \tr_2} \in \co_{\mathcal{P}}$ but $\mathcal{P}$ is a serializable prefix. If $\tr_1 = \tr$, then $\tr_2 \in \mathcal{P} \cup \{\tr\}$, then $\tup{\tr_2, \tr_3} \not\in \co$. If $\tr_2 = \tr$, $\tup{\mathcal{P}, \tr}$ violates \textsc{SerializableStep}.
+% \end{itemize}
+% 
+% So $\mathcal{P} \cup \{\tr\}$ is a serializable prefix.
+% 
+
+% \begin{proof}
+%  If $\mathcal{P}$ and $T \not\in \mathcal{P}$ satisfies those conditions, $\mathcal{P} \cup \{T\}$ is serializable prefix also.
+% 
+%  If $T$ does not does not satisfies those condition, that means either $T$ has a incoming dependency outside of $\mathcal{P}$, so $\mathcal{P} \cup \{T\}$ is not serializable. Else, for $\mathcal{P} \cup \{T\}$, there exists $x$ such that the outgoing $\WR_x$ edges do not originate at a unique transaction, which means $\mathcal{P} \cup \{T\}$ is not serializable.
+% \end{proof}
+
+% \begin{lemma}
+%  \label{serpref:2}
+%     Deciding whether a history with $k$ session orders and $n$ transactions is in , can be done in polytime with $\mathcal{O}(k\log(n))$ nondeterministic bits.
+% \end{lemma}
+
+%\begin{algorithm}
+% \SetKwInOut{KwInput}{Input}
+% \SetKwInOut{KwOutput}{Output}
+% \KwIn{A history $\hist = \tup{T, \so, \wro}$}
+% \KwOut{$\mathit{true}$ iff $\hist$ satisfies \textsc{Serialization}}
+% \BlankLine
+% seen = $\emptyset$\;
+% \eIf{dfs(empty prefix, maximal prefix, seen, $\hist$)}{
+%  \Return{false}\;
+% }{
+%  \Return{true}\;
+% }
+% \caption{Checking \textsc{Serializability} with bounded number of sessions}
+% \label{seralgo:1}
+%\end{algorithm}
+
+\begin{algorithm}[t]
+{\small
+ \SetKwInOut{KwInput}{Input}
+ \SetKwInOut{KwOutput}{Output}
+ \KwIn{A history $\hist = (T, \so, \wro)$, a serializable prefix $T'$ of $\hist$}
+ \KwOut{$\mathit{true}$ iff $T'\vartriangleright^* h$}
+ \BlankLine
+ \If{$T'$ = $T$}{
+  \Return{true}\;
+ }
+  \ForEach{$\tr \not\in T'$ s.t. $\forall \tr' \not\in T'.\ \tup{\tr', \tr} \not\in \wro \cup \so$}{
+   \If{$T'\not\vartriangleright T'\uplus\{\tr\}$}{
+    continue\;
+   }
+   %$\mathit{pref}$   $\leftarrow$ source $\cup \{\tr_\text{next}\}$\;
+   \If{$T'\uplus\{\tr\} \not\in\mathit{seen} \land \mathsf{checkSER}(\hist,T'\uplus\{\tr\})$}{
+    \Return{true}\;
+   }
+   $\mathit{seen}\leftarrow\mathit{seen}\cup\{(T'\uplus\{\tr\})\}$\;
+  }
+  \Return{false}\;
+ }
+ \caption{The algorithm $\mathsf{checkSER}$ for checking serializabilty. $\mathit{seen}$ is a global variable storing a set of prefixes of $\hist$ (which are not serializable). It is initialized as the empty set.}
+ \label{seralgo:2}
+\end{algorithm}
+
+
+Algorithm~\ref{seralgo:2} lists our algorithm for checking serializability. It is defined as a recursive procedure that searches for a sequence of valid extensions of a given prefix (initially, this prefix is empty) until covering the whole history. Figure~\ref{ser_algo_example:3} pictures this search on the history in Figure~\ref{ser_algo_example:1}. The right branch (containing blue edges) contains only valid extensions and it reaches a prefix that includes all the transactions in the history.
+
+
+%\begin{algorithm}
+% \SetKwInOut{KwInput}{Input}
+% \SetKwInOut{KwOutput}{Output}
+% \KwIn{source: serializable source prefix, target: target prefix, seen: seen prefixes, $\hist$: history}
+% \KwOut{$\mathit{true}$ iff target is a serializable prefix}
+% \BlankLine
+% \eIf{source = target}{
+%  \Return{true}\;
+% }{
+%  \ForEach{$\tr_\text{next} \not\in$ source, s.t. $\forall \tr \not\in$ source, $\tup{\tr, \tr_\text{next}} \not\in \wro \cup \so$}{
+%   \If{$\tup{\text{source}, \tr_\text{next}} \not\models$ \textsc{SerializableStep}}{
+%    continue\;
+%   }
+%   next $\leftarrow$ source $\cup \{\tr_\text{next}\}$\;
+%   \If{next $\not\in$ seen $\land$ dfs(next, target, seen, $\hist$)}{
+%    \Return{true}\;
+%   }
+%  }
+%  seen $\leftarrow$ seen $\cup$ \{source\}\;
+%  \Return{false}\;
+% }
+% \caption{DFS algorithm to extend \textsc{Serializable prefix}}
+% \label{seralgo:2}
+%\end{algorithm}
+
+\begin{theorem}
+ A history $\hist$ is serializable iff $\mathsf{checkSER}(\hist,\emptyset)$ returns true.
+\end{theorem}
+\begin{proof}
+The ``if'' direction is a direct consequence of Lemma~\ref{serpref:1}. 
+ %
+%\textsf{checkSER} uses depth first search to find next possible serializable prefix. If it reaches the whole history $\hist$ from starting from empty prefix, that means, $\hist$ is itself a serializable prefix, which directly implies, $\hist$ has a total order $\co$ which satisfies serializability for the whole history.
+%
+For the reverse, assume that $\hist=\tup{T,\so,\wro}$ is serializable with a (total) commit order $\co$. Let $\co_i$ be the set of transactions in the prefix of $\co$ of length $i$. 
+% and that orders all the transactions in this prefix before all the other transactions. Abusing the terminology, we refer to $\co_i$ as a prefix that contains the transactions 
+%where we have to if the history is serializable, the depth first search will reach $\hist$ as serializable prefix. We will prove this by induction. There exists a serializable order $s$ for $\hist$.
+Since $\co$ is consistent with $\so$, we have that $\co_i$ is a prefix of $\hist$, for any $i$.
+We show by induction that $\co_{i+1}$ is a valid extension of $\co_i$. The base case is trivial. For the induction step, let $\tr$ be the last transaction in the prefix of $\co$ of length $i+1$. Then,
+%
+%Our hypothesis is, \textsf{checkSER} can reach a prefix $S_i = {s_j | j < i}$ of serializable order $s$, then it can also reach $S_{i+1} = {s_j | j < i + 1} = S_i \cup \{s_i\}$.
+%
+\begin{itemize}
+%  \item Base case. Empty prefix of the serializable order $s$, is a empty serializable prefix. \textsf{checkSER} begins with empty serializable prefix itself. 
+%  \item Induction step. \textsf{checkSER} has reached to $S_i$. Obviously, $s_i \not\in S_i$. Now we have to show $S_i \vartriangleright S_i \cup \{s_i\}$.
+%
+%  $S_i = S_i \cup \{s_i\}$ is a prefix. If it is not, there exists a $s_1 \in S_i$ and $s_2 \not\in S_i$ such that $\tup{s_2, s_1} \in \so$. But in serialization order, $s_1$ comes before $s_2$ which is a contradiction of the serialization order.
+%
+\item $\tr$ cannot read from a transaction outside of $\co_i$ because $\co$ is consistent with the write-read relation $\wro$, 
+%Also $s_i$ does not read from outside $S_i$. It it is not the case, thesre exists $s' \not\in S_i$ s.t. $\tup{s', s_i} \in \wro$. But by serialization order $s$, $s_i$ comes before $s'$. Therefore, for all $s' \in T \in S_i$, $\tup{s', s_i} \not\in \wro$.
+%
+\item  also, for every variable $\xvar$ written by $\tr$, there exists no transaction $\tr_2 \neq \tr$ outside of $\co_i$ that reads a value of $\xvar$ written by a transaction $\tr_1 \in \co_i$. Otherwise, $\tup{\tr_1,\tr_2}\in\wro[\xvar]$, $\tup{\tr,\tr_2}\in \co$, and $\tup{\tr_1,\tr}\in\co$ which implies that $\tup{\hist,\co}$ does not satisfy $\mathsf{Serializability}$.
+%there exists $s_1, s_2, s_i$ such that $\tup{s_2, s_i}, \tup{s_i, s_1} \in s$, and $s_i$ writes on $\xvar$ and $\tup{s_2, s_1} \in \wro[\xvar]$. This is a violation of serializability axiom which contradicts $s$ is a serialization order of $\hist$.  
+\end{itemize} 
+ % It is interesting to note, reachablity problem is in fact is in \textsf{NL} complexisty class and we can use logarithmic space to represent the prefix and do a nondeterministic reachablity test on the search space. So our problem is in fact in in \textsf{NL}.
+% Therefore, $S_i \vartriangleright S_i \cup \{s_i\}$. So \textsf{checkSER} must have reached $S_{i+1}$ unless it reached $\hist$ already in the depth first search. This proves, the depth first search will always reach a serializable prefix of a serialization order if it exists. 
+This implies that $\mathsf{checkSER}(\hist,\emptyset)$ returns true.
+ %  As for the linearization, it is the same algorithm, except, we have to consider real-time order $\textsf{RO}$ when checking for valid next serializable prefix.
+\end{proof}
+
+Algorithm~\ref{seralgo:2} enumerates prefixes of the given history $\hist$, each prefix being uniquely determined by an antichain of $\hist$ containing the $\so$-maximal transactions in that prefix. By definition, the size of each antichain of a history $\hist$ is smaller than the width of $\hist$. Therefore, the number of possible antichains (prefixes) of a history $\hist$ is $O(\mathsf{size}(h)^{\mathsf{width}(h)})$ where $\mathsf{size}(h)$, resp., $\mathsf{width}(h)$, is the number of transactions, resp., the width, of $\hist$. Since the valid extension property can be checked in quadratic time, the asymptotic time complexity of the algorithm defined by $\mathsf{checkSER}$ is upper bounded by $O(\mathsf{size}(h)^{\mathsf{width}(h)}\cdot \mathsf{size}(h)^3)$.
+The following corollary is a direct consequence of these observations.
+
+\begin{corollary}\label{cor:ser}
+
+For an arbitrary but fixed constant $k\in\mathbb{N}$, the problem of checking serializability for histories of width at most $k$ is polynomial time.
+\end{corollary}
+
+
+%\begin{proof}
+% A direct consequence of the fact that the number of antichains of a bounded-width history is polynomial in the size of the history.
+% %This is essentially a reachablity algorithm on a directed graph where each node is a frontier. So the size of the search space is the product of sizes of all sessions. For a history with $k$ of sessions and each session with size $\mathcal{O}(n)$, the search space is of size $\mathcal{O}(n^k)$. For a bounded $k$, that is polysize. So the algorithm runs in polytime if the history has bounded number of sessions.
+%\end{proof}
+
+%\vspace{1em}
+
+
+\input{Sources/transaction/pc_red.tex}
+
+\input{Sources/transaction/si_red.tex}
+
+% 
+% 
+% We will use the similar algorithm to solve for snapshot isolation and prefix consistency. We will create a new history such that original history is \textsf{SI} or \textsf{PC} if and only if the new history is \textsf{SER}. Intuitively, we split the reads and writes in each transaction, as if they can take a snapshot at a point and commit later. This is enough for prefix consistency. But snapshot isolation demands write-write conflicts to be in visibility order. For snapshot isolation, in addition to this, we add new variables and new \WR edges to induce some \WW dependencies to ensure the said visibility dependencies.
+% 
+% Given a history, $\mathcal{H} = (\mathcal{T}, \SO, \WR)$, we can create a new history $\mathcal{H}' = (\mathcal{T}', \SO', \WR')$ such that,
+% 
+% \begin{itemize}
+%  \item $\mathcal{T}' = \left\{R_i | T_i \in \mathcal{T}\right\} \cup \left\{W_i | T_i \in \mathcal{T}\right\}$ such that reads in $T_i$ happen in $R_i$ and writes in $T_i$ happen in $W_i$.
+%  \item $\SO' = \left\{(R_i, W_i) \mid T_i \in \mathcal{T} \right\} \cup \left\{(W_i, R_j) \mid (T_i, T_j) \in \SO \right\}$
+%  \item $\WR'_x = \left\{(W_i, R_j) \mid (T_i, T_j) \in \WR_x \right\}$
+%  \item $\textsf{Write}'_x = \left\{W_i | T_i \in \textsf{Write}_x \right\}$
+% 
+% \end{itemize}
+% 
+% For snapshot isolation we need to add some new variables. If $T_i, T_j \in \mathcal{T}$ are in write conflict for any variable, we add a new variable $x_{ij}$ such that $W_i$ and $R_j$ writes it and $W_j$ reads it from $R_j$.
+% \begin{align*}
+%  \WR'_{x_{ij}}           & = \left\{(R_j, W_j) \mid T_i, T_j \text{ is in write conflict} \right\} \\
+%  \textsf{Write}_{x_{ij}} & = \left\{W_i, R_j\right\}                                               
+% \end{align*}
+% 
+% Similarly, we do it for $T_j, T_i$ also.
+% \begin{align*}
+%  \WR'_{x_{ji}}           & = \left\{(R_i, W_i) \mid T_j, T_i \text{ is in write conflict} \right\}, \\
+%  \textsf{Write}_{x_{ji}} & = \left\{W_j, R_i\right\}                                                
+% \end{align*}
+% 
+% In the notion of dependency relation, \textsf{PC} allows cycles with \RW dependency preceded by another \RW or \WW dependency and \textsf{SI} allows cycles with two adjacent \RW dependencies. Using the figure \ref{pcsiredu:1} it is easy to see that we are exactly breaking such adjacent dependencies such that they do not form a path. So every cycle containing such path, would not remain cycle anymore. But all other cycles are will have corresponding cycles in new history. So the history was \textsf{PC} or \textsf{SI} if and only if new history must be serializable.
+% 
+% \begin{lemma}
+%  $\mathcal{H}$ is snapshot isolation(or prefix consistent) if and only if $\mathcal{H}'$ is serializable.
+% \end{lemma}
+% 
+% 
+% \begin{theorem}
+%  Given a history with a bounded number of session orders, deciding if it is prefix consistent or snapshot isolation, is in \textsf{NL}.
+% \end{theorem}
+% 
+% \begin{proof}
+%  %  Given a history with bounded number of session orders, we can do the above poly-time reduction. Since $\textsf{NL} \subseteq \textsf{PTIME}$, by theorem \ref{serptime:1}, the reduced history is poly-time verifiable for serialization. Hence, by lemma \ref{sipc:1}, verifying snapshot isolation(or prefix consistency) is also poly-time.
+%  Given a history with a bounded number of sessions and we are trying to verify for prefix consistency or snapshot isolation, we can run the similar algorithm for serialization. To show that we will need only nondeterministic logarithmic space. Note, we can compute the necessary relations on the fly while keeping the original history intact. Algorithm \ref{pcsialgo:1} is such an algorithm. Also, we will need $\mathcal{O}(2n)$ bits because now, we have split each transaction into two transactions. So deciding a prefix consistent or snapshot isolation history with a bounded number of sessions is in \textsf{NL}.
+% \end{proof}
+
+% In both cases, constructing $\hist'$ can be done in PTIME. So we have a polytime reduction for Snapshot Isolation verification (resp. Prefix consistent) to Serializable verification which retains original number of session.
+% 
+
+%Therefore we can use this reduction and the PTIME algorithm for bounded-width serializable verification problem, bounded-width prefix consistency (resp. snapshot isolation) verification problem can also be solved in PTIME.
+%
+%We discussed an algorithm for bounded-width serializable verification problem which is polytime. We can use same algorithm with some little modification to simulate the behaviour of the reduced history with constant memory space. Since the algorithm was infact in NL, the modified algorithm for snapshot isolation (resp. prefix consistency) will also be in NL.
+
+
+
+\section{Communication graphs}\label{sec:communication}
+
+%$O(\mathsf{size}(h)^{\mathsf{width}(h)}\cdot \mathsf{size}(h)^3)$
+
+In this section, we present an extension of the polynomial time results for PC, SI, and SER, which allows to handle histories where the sharing of variables between different sessions is \emph{sparse}. For the results in this section, we take the simplifying assumption that the session order is a union of transaction sequences (modulo the fictitious transaction writing the initial values), i.e., each transaction sequence corresponding to the standard notion of \emph{session}\footnote{The results can be extended to arbitrary session orders by considering maximal transaction sequences in session order instead of sessions.}.
+We represent the sharing of variables between different sessions using an undirected graph called a \emph{communication graph}. For instance, the communication graph of the history in Figure~\ref{comm_graph_example:1} is given in Figure~\ref{comm_graph_example:2}. For readability, the edges are marked with the variables accessed by the two sessions.
+
+We show that the problem of checking PC, SI, or SER is polynomial time when the size of every \emph{biconnected} component of the communication graph is bounded by a fixed constant. This is stronger than the results in Section~\ref{sec:bounded_width} because the number of biconnected components can be arbitrarily large which means that the total number of sessions is  unbounded. In general, we prove that the time complexity of these consistency criteria is exponential only in the maximum size of such a biconnected component, and not the whole number of sessions.
+
+An undirected graph is biconnected if it is connected and if any one vertex were to be removed, the graph will remain connected, and a biconnected component of a graph $G$ is a maximal biconnected subgraph of $G$. Figure~\ref{comm_graph_example:2} shows the decomposition in biconnected components of a communication graph. This graph contains 5 sessions while every biconnected component is of size at most 3. Intuitively, if a history $\hist$ is a violation to some consistency criterion $C\in \{\text{PC}, \text{SI}, \text{SER}\}$, then there exists a projection of $\hist$ on sessions from the \emph{same} biconnected component which is also a violation to $C$ (the reverse is trivially true).
+%any potential consistency violation associated to a history will embed a consistency violation that contains sessions from a single biconnected component. 
+Therefore, checking any of these criteria can be done in isolation for each biconnected component (more precisely, on sub-histories that contain only sessions in the same biconnected component). Actually, this decomposition argument works even for RC, RA, and CC. For instance, in the case of the history in Figure~\ref{comm_graph_example:1}, any consistency criterion can be checked looking in isolation at three sub-histories: a sub-history with $S_1$ and $S_2$, a sub-history with $S_2$, $S_3$, and $S_4$, and a sub-history with $S_4$ and $S_5$.
+
+%If a history has a large number of sessions and the sessions sparsely shares variables with each other, we can use communication graph to group sessions to generate smaller sub-histories which we can individually process to verify for $\axser$ of the whole history. TODO SAY THAT IT IS QUITE LIKELY THAN NOT ALL SESSIONS USE THE SAME VARIABLES.
+Formally, a \emph{communication graph} of a history $\hist$ is an undirected graph $\mathsf{Comm}(\hist)=(V,E)$ where the set of vertices $V$ is the set of sessions\footnote{The transaction writing the initial values is considered as a distinguished session.} in $\hist$, and $(v,v')\in E$ iff the sessions $v$ and $v'$ contain two transactions $\tr_1$ and $\tr_2$, respectively, such that $\tr_1$ and $\tr_2$ read or write a common variable $\xvar$. 
+
+\begin{figure}
+  \begin{subfigure}{.59\textwidth}
+  \resizebox{\textwidth}{!}{
+  \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+   semithick, transform shape]
+   % \node[draw, rounded corners=2mm] (t1) at (0, 0) {\begin{tabular}{l} \texttt{x = 1;} \\ \texttt{y = 1;}\end{tabular}};
+   \node[draw=black!0] (s1) at (0, 0) {$S_1$};
+   \node[draw, rounded corners=2mm] (t11) at (0, -1) {\begin{tabular}{l} \texttt{x = 1;} \end{tabular}};
+  \node[draw, rounded corners=2mm] (t12) at (0, -2.3) {\begin{tabular}{l} \texttt{read(x);} \end{tabular}};
+  \path (t11) edge node {$\so$} (t12);
+  
+  \node[draw=black!0] (s2) at (2.5, 0) {$S_2$};
+  \node[draw, rounded corners=2mm] (t21) at (2.5, -1) {\begin{tabular}{l} \texttt{t = 1;} \end{tabular}};
+  \node[draw, rounded corners=2mm] (t22) at (2.5, -2.5) {\begin{tabular}{l} \texttt{y = 1;} \\ \texttt{read(x);} \end{tabular}};
+  \path (t21) edge node {$\so$} (t22);
+ 
+ \node[draw=black!0] (s3) at (5, 0) {$S_3$};
+ \node[draw, rounded corners=2mm] (t31) at (5, -1) {\begin{tabular}{l} \texttt{read(y);} \end{tabular}};
+\node[draw, rounded corners=2mm] (t32) at (5, -2.3) {\begin{tabular}{l} \texttt{read(z);} \end{tabular}};
+\path (t31) edge node {$\so$} (t32);
+
+\node[draw=black!0] (s4) at (7.5, 0) {$S_4$};
+\node[draw, rounded corners=2mm] (t41) at (7.5, -1.2) {\begin{tabular}{l} \texttt{z = 1;} \\ \texttt{read(w);} \end{tabular}};
+\node[draw, rounded corners=2mm] (t42) at (7.5, -2.7) {\begin{tabular}{l} \texttt{read(t);} \end{tabular}};
+\path (t41) edge node {$\so$} (t42);
+
+\node[draw=black!0] (s5) at (10, 0) {$S_5$};
+\node[draw, rounded corners=2mm] (t51) at (10, -1) {\begin{tabular}{l} \texttt{w = 1;} \end{tabular}};
+  % \node[draw, rounded corners=2mm] (t3) at (1.5, 0) {\begin{tabular}{l} \texttt{read(x); // 2} \\ \texttt{read(y); // 1} \end{tabular}};
+  % \path (t1) edge node {} (t3);
+  % \path (t2) edge node {$\so$} (t3);
+  % \path (t1) edge node {} (t2);
+  % \path (t3_1) edge node {$\po$} (t3_2);
+  \end{tikzpicture}  
+  }
+   \caption{A history with 5 sessions.}
+   \label{comm_graph_example:1}
+  \end{subfigure}
+%  \hspace{1mm}
+    \begin{subfigure}{.4\textwidth}
+    \resizebox{.7\textwidth}{!}{
+    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+     semithick, transform shape]
+     \node[draw=black!0] (s1) at (0, 0) {$S_1$};
+  
+    \node[draw=black!0] (s2) at (1.2, 0) {$S_2$};
+  
+  
+   \node[draw=black!0] (s3) at (2, -1) {$S_3$};
+  
+  \node[draw=black!0] (s4) at (2.8, 0) {$S_4$};
+  
+  \node[draw=black!0] (s5) at (4, 0) {$S_5$};
+  \path (s1) edge[-] node {\texttt{x}} (s2);
+  \path (s2) edge[-, left] node {\texttt{y}} (s3);
+  \path (s3) edge[-, right] node {\texttt{z}} (s4);
+  \path (s4) edge[-, above] node {\texttt{t}} (s2);
+  \path (s4) edge[-] node {\texttt{w}} (s5);
+  
+  
+  \node[draw=red!50, dashed, rounded corners=2mm, minimum width=2cm, minimum height=.7cm] () at (.6, .1) {};
+  \node[draw=green!50, dashed, rounded corners=2mm, minimum width=2.2cm, minimum height=1.7cm] () at (2, -.4) {};
+  \node[draw=blue!50, dashed, rounded corners=2mm, minimum width=2cm, minimum height=.7cm] () at (3.4, .1) {};
+  
+  
+  \end{tikzpicture}  
+    }
+     \caption{The communication graph and its decomposition in biconnected components.}
+     \label{comm_graph_example:2}
+    \end{subfigure}
+    
+%     \vspace{-3mm}
+  \caption{A history and its communication graph.}
+  \label{comm_graph_example}
+%   \vspace{-3mm}
+\end{figure}
+
+%TODO GIVE AN EXAMPLE OF A HISTORY AND ITS COMMUNICATION GRAPH, AND THE BICONNECTED COMPONENTS.
+%For a biconnected component $C$ of $\mathsf{Comm}(\hist)$, the transactions in $C$ are the transaction
+
+%Given a graph $G=(V,E)$ and a biconnected component $C$ of $G$, we say that 
+We begin with a technical lemma showing that \emph{minimal} paths of certain form in the graph representing a history $\hist$ and a relation $\co$ (on the transactions of $\hist$) 
+%can be short-circuited to 
+lie within a single biconnected component of the underlying communication graph. This is used to show that any consistency violation can be exposed by looking at a single biconnected component at a time. The graph representing a history $\hist$ and a relation $\co$ on the transactions of $\hist$ is denoted by $\mathsf{G}(\hist,\co)$\footnote{The nodes of $\mathsf{G}(\hist,\co)$ correspond to transactions in $\hist$ and the edges connect pairs of transactions in $\so$, $\wro$, or $\co$.}.
+
+Given a graph $\mathsf{G}(\hist,\co)$ and a relation~$r$ on its vertices, a term over the relations $\so$, $\wro$, and $\co$, e.g., $(\wro \cup \so)^+$, a path of the form~$r$ (or an $r$-path) is a sequence of edges representing $\so$, $\wro$, or $\co$ dependencies as specified by the term $r$, e.g., a sequence of $\wro$ or $\so$ dependencies.
+%Let $\Gamma = \{ \CO^+,\ (\wro \cup \so)^+\}$.
+%Thus, 
+%be the following set of terms over the relations $\so$, $\wro$, and $\co$:
+%\begin{align*}
+%,\ \CO^*;(\wro\cup\so),\ \CO^*;(\CO_{\mathit{wc}} \cup \so)\}
+%%& \Gamma(\CO^+) = \CO^+ & \Gamma((\wro \cup \so)^+) = (\wro \cup \so)^+ \\
+%%& \Gamma(\CO^*;(\wro\cup\so))=\CO^*;(\wro\cup\so) & \Gamma(\CO^*;\CO_{\mathit{wc}})=\CO^*;(\CO_{\mathit{wc}} \cup \so)
+%\end{align*}
+%where $\CO_{\mathit{wc}}$ denotes the restriction of $\CO$ to pairs of transactions writing to a common variable. Note that $\Gamma$ contains the terms used in Figure~\ref{consistency_defs} to define the consistency criteria we consider in this paper.
+%($\Gamma$ is the identity except for the case on the bottom-right). 
+
+%To prove any violation for whole history for PC, SI and SER implies a violation contained in a biconnected component, first we show any path from a set $P_l$ between $\tr_2$ and $\tr_3$ from table~\ref{consistency_defs} can be mapped to a shorter path from a set $P_s$ which is contained in one single biconnected component. We present the mapping in table~\ref{path_map}. For convenience, we define write conflict relation $\CO_{wc} = \{\tup{\tr_1, \tr_2} \in \CO | \tr_1, \tr_2 \text{ write on same variable} \}$.
+
+%\begin{table}
+% \centering
+% \begin{tabular}{|c|c|}
+%   \hline
+%    $P_l$ & $P_s$ \\
+%    \hline
+%    $\CO^+$ & $\CO^+$ \\
+%    \hline
+%    $(\wro \cup \so)^+$ & $(\wro \cup \so)^+$ \\
+%    \hline
+%    $\CO^*;(\wro\cup\so)$ & $\CO^*;(\wro\cup\so)$ \\
+%    \hline
+%    $\CO^*;\CO_{wc}$ & $\CO^*;(\CO_{wc} \cup \so)$ \\
+%    \hline
+%  \end{tabular}
+%  \caption{A path in $P_l$ connecting $\tr_2$, $\tr_3$ in table~\ref{consistency_defs} is mapped to a path in $P_s$ contained in a biconnected component}
+%  \label{path_map}
+%\end{table}
+
+\begin{lemma}\label{lem:comm_graph}
+Let $B_1$,$\ldots$,$B_n$ be the biconnected components of $\mathsf{Comm}(\hist)$ for a history $\hist = \tup{T, \wro, \so}$. 
+For each $B_i$, let $\co_i$ be a total order on the transactions of $B_i$\footnote{That is, transactions that are included in the sessions in $B_i$.} extending the session order $\so$ on the transactions of $B_i$. Also, let $\co=\bigcup_i \co_i$.  
+Then, for every term $r\in \{ \CO^+,\ (\wro \cup \so)^+\}$, any minimal $r$-path in the graph $\mathsf{G}(\hist,\co)$
+between two transactions from the same biconnected component includes only transactions of that biconnected component.
+%$B\in\{B_1,\ldots,B_n\}$
+% there exists a $\Gamma(r)$-path connecting the same two transactions and that includes only transactions in $B$.
+%Let $p_l$ be a path from a set $P_l$ from table~\ref{path_map} connecting two transactions of $C_i$\footnote{That is, transactions that are included in the sessions in $C_i$.} Then, there is a path $p_s$ from $P_s$ from table~\ref{path_map} connecting the same two transactions and $p_s$ never leaves $C_i$.
+\end{lemma}
+%\begin{proof}
+%\renewcommand{\qedsymbol}{}
+ \textsc{Proof.} We consider the case $r=\CO^+$.
+ Consider a \emph{minimal} $\CO^+$-path $\pi=\tr_0,\ldots,\tr_n$ %in $\bigcup_i \co_i$ 
+ between two transactions $\tr_0$ and $\tr_n$ from the same biconnected component $B$ of $\mathsf{Comm}(\hist)$ (i.e., from sessions in $B$). 
+ %We show that $\pi$ contains only transactions from $B$ (which implies the claim above, since for every $\CO^+$-path between $\tr_0$ and $\tr_n$, there exists a $\CO^+$-path, the minimal one, which is included in $B$). 
+ Assume by contradiction, that $\pi$ traverses multiple biconnected components.
+ We define a path $\pi_s=v_0,\ldots,v_m$ between sessions, i.e., vertices of $\mathsf{Comm}(\hist)$, which contains an edge $(v_j,v_{j+1})$ iff $\pi$ contains an edge $(\tr_i,\tr_{i+1})$ with $\tr_i$ a transaction of session $v_j$ and $\tr_{i+1}$ a transaction of session $v_{j+1}\neq v_j$. Since any graph decomposes to a forest of biconnected components, this path must necessarily leave and enter some biconnected component $B_1$ to and from the same biconnected component $B_2$, i.e., $\pi_s$ must contain two vertices $v_{j_1}$ and $v_{j_2}$ in $B_1$ such that the successor $v_{j_1+1}$ of $v_{j_1}$ and the predecessor $v_{j_2-1}$ of $v_{j_2}$ are from $B_2$. Let $\tr_1$, $\tr_2$, $\tr_3$, $\tr_4$ be the transactions in the path $\pi$ corresponding to $v_{j_1}$, $v_{j_2}$, $v_{j_1+1}$, and $v_{j_2-1}$, respectively. Now, since any two biconnected components share at most one vertex, it follows that $t_3$ and $t_4$ are from the same session and
+  \vspace{-1mm}
+\begin{wrapfigure}{l}{0.43\textwidth} 
+  \centering
+  \begin{subfigure}{.18\textwidth}
+   \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+      semithick, transform shape]
+     \node[transaction state] at (0,0)       (t_3)           {$\tr_3$};
+     \node[transaction state] at (0,1.5)       (t_5)           {};
+     \node[transaction state] at (2,0)       (t_4)           {$\tr_4$};
+     \node[transaction state] at (2,1.5)       (t_6)           {};
+     \node[transaction state] at (0,-1)       (t_1)           {$\tr_1$};
+     \node[transaction state] at (2,-1)       (t_2)           {$\tr_2$};
+     \node[transaction state,text=red] at (1, 1.4)       ()           {$B_2$};
+     \node[transaction state,text=blue] at (1, -1.3)       ()           {$B_1$};
+     \node[draw=red!50, dashed, rounded corners=2mm, minimum width=2.7cm, minimum height=2cm] () at (1, .75) {};
+     \node[draw=blue!50, dashed, rounded corners=2mm, minimum width=2.7cm, minimum height=2cm] () at (1, -.6) {};
+     \path (t_3) edge[dashed,right] node {$\co^+_2$} (t_5); %bend left=90
+     \path (t_1) edge node[right] {$\co^*_1$} (t_3);
+     \path (t_4) edge node[left] {$\co^*_1$} (t_2);
+     \path (t_6) edge[dashed,left] node {$\co^+_2$} (t_4); %bend left=90
+     \path (t_3) edge[color=purple] node[above] {$\so$} (t_4);
+    \end{tikzpicture}  
+   }
+   \caption{$\tup{\tr_3,\tr_4} \in \so$}
+   \label{comm_graph_proof:1a}
+  \end{subfigure}\hspace{3mm}
+  \begin{subfigure}{.18\textwidth}
+   \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+      semithick, transform shape]
+     \node[transaction state] at (0,0)       (t_3)           {$\tr_3$};
+     \node[transaction state] at (0,1.5)       (t_5)           {};
+     \node[transaction state] at (2,0)       (t_4)           {$\tr_4$};
+     \node[transaction state] at (2,1.5)       (t_6)           {};
+     \node[transaction state] at (0,-1)       (t_1)           {$\tr_1$};
+     \node[transaction state] at (2,-1)       (t_2)           {$\tr_2$};
+     \node[transaction state,text=red] at (1, 1.4)       ()           {$B_2$};
+     \node[transaction state,text=blue] at (1, -1.3)       ()           {$B_1$};
+     \node[draw=red!50, dashed, rounded corners=2mm, minimum width=2.7cm, minimum height=2cm] () at (1, .75) {};
+     \node[draw=blue!50, dashed, rounded corners=2mm, minimum width=2.7cm, minimum height=2cm] () at (1, -.6) {};
+     \path (t_3) edge[dashed,right] node {$\co^+_2$} (t_5); %bend left=90
+     \path (t_1) edge node[right] {$\co^*_1$} (t_3);
+     \path (t_4) edge node[left] {$\co^*_1$} (t_2);
+     \path (t_6) edge[dashed,left] node {$\co^+_2$} (t_4); %bend left=90
+     \path (t_4) edge[color=purple] node[above] {$\so$} (t_3);
+    \end{tikzpicture}  
+   }
+   \caption{$\tup{\tr_4,\tr_3} \in \so$}
+   \label{comm_graph_proof:1b}
+  \end{subfigure}
+   \vspace{-2mm}
+  \caption{Minimal paths between transactions in the same biconnected component.}
+  \label{comm_graph_proof:1}
+%   \vspace{-2mm}
+ \end{wrapfigure}
+ \begin{itemize}
+  \item if $\tup{\tr_3, \tr_4} \in \so$, then there exists a shorter path between $\tr_0$ and $\tr_1$ that uses the $\so$ relation between $\tup{\tr_3, \tr_4}$ (we recall that $\so\subseteq \bigcup_i \co_i$) instead of the transactions in $B_2$, pictured in Figure~\ref{comm_graph_proof:1a}, which is a contradiction to the minimality of $\pi$,
+  \item if $\tup{\tr_4, \tr_3} \in \so$, then, we have a cycle in ${\bigcup_i \co_i\cup\so}$, pictured in Figure~\ref{comm_graph_proof:1b}, which is also a contradiction.
+ \end{itemize}
+% So there is a minimal path $p_s$ in $P_s$ which never leaves the biconnected component same as $\tr_1$ and $\tr_2$ in figure~\ref{comm_graph_proof:1}.
+ 
+ The case $r=(\wro \cup \so)^+$
+ %$r=(\wro \cup \so)^+$ and $r=\CO^* \circ\, (\wro \cup \so)$ 
+ can be proved in a similar manner since the reasoning outlined in Figure~\ref{comm_graph_proof:1} reduces to short-circuiting a path using a single $\so$ edge (and $\so$ is included in $(\wro \cup \so)^+$). \hfill $\Box$
+ 
+%  $P_l$ and $P_s$ are both $(\wro \cup \so)^+$. ``shortening'' a longer path $p_l$ from $P_l$ (they are also a path in $\CO^+$ since $(\wro \cup \so)^+ \subseteq \CO$) will introduce only $\so$ dependencies. So there is a minimal path $p_s$ in $P_s$ which never leaves a biconnected component.
+%  
+%  $P_l$ and $P_s$ are both $\CO^* \circ (\wro \cup \so)$. Similar to last the case, ``shortening'' a longer path $p_l$ from $P_l$ will introduce only $\so$ dependencies. If the new $\so$ is at the end of the path then the new path is from the set $\CO^* \circ (\wro \cup \so)$. Else, we can replace $\so$ with $\CO$ to make a path from the set $\CO^* \circ (\wro \cup \so)$. So a minimal $\CO^* \circ (\wro \cup \so)$ never leaves a biconnected component.
+  
+%  $P_l$ is $\CO^* \circ \CO_{wc}$ and $P_s$ is $\CO^* \circ (\CO_{wc} \cup \so)$. Similar to the previous cases, ``shortening'' a longer path $p_l$ from $P_l$ will introduce only $\so$ dependencies. If the new $\so$ is at the end, then it becomes of a path from $\CO^* \circ \so$. Else, we can replace $\so$ with $\CO$ to make a path from $\CO^* \circ \CO_{wc}$ where the last $\CO$ dependency is the same one from the original path. So there is path $p_s$ from $P_s$ which never leaves a biconnected component.
+%  
+%  Note in all cases, the paths in $P_l$ and $P_s$ starts and ends in same biconnected component because $\tr_2$ and $\tr_3$ access a common variable $\xvar$. So the paths in $P_s$ are always in same biconnected component as $\tr_2$ and $\tr_3$ from table~\ref{consistency_defs}. 
+  
+%
+
+%\begin{theorem}
+% \label{comm_path}
+%  If each biconnected component $C_i$ has a total $\co_i$ extending $\wro \cup \so$ restricting to that biconnected component, in the union all $\co_i$, any returning path(a path that began and ended in the sessions from same biconnected components) across two biconnected components are not minimal.
+%\end{theorem}
+%
+%\begin{proof}
+%
+% 
+% 
+% In figure \ref{comm_graph_proof:1}, we have a returning path from a biconnected component $C_1$ and it leaves $C_1$ for the first time at transaction $\tr_3$ and enters $C_1$ for the last time at transaction $\tr_4$. Now by definition of biconnected component each pair of biconnected components has at most one session in common. So $\tr_3$ and $\tr_4$ must be in same session and therefore,
+% 
+% \begin{itemize}
+%  \item either $\tup{\tr_3, \tr_4} \in \so$, then we have a shorter path in $C_1$ itself, using the $\so$ relation between $\tup{\tr_3, \tr_4}$.
+%  \item or $\tup{\tr_4, \tr_3} \in \so$, but then, we have a cycle in $\co_2$, which is a contradiction.
+% \end{itemize} 
+% 
+% Therefore, the returning path is not minimal.
+%\end{proof}
+%
+%\begin{corollary}
+% If each biconnected component $C_i$ has a total $\co_i$ extending $\wro \cup \so$ restricting to that biconnected component, in the union all $\co_i$, any returning path(a path that began and ended in the sessions from same biconnected components) across multiple biconnected components are not minimal.
+%\end{corollary}
+%
+%\begin{proof}
+% There will be one biconnected component where the returning path enters from and leaves to same biconnected component. Then we can apply our previous theorem \ref{comm_path}. If not, the path also enters into each biconnected component from a different biconnected component and leaves to a different biconnected component and at the end, it returns to the biconnected component, it originated. So we have a cycle of biconnected components. But it is proved, any connected graph decomposes into a tree of biconnected components.
+% 
+% If there is one biconnected component $C_2$ where the returning path enters from and leaves to same biconnected component $C_1$, it will produce the same situation from figure \ref{comm_graph_proof:1}, which makes the original path to be not minimal. 
+%\end{proof}
+
+\medskip
+Now we prove our final claim. For a history $\hist = (T, \so, \wro)$ and biconnected component $B$ of $\mathsf{Comm}(\hist)$, the projection of $\hist$ over transactions in sessions of $B$ is denoted by $h\downarrow B$, i.e., $h\downarrow B=(T', \so', \wro')$ where $T'$ is the set of transactions in sessions of $B$, $\so'$ and $\wro'$ are the projections of $\so$ and $\wro$, respectively, on $T'$.
+
+\begin{theorem}\label{th:comm_graph}
+For any criterion $C\in\{\text{RA},\text{RC},\text{CC},\text{PC},\text{SI},\text{SER}\}$, a history $h$ satisfies $C$ iff for every biconnected component $B$ of $\mathsf{Comm}(\hist)$, $h\downarrow B$ satisfies $C$.
+% Bi-connected components of a communication graph of a history are consistent to a consistency model if and only if the whole history is consistent to that consistency model.
+\end{theorem}
+\begin{proof}
+The ``only-if'' direction is obvious. For the ``if'' direction, we first consider the cases $C\in\{\text{RA},\text{RC},\text{CC},\text{SER}\}$. The proof concerning PC and SI is based on the reduction to SER outlined in Section~\ref{ssec:pc} and Section~\ref{ssec:si}, respectively, and it is given afterwards. Let $B_1$,$\ldots$,$B_n$ be the biconnected components of $\mathsf{Comm}(\hist)$.
+
+Let $C\in\{\text{RA},\text{RC},\text{CC},\text{SER}\}$, and let $\co_i$ be the commit order that witnesses that $h\downarrow B_i$ satisfies $C$, for each $1\leq i\leq n$. The union $\bigcup_i\co_i$ is acyclic since otherwise, any minimal cycle would be a minimal path between transactions of the same biconnected component $B_j$, and, by Lemma~\ref{lem:comm_graph}, it will include only transactions of $B_j$ which is a contradiction to $\co_j$ being a total order. We show that any linearization $\co$ of $\bigcup_i\co_i$ along with $h$ satisfies the axioms of $C$. The axioms defining RA, RC, CC, and SER involve transactions that write or read a common variable, which implies that they belong to the same biconnected component (we refer to the transactions $\tr_1$, $\tr_2$, and $\tr_3$ in Figure~\ref{consistency_defs}). Furthermore, by Lemma~\ref{lem:comm_graph}, minimal paths witnessing the dependencies in those axioms, e.g., $(\wro \cup \so)^+$ for CC, are also formed of transactions included in the same biconnected component. Therefore, $\co$ satisfies any of those axioms provided that each $\co_i$ does.
+
+%For CC, PC, SER using the result from Lemma~\ref{lem:comm_graph}, a minimal $(\wro \cup \so)^+$, resp., $\CO^* \circ (\wro \cup \so)^+$, $\co$ path from $\tr_2$ to $\tr_3$ in Figure~\ref{cc_def}, resp., Figure~\ref{pre_def}, Figure~\ref{ser_def} will include transactions in the same biconnected component as $\tr_2$ and $\tr_3$, since ``shortening'' a longer path will introduce only $\so$ dependencies. Therefore, they must be satisfied by $\co$. 
+
+% Concerning the axiom defining PC in Figure~\ref{pre_def}, the transactions $\tr_1$, $\tr_2$, and $\tr_3$ belong to the same biconnected component $C$ (since they all read or write a common variable $\xvar$). Then, using again a similar reasoning as in Lemma~\ref{lem:comm_graph}, it can be proved that a minimal $\co^* \circ (\wro \cup \so)$ path from $\tr_2$ to $\tr_3$ will contain only transactions of $C$. Therefore, this axiom must be satisfied by $\co$.
+%Therefore, applying Lemma~\ref{lem:comm_graph}, a minimal path from $\tr_2$ to $\tr_4$ will include only transactions from $C$. 
+
+We now consider the case where $C=\text{PC}$. Assume that each $B_i$ satisfies PC. Based on the reduction in Section~\ref{ssec:pc}, $\hist$ satisfies PC iff $\hist_{R|W}$ satisfies SER. Moreover, since $\hist_{R|W}$ is obtained from $\hist$ by splitting each transaction $t$ into a read transaction $R_t$ and a write transaction $W_t$ while keeping all session order dependencies, each session in $\hist$ corresponds to a session in $\hist_{R|W}$ that reads or writes exactly the same set of variables. Therefore, $\mathsf{Comm}(\hist)$ is isomorphic to $\mathsf{Comm}(\hist_{R|W})$. Since $B_i$ satisfies PC, we get that the corresponding biconnected component $B_i'$ of $\mathsf{Comm}(\hist_{R|W})$ satisfies SER, for every $i$. Therefore, $\hist_{R|W}$ satisfies SER, which implies that $\hist$ satisfies PC. The case of SI is proved in a similar way using the reduction to the serializability of $\hist_{R|W}^c$ presented in Section~\ref{ssec:si} (note that two transactions of $\hist_{R|W}^c$ may read or write an additional common variable only if they were writing a common variable in the original history and therefore, $\mathsf{Comm}(\hist)$ is still isomorphic to $\mathsf{Comm}(\hist_{R|W}^c)$).
+%
+%Concerning the axiom $\mathsf{Conflict}$ of SI (Figure~\ref{confl_def}), by Lemma~\ref{lem:comm_graph},
+%%only necessary to discuss  (the satisfaction of $\mathsf{Prefix}$ is proved as for PC). Following Figure~\ref{confl_def} and Lemma~\ref{lem:comm_graph}, 
+%for any $\CO^* \circ \CO_{\mathit{wc}}$-path connecting $\tr_2$ and $\tr_3$, there exists a minimal $\CO^* \circ (\CO_{\mathit{wc}}\cup \so)$-path connecting $\tr_2$ and $\tr_3$ and formed only of transactions from 
+%%from  that never leaves 
+%the same biconnected component as $\tr_2$ and $\tr_3$. Therefore, $\co$ satisfies $\mathsf{Conflict}$ provided that each $\co_i$ satisfies $\mathsf{Prefix}$ and $\mathsf{Conflict}$.
+%%
+%%or a minimal path from $\CO^* \circ \so$. Since the biconnected component satisfies SI or particularly $\mathsf{Prefix}$ and $\mathsf{Conflict}$, for all possible $\tr_1$, $\tr_1, \tr_2, \tr_3$, it must satisfy $\mathsf{Conflict}$.
+%%Note that $\tr_3$ cannot be the first transaction in its session because a path from $\tr_2$ to $\tr_3$ passing through $\tr_4$ (which belongs to a different biconnected component) will necessarily have to pass twice through $\tr_3$ which would imply that $\co$ is cyclic. Thus, $\mathsf{Conflict}$ must be satisfied by $\co$.
+\end{proof}
+%
+% $\co^*\circ\co$ path or a $\co^*\circ\so$ path. 
+%
+%
+%will necessarily end in an $\so$ dependency, which reduces to the scenario described by the $\mathsf{Prefix}$ axiom.
+%%Then, by Lemma~\ref{lem:comm_graph}, there must exist a $\co$ path from $t_2$ to $t_3$ using transactions of $C$. If this path still contains the transaction $\tr_4$, then the axiom 
+%Finally, concerning SER, TODO COMPLETE.
+% 
+%% For other direction, we derive $\co_i$ for each of biconnected component $C_i$ that satisfy corresponding consistency model. We take $\cup C_i$, the union of all $\co_i$.
+%% 
+%% $\cup C_i$ is acyclic because the cycles can be thought of a returning path. Therefore, a minimal cycle will always entirely be inside a biconnected component which contradicts acyclicity of $\co_i$.
+%% 
+%% We show any total order $\co$ extending $\cup C_i$ also satisfies that consistency axiom for whole history. To prove that, for each of the consistency axiom discussed in the paper we derive a contradiction.
+% \begin{itemize}
+%  \item If $\co$ violates $\textsc{Read Committed}$ \ie it violates \textsf{Read Committed}, then there exists $\tr_1, \tr_2$ and $\alpha, \beta$ are operations from some $\tr_3$ from figure \ref{lock_rc_def} but it violates that axiom \ie $\tup{\tr_2, \tr_1} \in \co$ . But they all read or write on same variable $\xvar$. So they all must be in a biconnected component $C_i$. Hence, $\tup{\tr_1, \tr_2} \in \co_i$, but $\tup{\tr_2, \tr_1} \in \co$.
+%  \item If $\co$ violates $\textsc{Read Atomic}$ \ie it violates \textsf{Read Atomic}, then there exists $\tr_1, \tr_2, \tr_3$ from figure \ref{ra_def} but it violates that axiom \ie $\tup{\tr_2, \tr_1} \in \co$. But they all read or write on same variable $\xvar$. So they all must be in a biconnected component $C_i$ and the $\wro$ and $\so$ on the figure. Hence, $\tup{\tr_1, \tr_2} \in \co_i$, but $\tup{\tr_2, \tr_1} \in \co$.
+%  \item If $\co$ violates $\textsc{Causal}$ \ie it violates axiom \textsf{Causal}, then there exists $\tr_1, \tr_2, \tr_3$ from figure \ref{cc_def} but it violates that axiom \ie $\tup{\tr_2, \tr_1} \in \co$. $\tr_1, \tr_2, \tr_3$ all read or write on same variable $\xvar$. So they all must be in a biconnected component $C_i$.
+%  Now $\tup{\tr_2, \tr_3} (\wro \cup \so)^+ \subseteq \cup \co_j$ is a returning path in $C_i$. So there is a smaller path in $C_i$ itself, where $\wro \cup \so$ are from the previous path except one, which is a $\so$ from a session in $C_i$ itself. So $\tup{\tr_2, \tr_3} \left.(\wro \cup \so)^+\right|_{C_i}$. Hence, $\tup{\tr_1, \tr_2} \in \co_i$, but $\tup{\tr_2, \tr_1} \in \co$.
+%  \item If $\co$ violates $\textsc{Prefix}$ \ie it violates axiom \textsf{Prefix}, then there exists $\tr_1, \tr_2, \tr_3, \tr_4$ from figure \ref{pre_def} but it violates that axiom \ie $\tup{\tr_2, \tr_1} \in \co$. $\tr_1, \tr_2, \tr_3$ all read or write on same variable $\xvar$. So they all must be in a biconnected component $C_i$. Similarly as \textsf{Prefix} case we can show, if $\tup{\tr_2, \tr_3} \in \co \circ (\wro \cup \so)$ then $\tup{\tr_2, \tr_3} \in \co_j \circ \left.(\wro \cup \so)\right|_{C_i}$.
+%  \item If $\co$ violates $\textsc{Snapshot Isolation}$ \ie it violates either of axiom \textsf{Prefix} or axiom \textsf{Conflict}. Now we already proved, $\co_i$ satisfies \textsf{Prefix}, $\co$ must satisfy \textsf{Prefix}. So we will assume, $\co$ satisfy \textsf{Prefix}. Now if $\co$ violates \textsf{Conflict}, then the, then there exists $\tr_1, \tr_2, \tr_3, \tr_4$ from figure \ref{confl_def} but it violates that axiom \ie $\tup{\tr_2, \tr_1} \in \co$. $\tr_1, \tr_2, \tr_3$ all read or write on same variable $\xvar$. So they all must be in a biconnected component $C_i$. Now for the returning path $\tup{\tr_2, \tr_3}$,
+%  \begin{itemize}
+%    \item if the shorter path contained in $C_i$ removes $\tup{\tr_4, \tr_3}$ that means, it is replaced with a $\so$. But then $\tup{\tr_2, \tr_3} \in \co_i^* \circ \so$ and by \textsf{Prefix}, we should have $\tup{\tr_2, \tr_1} \in \co_i$ but $\tup{\tr_1, \tr_2} \in \co$.
+%    \item if the shorter path contained in $C_i$ does not remove $\tup{\tr_4, \tr_3}$ that means, $\tr_4$ is part of $C_i$. and then $\tup{\tr_2, \tr_4} \in \co_i*$. Then by \textsf{Conflict}, we should have $\tup{\tr_2, \tr_1} \in \co_i$ but $\tup{\tr_1, \tr_2} \in \co$.
+%  \end{itemize}
+%  \item If $\co$ violates \textsc{serializability} \ie it violates axiom \textsf{serializability}, then there exists $\tr_1, \tr_2, \tr_3$ from figure \ref{ser_def} but it violates that axiom \ie $\tup{\tr_2, \tr_1} \in \co$. $\tr_1, \tr_2, \tr_3$ all read or write on same variable $\xvar$. So they all must be in a biconnected component $C_i$. So $\tr_1, \tr_2, \tr_3$ must be totally ordered in $\co_i$ for component $C_i$. So either $\tup{\tr_2, \tr_1} \in \co_i$ or $\tup{\tr_3, \tr_2} \in \co_i$. But $\tup{\tr_1, \tr_2}, \tup{\tr_2, \tr_3} \in \co$.
+% \end{itemize}
+ 
+% Therefore, the subhistory for each biconnected component satisfy \textsc{Read Committed}, \textsc{Read Atomic}, \textsc{Casual}, \textsc{Prefix}, \textsc{Snapshot Isolation}, \textsc{Serializability} if and only if the whole history satisfy the corresponding consistency model.
+
+Since the decomposition of a graph into biconnected components can be done in linear time, Theorem~\ref{th:comm_graph} implies that any of the criteria \text{PC}, \text{SI}, or \text{SER} can be checked in time $O(\mathsf{size}(h)^{\mathsf{bi\text{-}size}(h)}\cdot \mathsf{size}(h)^3\cdot \mathsf{bi\text{-}nb}(h))$ where $\mathsf{bi\text{-}size}(h)$ and $\mathsf{bi\text{-}nb}(h)$ are the maximum size of a biconnected component in $\mathsf{Comm}(\hist)$ and the number of biconnected components of $\mathsf{Comm}(\hist)$, respectively. The following corollary is a direct consequence of this observation.
+
+\begin{corollary}
+For an arbitrary but fixed constant $k\in\mathbb{N}$ and any criterion $C\in\{\text{PC},\text{SI},\text{SER}\}$, the problem of checking if a history $\hist$ satisfies $C$ is polynomial time, provided that the size of every biconnected component of $\mathsf{Comm}(\hist)$ is bounded by $k$.
+\end{corollary}
+
+%Also, it is known, the decomposition of a graph into biconnected components can be done in linear time. So even if a history has a large number of sessions, if the communication graph has a bounded number of biconnected components. We can decompose the history to subhistories with fewer sessions and process each subhistory separately.

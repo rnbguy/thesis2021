@@ -1,0 +1,205 @@
+%!TEX root = Thesis.tex
+
+\section{Proofs of Section~\ref{sec:general}}\label{app:sec:general}
+
+\begin{algorithm}
+ \SetKwInOut{KwInput}{Input}
+ \SetKwInOut{KwOutput}{Output}
+ \KwIn{A history $\hist = \tup{T, \so, \wro}$}
+ \KwOut{$\mathit{true}$ iff $\hist$ satisfies \textsc{Causal consistency}}
+ \BlankLine
+ \If{$\so\cup\wro$ is cyclic} {
+  \Return{false}\;
+ }
+ $\co \leftarrow \so\cup\wro$\;
+ \ForEach{$\xvar \in \vars{\hist}$}{
+  \ForEach{$\tr_1 \neq \tr_2 \in T$ s.t. $\tr_1$ and $\tr_2$ write on $\xvar$}{
+   \If{$\exists \alpha, \beta.\ \tup{\tr_1,\alpha}\in \wro[\xvar]\land \tup{\tr_2,\beta}\in (\so\cup\wro) \land \tup{\alpha, \beta} \in \po$} { %\Path{\tr_2}{E_1^+}{\tr_3}, \Path{\tr_1}{\wro[\xvar]}{\tr_3}
+    $\co \leftarrow \co \cup \{\tup{\tr_2, \tr_1}\}$\;
+   }
+  }
+ }
+ \eIf{$\co$ is cyclic}{
+  \Return{false}\;
+ }{
+  \Return{true}\;
+ }
+ \caption{Checking \textsc{Read Committed}}
+ \label{rcalgo:1}
+\end{algorithm}
+
+\begin{algorithm}
+ \SetKwInOut{KwInput}{Input}
+ \SetKwInOut{KwOutput}{Output}
+ \KwIn{A history $\hist = \tup{T, \so, \wro}$}
+ \KwOut{$\mathit{true}$ iff $\hist$ satisfies \textsc{Causal consistency}}
+ \BlankLine
+ \If{$\so\cup\wro$ is cyclic} {
+  \Return{false}\;
+ }
+ $\co \leftarrow \so\cup\wro$\;
+ \ForEach{$\xvar \in \vars{\hist}$}{
+  \ForEach{$\tr_1 \neq \tr_2 \in T$ s.t. $\tr_1$ and $\tr_2$ write on $\xvar$}{
+   \If{$\exists \tr_3.\ \tup{\tr_1,\tr_3}\in \wro[\xvar]\land \tup{\tr_2,\tr_3}\in (\so\cup\wro)$} { %\Path{\tr_2}{E_1^+}{\tr_3}, \Path{\tr_1}{\wro[\xvar]}{\tr_3}
+    $\co \leftarrow \co \cup \{\tup{\tr_2, \tr_1}\}$\;
+   }
+  }
+ }
+ \eIf{$\co$ is cyclic}{
+  \Return{false}\;
+ }{
+  \Return{true}\;
+ }
+ \caption{Checking \textsc{Read Atomic}}
+ \label{raalgo:1}
+\end{algorithm}
+
+\begin{theorem}
+The problem of checking whether a history satisfies \emph{\textsc{Read Committed}}, \emph{\textsc{Read Atomic}}, or \emph{\textsc{Causal consistency}} is polynomial time.
+\end{theorem}
+\begin{proof}
+ % ========
+ % TODO TAKE THIS INTO ACCOUNT:
+ % Also, the writing in the proof of Theorem 3.1. is kind of “naive”. For instance, the first sentence is a description of the algorithm. This has no place in the proof. Such a thing has to be mentioned in the description of the algorithm. Which should be added at some point (together with some example). It should be decomposed in two parts:
+ % 
+ % 1) if the history h satisfies CC, then the algorithms says yes. In this case, you have to show that the algorithm will not find a cycle in co. This is a consequence of h satisfying the axiom.
+ % 
+ % 2) if the algorithm says yes, then the history satisfies CC. Here you have to show that the topological order of the co at the end of the algorithm will satisfy the CC axiom (together with the history h). And here, one should say that the new ordering constraints added by doing the topological order will not imply more instantiations of the left part of the entailment in the axiom.
+ % =======
+ 
+We first consider the case of \textsc{Read Committed}. Algorithm \ref{rcalgo:1} finds all the $\co$ relations that are implied by the $\mathsf{Read Committed}$ axiom (fig. \ref{lock_rc_def}) \ie for all $\tr_1, \tr_2$ and for all $\alpha, \beta$ if we have, $\tup{\tr_1, \alpha} \in \wro[\xvar]$ and $\tup{\tr_2, \beta} \in \wro$ and $\tup{\beta, \alpha} \in \po$ and $\writeVar{\tr_2}{\xvar}$(from figure \ref{lock_rc_def}), then we add $\tup{\tr_2, \tr_1} \in \co$. Quantification can be done in cubic iteration over the transactions for each variable. Now, we claim $\hist$ is \textsc{Read Committed} if and only if $\co$, the union of these found relations is acyclic. 
+ 
+  First we prove that if $\co$ is acyclic, then $\hist$ satisfies \textsc{Read Committed}. $\co$ is acyclic, hence consider a topological order $\co'$ of $\co$. If $\tup{\hist, \co'}$ does not satisfies \textsc{Read Committed}, there exists $\tr_1, \tr_2$ and $\alpha, \beta$ such that, $\tup{\tr_1, \alpha} \in \wro[\xvar]$ and $\tup{\tr_2, \beta} \in \wro$ and $\tup{\alpha, \beta} \in \po$ and $\writeVar{\tr_2}{\xvar}$ and $\tup{\tr_1, \tr_2} \in \co'$. But with the same $\tr_1, \tr_2, \alpha, \beta$ and variable $\xvar$, we must have added $\tup{\tr_2, \tr_1}$ in $\co$ which implies any topological order of $\co$ can not have $\tup{\tr_1, \tr_2}$ which contradicts that $\co'$ contains $\tup{\tr_1, \tr_2}$.
+ 
+ Now we prove, if $\co$ is not acyclic, then $\hist$ does not satisfie \textsc{Read Committed}. If the history is \textsf{Read Committed}, there must be a commit order $\co'$ for $\hist$, for which $\tup{\hist, \co'}$ satisfies \textsf{Read Committed}. $\co'$ must be acyclic. Now, take any cycle in $\co$, $\tr_1 \xrightarrow{\co} \tr_2 \xrightarrow{\co} \cdots \xrightarrow{\co} \tr_k \xrightarrow{\co} \tr_1$. Now along these, if for all $i, j$ $\tr_i \xrightarrow{\co'} \tr_j$ then, it becomes a cycle in $\co'$. Therefore, there must be atleast one pair, where $\tup{\tr_i, \tr_j} \in \co$, but $\tup{\tr_i, \tr_j} \not\in \co'$ or $\tup{\tr_j, \tr_i} \in \co'$ since $\co'$ is total.
+ 
+ But $\tup{\tr_i, \tr_j} \in \co$ must have been added because there exists $\alpha, \beta$ such that $\tup{\tr_i, \beta} \in \wro$, $\tup{\beta, \alpha} \in \po$ and $\tup{\tr_j, \alpha} \in \wro[\xvar]$ and $\writeVar{\tr_i}{\xvar}$. But $\tup{\tr_j, \tr_i} \in \co'$, so $\co'$ violates \textsc{Read Commmitted} for $\tr_i, \tr_j, \alpha, \beta$. Therefore, if $\co$ has a cyclic, $\hist$ does not satisfy \textsc{Read Committed}.
+ 
+The case of \textsc{Read Atomic} and \textsc{Causal Consistency} is similar. If the $\co$ at the end of the algorithm is acyclic, then if a topological order extending it does not satisfy resp. consistency model, then it contains $\tup{\tr_1, \tr_2}$ with the quantified transactions, variables and operations for resp. consistency model. But, then for same quantified transactions, variables and operations, we must have added $\tup{\tr_2, \tr_1} \in \co$ in the algorithm. It contradicts the topological order contains $\tup{\tr_1, \tr_2}$. For the other direction, if the $\co$ at the end of the algorithm has cycle, we show there exists $\tup{\tr_i, \tr_j} \in \co$, like the case of \textsf{Read Committed}, yet it is not in a commit order satisfying the resp. consistency models. Then the commit order must have $\tup{\tr_j, \tr_i}$ which violates the resp. consistency models for the exact same quantified transactions, variables and operations for which $\tup{\tr_i, \tr_j}$ was added in $\co$ at first.
+ % \begin{itemize}
+ %  \item If it returns a $\CO$, it does not violate Causal axiom by construction (line 8).
+ %  \item If it returns $\none$, then there was a cycle in $\CO$ relations which are implies by $\wro$, $\so$ and Causal axiom. 
+ % \end{itemize}
+ % 
+ % The algorithm run in \textsf{PTIME}. So verifying a history for causally consistent is in PTIME.
+\end{proof}
+
+%\input{Sources/transaction/np-app}
+
+%\begin{theorem}
+% \label{npcproof:0:app}
+%The problem of checking whether a history satisfies \emph{\textsc{Prefix Consistency}}, \emph{\textsc{Snapshot Isolation}}, or \emph{\textsc{Serializability}}, is NP-complete.
+%\end{theorem}
+%\begin{proof}
+% Given a history, any of these three criteria can be checked by guessing a total order on its transactions and checking whether they satisfy the corresponding axioms. This shows that the problem is in NP.
+% 
+% To show NP-hardness, we define a reduction from boolean satisfiability. Therefore, let $\varphi=C_1\land\ldots\land C_m$ be a \textsf{CNF} formula over the boolean variables $x_1, \ldots, x_n$ where each $C_i$ is a disjunctive clause with $m_i$ literals.  %we reduce it to a history in polynominal time.
+% Let $\lambda_{ik}$ denote the $k$-th literal of $C_i$. 
+% 
+% % For each variable $x_j$, add transactions $a_j, b_j, c_j$ and add $v_{b_j,c_j}$ in write set of $a_j$ and $b_j$ and $c_j$ reads it from $b_j$.
+% We define a history $h_\varphi$ which satisfies PC, SI, or SER iff $\varphi$ is satisfiable. Therefore, for each boolean variable $x_j$ in $\varphi$, $h_\varphi$ contains the transactions $a_j$ and $b_j$ which write the variable $v_j$. % in write set of $a_j$ and $b_j$.
+% %Let's denote $C_i$'s $k$-th literal by $\lambda_{ik}$. 
+% Also, for each literal $\lambda_{ik}$, $h_\varphi$ contains the transactions $w_{ik}$, $y_{ik}$, $z_{ik}$ such that
+% $\tup{z_{ik}, y_{i,(k+1)}}\in \so$ for every $i$, $k$ (the addition is done modulo $m_i$).
+% %% For each $C_i$, we add $v_{z_{ik}, y_{i,(k+1)}}$(addition $mod\ m_i$) in the write set of $z_{ik}$ and $y_{i,(k+1)}$ reads it from $z_{ik}$.
+% %For each $C_i$, $(z_{ik}, y_{i,(k+1)})$ in $\so$(addition $mod\ m_i$).
+% Moreover, 
+% %If $\lambda_{ik} = x_i$,
+% \begin{itemize}
+%  \item if $\lambda_{ik} = x_j$, then $\tup{y_{ik}, a_j}\in\so$, $\tup{b_j, w_{ik}}\in \so$, both $z_{ik}$ and $y_{ik}$ write some variable $v_{ik}$ and $w_{ik}$ reads it from $z_{ik}$ (i.e., $\tup{z_{ik},w_{ik}}\in\wro[v_{ik}]$),
+%  \item if $\lambda_{ik} = \neg x_j$, then $\tup{y_{ik}, b_j}\in \so$, $\tup{a_j, w_{ik}}\in\so$, both $z_{ik}$ and $y_{ik}$ write some variable $v_{ik}$, and $w_{ik}$ reads it from $z_{ik}$ (i.e., $\tup{z_{ik},w_{ik}}\in\wro[v_{ik}]$).
+% \end{itemize}
+% %  Add $(y_{ik}, a_j)$ in $\so$.
+% % \item Add $(b_j, w_{ik})$ in $\so$.
+% % \item Add $v_{ik}$ in write set of $z_{ik}$ and $y_{ik}$. $w_{ik}$ reads it from $z_{ik}$.
+% %\end{itemize}
+% %
+% %If $\lambda_{ik} = \neg x_i$,
+% %\begin{itemize}
+% % \item Add $(y_{ik}, b_j)$ in $\so$.
+% % \item Add $(a_j, w_{ik})$ in $\so$.
+% % \item Add $v_{z_{ik}, w_{ik}}$ in write set of $z_{ik}$ and $y_{ik}$. $w_{ik}$ reads it from $z_{ik}$.
+% %\end{itemize}
+% 
+% \input{Sources/transaction/npc_proof.tex}
+% 
+% The construction above enforces that $\Path{a_j}{\CO}{b_j} \Rightarrow \Path{y_{ik}}{\CO}{z_{ik}}$ when $\lambda_{ik} = x_j$ and $\Path{b_j}{\CO}{a_j} \Rightarrow \Path{y_{ik}}{\CO}{z_{ik}}$ when $\lambda_{ik} = \neg x_j$. TODO EXPLAIN WHY BY REFERRING TO THE AXIOMS (EXPLAIN WHY THIS IS VALID FOR ALL THE THREE CRITERIA)%Otherwise, it is easy to see, it violates respective axioms.
+% 
+% Intuitively, $\Path{a_j}{\CO}{b_j}$ denotes the fact that $x_j$ is evaluated to false, and $\Path{y_{ik}}{\CO}{z_{ik}}$ the fact that the literal $\lambda_{ik}$ is evaluated to false. If all the literals in a clause becomes false, \ie for all $\lambda_{ik}$ in $C_i$, $\Path{y_{ik}}{\CO}{z_{ik}}$, then the commit order $\CO$ will contain a cycle of the form $y_{i1} \xrightarrow{\CO} z_{i1} \xrightarrow{\so}\cdots y_{i,(k+1)} \xrightarrow{\CO} z_{i,(k+1)} \xrightarrow{\so} \cdots \xrightarrow{\so} y_{i1}$.
+% 
+% Thus, if $h_\varphi$ satisfies PC, SI, or SER, then for each clause $C_i$ there exists a $k$ such that 
+% %is serializable, resp. snapshot isolation and prefix consistent, in each clause $C_i$ there is a $k$ such that 
+% $\Path{z_{ik}}{\CO}{y_{ik}}$, i.e., there is an assignment for which at least one literal of every clause is evaluated to true. 
+% %in each clause, there is a literal which is positive. 
+% Hence, $\varphi$ is satisfiable.  
+% 
+% For the reverse, if $\varphi$ is satisfiable, then there exists a satisfying assignment $\sigma$ such that each clause contains at least one literal evaluated to true.
+% 
+% We show that there exists a commit order $\co$ such that $\Path{a_j}{\CO}{b_j}$ and $\Path{y_{ik}}{\CO}{z_{ik}}$ iff $\sigma(x_j) = \mathit{false}$.
+% Since each clause $C_i$ contains a literal $\lambda_{ik}$ evaluated by $\sigma$ to true, we have that there exists $k$ such that $\Path{z_{ik}}{\CO}{y_{ik}}$ for each $C_i$. Therefore, it is not possible that $\co$ contains cycles of the form $y_{i1} \xrightarrow{\CO} z_{i1} \xrightarrow{\so}\cdots y_{i,(k+1)} \xrightarrow{\CO} z_{i,(k+1)} \xrightarrow{\so} \cdots \xrightarrow{\so} y_{i1}$. TODO WHY IT CANNOT CONTAIN OTHER CYCLES ?
+% 
+% So the history is serializable. Since Serializable implies prefix consistency and snapshot isolation, the history also satisfies prefix consistency and snapshot isolation.
+% \end{proof}
+ 
+ % we will not have cycles of the form $y_{i1} \xrightarrow{\CO} z_{i1} \xrightarrow{\so} y_{i,(k+1)} \xrightarrow{\CO} z_{i,(k+1)} \xrightarrow{\so} \cdots \xrightarrow{\so} y_{i1}$.
+ 
+ % Also, clearly this satisfies, $\Path{a_j}{\CO}{b_j} \Rightarrow \Path{y_{ik}}{\CO}{z_{ik}}$ for $\lambda_{ik} = x_j$ and $\Path{b_j}{\CO}{a_j} \Rightarrow \Path{y_{ik}}{\CO}{z_{ik}}$ for $\lambda_{ik} = \neg x_j$. TODO HOW IS THIS HELPFUL ?
+ 
+ % TODO: explain little bit
+ %Also it is easy to see, there is no other cycles.
+ 
+ % To explain, to have acyclic dependencies, for $\lambda_{ik} = x_j$, $a_j \xrightarrow{\WW} b_j$ implies $y_{ik} \xrightarrow{\WW} z_{ik}$ and for $\lambda_{ik} = \neg x_j$, $b_j \xrightarrow{\WW} a_j$ implies $y_{ik} \xrightarrow{\WW} z_{ik}$. Here, $a_j \xrightarrow{\WW} b_j$ denotes $x_j$ is assigned false and $y_{ik} \xrightarrow{\WW} z_{ik}$ denotes the value of literal $x_j$ in $i$-th clause. So if all the literals in $i$-th clause is assigned false, then, we will have a cycle of the form $z_{i,k-1} \xrightarrow{\WR} y_{ik} \xrightarrow{\WW} z_{ik} \xrightarrow{\WR} y_{i,(k+1)} \xrightarrow{\WW} \ldots \xrightarrow{\WW} z_{i,k-1}$. So for all unsatisfying assignment, we can always found such cycle in the history. But for a satisfying assignment, we can assign the $\WW$ in such way, that there is no cycle of the form $z_{i,k-1} \xrightarrow{\WR} y_{ik} \xrightarrow{\WW} z_{ik} \xrightarrow{\WR} y_{i,(k+1)} \xrightarrow{\WW} \ldots \xrightarrow{\WW} z_{i,k-1}$ - because there will be at least one \WW edge which will be reversed.
+ 
+ %\begin{lemma}
+ % \label{npcproof:1}
+ % The \textsf{CNF} is satisfiable if and only if the history is Serializable, resp. Prefix consistency and Snapshot isolation.
+ %\end{lemma}
+ 
+ % \begin{proof}
+ % If you look at the dependency relations, we can say, $a_j \xrightarrow{\WW_x} b_j \Leftrightarrow x_j = \bot$. So if we have a valid assignment, we can choose $\WW$ in this way and have a serializable history. Also, if we have a serializable history, we can choose variables in CNF in this way and have a satisfying assignment.
+ % \end{proof}
+ 
+ 
+ % \begin{corollary}
+ %  Reduced history does not have dependency cycles allowed in \textsf{PC}, \textsf{SI} consistency. In other words, Reduced history is \textsf{PC}, \textsf{SI} consistent if and only if it is serializable.
+ % \end{corollary}
+ % 
+ % \begin{proof}
+ %  There are two types of cycles possible,
+ %  \begin{itemize}
+ %   \item The cycle $y_{ik} \xrightarrow{\WR} a_j \xrightarrow{\WW} b_j \xrightarrow{\WR} w_{ik} \xrightarrow{RW} y_{ik}$ is not allowed in any of \textsf{PC}, \textsf{SI} consistency.
+ %   \item The cycles of the form $z_{i,k-1} \xrightarrow{\WR} y_{ik} \xrightarrow{\WW} z_{ik} \xrightarrow{\WR} y_{i,(k+1)} \xrightarrow{\WW} \ldots \xrightarrow{\WW} z_{i,k-1}$ are also not allowed in those consistency.
+ %  \end{itemize}
+ % 
+ %  There is no other form of cycles.
+ % \end{proof}
+ % 
+ % \begin{corollary}
+ %  \label{npcproof:2}
+ %  The \textsf{CNF} is satisfiable if and only if the history is PC, SI consistent.
+ % \end{corollary}
+ 
+ % \begin{proof} So if we decide the history for \textsf{SI}, \textsf{PC} or serializable, we know the history is serializable to be exactly and hence the formula satisfiable. Else if the history was consistent to none of them, the history is not serializable, hence, the formula is not satisfiable.
+ % \end{proof}
+ 
+ % \begin{corollary}
+ %  \label{serlin:1}
+ %  Serializable problem is poly-time reducible to linearizable problem.
+ % \end{corollary}
+ 
+ % \begin{proof}
+ %  With a history of $n$ transactions, we can say, each transaction is a singleton session and the interval of $i$-th transaction is $[i, n+i]$. It is easy to see, all the intervals have a common interval $[n, n+1]$. So, the transactions do not have any real-time order. But we have to maintain the session orders from the original history. To do that, we just new variables to add some \WR dependencies.
+ 
+ %  In the end, the new history is linearizable if and only if the original history was serializable.
+ % \end{proof}
+ 
+ %\begin{proof}
+ % Creating a history from a $k$-SAT formula need polynomial time. Using corollary \ref{npcproof:1}, $k$-SAT problem can be reduced to the problem verifying histories in Prefix consistency, Snapshot isolation or Serializable in polynomial time. Since $k$-SAT is NPC, so verification of history must be in NP-hard.
+ % 
+ % Also, it is easy to see, given a certificate of $\CO$ choices, it takes polytime to decide whether the history is Serializable, resp. Prefix consistent or Snapshot isolation. So the problem is in NP.
+ % 
+ % %  For linearization, the problem is NP-hard, because serialization problem can be reduced to linearization problem. And given a certificate of $\WW$ choices, it takes polytime to decide if there is any cyclic dependency including the given real-time order. So linearization problem is in NP.
+ % 
+ % Thus deciding whether a history is Serializable, resp. Prefix consistent and Snapshot Isolation is in NP-complete, which proves theorem \ref{npcproof:0}.
+ %\end{proof}
+

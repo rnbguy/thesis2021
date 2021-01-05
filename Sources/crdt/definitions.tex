@@ -1,0 +1,250 @@
+%!TEX root = Thesis.tex
+
+\section{A Logical Characterization of Replicated Data Types}
+\label{sec:consistency}
+
+In this section we describe an axiomatic framework for defining the semantics of replicated data types.
+%To formalize the semantics of replicated data types we use several semantic domains defined hereafter.
+We consider a set of method names $\methods$, and that
+each method $\amethod \in \methods$ has a number of arguments and a return value sampled from
+a data domain $\datadomain$. %We use a distinguished value $\bot$ to denote absence of return value.
+%By an abuse of terminology, the methods that return a value different from $\bot$
+%are called \emph{query methods} even though they may modify the state of the object.
+%The set of query methods is denoted by $\queries$. TODO EXAMPLE.
+We will use operation labels of the form
+$\alabellongind{\argv}{\retv}{i}$ to represent the call of a
+method $\amethod \in \methods$, with
+argument $\argv \in \datadomain$, and resulting in the value $\retv \in
+\datadomain$. Since there might be multiple calls to the same method with the same
+arguments and result, labels are tagged with a unique identifier $i$. We will ignore identifiers when unambiguous.
+%The set of all operation labels is denoted by $\labels$.
+%The operation labels corresponding to query methods are called queries.
+%For a given operation label $\ell=\alabellongind{\argv}{\retv}{i}$, ${\sf meth}
+
+The interaction between a data type implementation and a client is represented by a \emph{history} $\hist=\tup{\Op, \RO}$ which consists of a set of operation labels $\Op$ and a partial \emph{replica order} $\RO$ ordering operations issued by the client on the same replica. Usually, $\RO$ is a union of sequences, each sequence representing the operations issued on the same replica, and the \emph{width} of $\RO$, i.e., the maximum number of mutually-unordered operations, gives the number of replicas in a given history.
+
+To characterize the set of histories $\hist=\tup{\Op, \RO}$ admitted by a certain replicated data type, we use \emph{abstract executions} $\exec = \tup{ \rf,\hb,\lin }$, which include:
+%a set of relations that concern
+%%. The overarching principle is to say that a history is admitted if there exist several relations between the labels in the history which satisfy certain properties. These relations are concerned with
+%the correctness of return values (the read-from relation), preserving causal dependencies between operations (the happens-before order), and modeling the conflict resolution policy (the linearization order). In this work, we consider replicated data types which satisfy \emph{causal consistency}~\cite{DBLP:journals/cacm/Lamport78}, i.e., updates which are related by cause and effect relations are observed by all replicas in the same order. %The properties of these different relations are expressed using a set of first-order axioms. 
+%Therefore, an \emph{abstract execution} $\exec = \tup{ \rf,\hb,\lin }$ of the history $\hist=\tup{\Op, \RO}$  is:
+\vspace{-2.5mm}
+\begin{itemize}
+  \item a \emph{read-from} binary relation $\rf$ over operations in $\Op$, which identifies the set of updates needed to ``explain'' a certain return value, e.g., a {\sf write} operation explaining the return value of a {\sf read},
+  \item a strict partial \emph{happens-before} order $\hb$, which includes $\ro$ and $\rf$, representing the causality constraints in an execution, and
+  \item a strict total \emph{linearization} order $\lin$, which includes $\hb$, used to model conflict resolution policies based on timestamps.
+\end{itemize}
+\vspace{-1mm}
+In this work, we consider replicated data types which satisfy \emph{causal consistency}~\cite{DBLP:journals/cacm/Lamport78}, i.e., updates which are related by cause and effect relations are observed by all replicas in the same order. This follows from the fact that the happens-before order is constrained to be a partial order, and thus transitive (other forms of weak consistency don't pose this constraint). Some of the replicated data types we consider in this paper do \emph{not} consider resolution policies based on timestamps and in those cases, the linearization order can be ignored.
+
+A \emph{replicated data type} is defined by a set of first-order axioms $\Phi$ characterizing the relations in an abstract execution. 
+A history $\hist$ is \emph{admitted} by a data type when there exists an abstract execution $\exec$ such that $\tup{\hist,\exec}\models\Phi$. The satisfaction relation $\models$ is defined as usual in first order logic. The \emph{admissibility problem} is the problem of checking whether a history $\hist$ is admitted by a given data type.
+
+%More precisely, the axioms in $\Phi_{\rf}$ characterize a pair $\tup{\hist,\rf}$ formed of a history and a read-from relation, the axioms in $\Phi_{\hb}$ a triple $\tup{\hist,\rf,\hb}$ formed of a history, read-from relation, and happens-before order, and finally, $\Phi_{\lin}$ characterize abstract executions of histories $\tup{\hist,\rf,\hb,\lin}$. Their satisfaction relation $\models$ on such tuples is defined as usual.
+
+%We say that a history $\hist$ is admitted by a data type $\Phi_{\rf}\cup \Phi_{\hb}\cup \Phi_{\lin}$ when there exists an abstract execution $\exec = \tup{ \rf,\hb,\lin }$ of $\hist$ such that $\tup{\hist,\rf}\models \Phi_{\rf}$, $\tup{\hist,\rf,\hb}\models \Phi_{\hb}$, and $\tup{\hist,\rf,\hb,\lin}\models \Phi_{\lin}$.
+
+
+
+\begin{figure}[t]
+  \footnotesize
+  \hspace{-5mm}
+  \begin{minipage}[t]{.48\linewidth}
+    \input{Sources/crdt/figures/axioms-1}
+  \end{minipage}
+  \hfill
+  \begin{minipage}[t]{.48\linewidth}
+    \input{Sources/crdt/figures/axioms-2}
+  \end{minipage}
+  \input{Sources/crdt/figures/axioms-3}
+  \vspace{-2em}
+  \caption{The axiomatic semantics of replicated data types. Quantified variables are implicitly distinct, and $\exists! o$ denotes the existence of a unique operation $o$.}
+  \label{fig:formulas:common}
+  \vspace{-1em}
+\end{figure}
+
+
+
+In the following, we define the replicated data types with respect to which we study the complexity of the admissibility problem. The axioms used to define them are listed in Figure~\ref{fig:formulas:common} and Figure~\ref{fig:formulas:RGA}. These axioms use the function symbols {\sf meth}-od, {\sf arg}-ument, and {\sf ret}-urn interpreted over operation labels, whose semantics is self-explanatory. 
+%Moreover, {\sf ReadOk} is a binary predicate interpreted over operation labels whose semantics is defined individually for each data type.
+
+\subsection{Replicated Sets and Flags}
+
+The Add-Wins Set and Remove-Wins Set~\cite{DBLP:journals/eatcs/ShapiroPBZ11}
+are two implementations of a replicated set with operations {\sf add}($x$), {\sf remove}($x$), and {\sf contains}($x$) for adding, removing, and checking membership of an element $x$.
+Although the meaning of these methods is self-evident from their names,
+ the result of conflicting concurrent operations is not evident. When concurrent {\sf add}($x$) and {\sf remove}($x$)
+ operations are delivered to a certain replica, the Add-Wins Set chooses to keep the element $x$ in the set, so every
+ subsequent invocation of {\sf contains}($x$) on this replica returns $\mathit{true}$, while the Remove-Wins Set makes the dual choice
+ of removing $x$ from the set.
+
+The formal definition of their semantics uses abstract executions where the read-from relation associates sets of {\sf add}($x$) and {\sf remove}($x$)
+operations to {\sf contains}($x$) operations. Therefore, the predicate ${\sf ReadOk}(o_1,o_2)$ is defined by
+\begin{align*}
+{\sf meth}(o_1) \in \{{\sf add},{\sf remove}\} \land {\sf meth}(o_2) ={\sf contains} \land {\sf arg}(o_1)= {\sf arg}(o_2)
+\end{align*}
+and the Add-Wins Set is defined by the following set of axioms:
+\begin{align*}
+&\textsc{ReadFrom}({\sf ReadOk}) \land \textsc{ReadFromMaximal}({\sf ReadOk})\ \land \\
+& \textsc{ReadAllMaximals}({\sf ReadOk}) \land \textsc{RetvalSet}({\sf contains},\mathit{true},{\sf add})
+\end{align*}
+\textsc{ReadFromMaximal} says that every operation read by a {\sf contains}($x$) is maximal among its $\hb$-predecessors that add or remove $x$ while \textsc{ReadAllMaximals} says that all such maximal $\hb$-predecessors are read. The \textsc{RetvalSet} instantiation ensures that a {\sf contains}($x$) returns $\mathit{true}$ iff it reads-from at least one {\sf add}($x$).
+
+The definition of the Remove-Wins Set is similar, except for the parameters of \textsc{RetvalSet}, which become
+$
+\textsc{RetvalSet}({\sf contains},\mathit{false},{\sf remove}),
+$
+i.e., a {\sf contains}($x$) returns $\mathit{false}$ iff it reads-from at least one {\sf remove}($x$).
+%\end{example}
+
+The Enable-Wins Flag and Disable-Wins Flag are implementations of a set of flags with operations: {\sf enable}($x$), {\sf disable}($x$), and {\sf read}($x$), where {\sf enable}($x$) turns the flag $x$ to true, {\sf disable}($x$) turns $x$ to false, while {\sf read}($x$) returns the state of the flag $x$. Their semantics is similar to the Add-Wins Set and Remove-Wins Set, respectively, where {\sf enable}($x$), {\sf disable}($x$), and {\sf read}($x$) play the role of {\sf add}($x$), {\sf remove}($x$), and {\sf contains}($x$), respectively. Their axioms are defined as above.
+
+\subsection{Replicated Registers}
+
+We consider two variations of replicated registers called Multi-Value Register (MVR) and Last-Writer-Wins Register (LWW)~\cite{DBLP:journals/eatcs/ShapiroPBZ11} which maintain a set of registers and provide {\sf write}($x$,$v$) operations for writing a value $v$ on a register $x$ and {\sf read}($x$) operations for reading the content of a register $x$ (the domain of values is kept unspecified since it is irrelevant). While a {\sf read}($x$) operation of MVR returns \emph{all} the values written by concurrent writes which are maximal among its happens-before predecessors, therefore, leaving the responsibility for solving conflicts between concurrent writes to the client, a {\sf read}($x$) operation of LWW returns a single value chosen using a conflict-resolution policy based on timestamps. Each written value is associated to a timestamp, and a {\sf read} operation returns the most recent value w.r.t. the timestamps. This order between timestamps is modeled using the linearization order of an abstract execution.
+
+Therefore, the predicate ${\sf ReadOk}(o_1,o_2)$ is defined by
+\begin{align*}
+{\sf meth}(o_1) = {\sf write} \land {\sf meth}(o_2) ={\sf read} \land {\sf arg}_1(o_1)= {\sf arg}(o_2) \land {\sf arg}_2(o_1)\in {\sf ret}(o_2)
+\end{align*}
+(we use ${\sf arg}_1(o_1)$ to denote the first argument of a {\sf write} operation, i.e., the register name, and ${\sf arg}_2(o_1)$ to denote its second argument, i.e., the written value) and the MVR is defined by the following set of axioms:
+\begin{align*}
+&\textsc{ReadFrom}({\sf ReadOk})\land \textsc{ReadFromMaximal}({\sf ReadOk})\ \land \\
+& \textsc{ReadAllMaximals}({\sf ReadOk})\land \textsc{RetvalReg}
+\end{align*}
+where \textsc{RetvalReg} ensures that a {\sf read}($x$) operation reads from a {\sf write}($x$,$v$) operation, for each value $v$ in the set of returned values~\footnote{For simplicity, we assume that every history contains a set of {\sf write} operations writing the initial values of variables, which precede every other operation in replica order.}.
+
+LWW is obtained from the definition of MVR by replacing \textsc{ReadAllMaximals} with the axiom \textsc{LinLWW} which ensures that every {\sf write}($x$,\_) operation which happens-before a {\sf read}($x$) operation is linearized before the {\sf write}($x$,\_) operation from where the {\sf read}($x$) takes its value (when these two {\sf write} operations are different). This definition of LWW is inspired by the ``bad-pattern'' characterization in~\cite{DBLP:conf/popl/BouajjaniEGH17}, corresponding to their causal convergence criterion.
+
+\subsection{Replicated Counters}\label{ssec:counter}
+
+%TODO PROBABLY A GOOD IDEA TO MENTION SOME BASIC FACTS LIKE (A) WHAT YOU CALL A “COUNTER” IS IN FACT A COLLECTION OF COUNTERS, (B) WHAT ARE THE DOMAIN AND RANGE OF A COUNTER? E.G. DOMAIN IS PROBABLY SOME SET OF VARIABLE NAMES, AND RANGE IS PROBABLY INTEGERS… WITHOUT SAYING THIS, ONE MIGHT THINK THAT COUNTERS SHOULD ARE ALWAYS POSITIVE. ALSO: THIS KIND OF DISCUSSION SHOULD PROBABLY PRECLUDE EACH OF THESE SUBSECTIONS.
+
+The replicated counter datatype~\cite{DBLP:journals/eatcs/ShapiroPBZ11} maintains a set of counters interpreted as integers (the counters can become negative). This datatype provides  operations {\sf inc}($x$) and {\sf dec}($x$) for incrementing and decrementing a counter $x$, and {\sf read}($x$) operations to read the value of the counter $x$. The semantics of the replicated counter is quite standard: a {\sf read}($x$) operation returns the value computed as the difference between the number of {\sf inc}($x$) operations and {\sf dec}($x$) operations among its happens-before predecessors. The axioms defined below will enforce the fact that a {\sf read}($x$) operation reads-from all its happens-before predecessors which are {\sf inc}($x$) or {\sf dec}($x$) operations.
+
+Therefore, the predicate ${\sf ReadOk}(o_1,o_2)$ is defined by
+\begin{align*}
+{\sf meth}(o_1) \in \{{\sf inc},{\sf dec}\} \land {\sf meth}(o_2) ={\sf read} \land {\sf arg}(o_1)= {\sf arg}(o_2)
+\end{align*}
+and the replicated counter is defined by the following set of axioms:
+\begin{align*}
+&\textsc{ReadFrom}({\sf ReadOk})\land \textsc{ClosedRF}({\sf ReadOk})\land \textsc{RetvalCounter}.
+\end{align*}
+
+\subsection{Replicated Growable Array}
+
+\begin{figure}[t]
+  \footnotesize
+  \input{Sources/crdt/figures/axioms-rga}
+  \vspace{-2em}
+  \caption{Axioms used to define the semantics of RGA.}
+  \label{fig:formulas:RGA}
+  \vspace{-2em}
+\end{figure}
+
+The Replicated Growing Array (RGA)~\cite{RohJKL11} is a replicated list used for text-editing applications.
+%  to be consistent with the rest of the paper.}
+%
+RGA supports three operations:
+{\sf addAfter}($a$,$b$) which adds the character
+  $b$
+  immediately after the occurrence of the character $a$
+  assumed to be present in the list,
+  {\sf remove}($a$) which removes $a$
+  assumed to be present in the list, and
+{\sf read}() which returns the list contents.
+It is assumed that a character is added at most once~\footnote{In a practical context, this can be enforced by tagging characters with replica identifiers and sequence numbers.}.
+The conflicts between concurrent {\sf addAfter} operations that add a character immediately after the same character is solved using timestamps (i.e., each added character is associated to a timestamp and the order between characters depends on the order between the corresponding timestamps), which in the axioms below are modeled by the linearization order.
+
+Figure~\ref{fig:formulas:RGA} lists the axioms defining RGA. \textsc{ReadFromRGA} ensures that:
+\vspace{-1.5mm}
+\begin{itemize}
+\item every {\sf addAfter}($a$,$b$) operation reads-from the {\sf addAfter}(\_,$a$) adding the character $a$, except when $a=\circ$ which denotes the ``root'' element of the list\footnote{This element is not returned by {\sf read} operations.}, 
+\item every {\sf remove}($a$) operation reads-from the operation adding $a$, and 
+\item every {\sf read} operation returning a list containing $a$ reads-from the operation {\sf addAfter}(\_,$a$)  adding $a$. 
+\vspace{-1.5mm}
+\end{itemize}
+
+Then, \textsc{RetvalRGA} ensures that a {\sf read} operation $o_1$ happening-after an operation adding a character $a$ reads-from a {\sf remove}($a$) operation when $a$ doesn't occur in the list returned by $o_1$ (the history must contain a {\sf remove}($a$) operation because otherwise, $a$ should have occurred in the list returned by the {\sf read}). 
+
+Finally, \textsc{LinRGA} models the conflict resolution policy by constraining the linearization order between {\sf addAfter}($a$,\_) operations adding some character immediately after the same character $a$. As a particular case, \textsc{LinRGA} enforces that {\sf addAfter}($a$,$b$) is linearized before {\sf addAfter}($a$,$c$) when a {\sf read} operation returns a list where $c$ precedes $b$ ({\sf addAfter}($a$,$b$) results in the list $a\cdot b$ and applying {\sf addAfter}($a$,$c$) on $a\cdot b$ results in the list $a\cdot c\cdot b$). However, this is not sufficient: assume that the history contains the two operations {\sf addAfter}($a$,$b$) and {\sf addAfter}($a$,$c$) along with two operations {\sf remove}($b$) and {\sf addAfter}($b$,$d$). Then, a {\sf read} operation returning the list $a\cdot c\cdot d$ must enforce that {\sf addAfter}($a$,$b$) is linearized before {\sf addAfter}($a$,$c$) because this is the only order between these two operations that can lead to the result $a\cdot c\cdot d$, i.e., executing {\sf addAfter}($a$,$b$), {\sf addAfter}($b$,$d$), {\sf remove}($b$), {\sf addAfter}($a$,$c$) in this order. \textsc{LinRGA} deals with any scenario where arbitrarily-many characters can be removed from the list: $\rf^*_{\sf addAfter}$ is the reflexive and transitive closure of the projection of $\rf$ on ${\sf addAfter}$ operations and $<_{o_5}$ denotes the order between characters in the list returned by the {\sf read} operation $o_5$.
+
+
+%
+%
+%\begin{example}
+%The RGA is defined by the following set of axioms:
+%\begin{align*}
+%\textsc{Read-from-RGA}\land \textsc{ReturnRGA}\land \textsc{LinRGA}
+%\end{align*}
+%\end{example}
+
+
+%OR-Set:
+%
+%$\Phi_{\rf} = \tup{\op_2, \op_1} \in \rf$ implies $\op_1 = \tup{Contains(\xvar), \_}, \op_2 = \tup{Add/Remove(\xvar), \bot}$
+%
+%$\Phi_{\hb} = \forall \op_1 = \tup{Contains(\xvar), \_} \in \Op \land \op_2 = \tup{Add/Remove(\xvar), \bot} \in \Op$ st. $\tup{\op_2, \op_1} \in \rf$ implies $\not\exists \op_3 = \tup{Add/Remove(\xvar), \_} \in \Op$ st. $\tup{\op_2, \op_3}, \tup{\op_3, \op_1} \in \hb$
+%
+%$\Phi_{\lin} = \forall \op_1 = \tup{Contains(\xvar), r} \in \Op, \exists \op_2 = \tup{Add(\xvar), \bot} \in \Op$ st. $\tup{\op_2, \op_1} \in \rf$ iff $r = true$.
+%
+%And-Set:
+%
+%$\Phi_{\rf} = \tup{\op_2, \op_1} \in \rf$ implies $\op_1 = \tup{Contains(\xvar), \_}, \op_2 = \tup{Add/Remove(\xvar), \bot}$
+%
+%$\Phi_{\hb} = \forall \op_1 = \tup{Contains(\xvar), \_} \in \Op \land \op_2 = \tup{Add/Remove(\xvar), \bot} \in \Op$ st. $\tup{\op_2, \op_1} \in \rf$ implies $\not\exists \op_3 = \tup{Add/Remove(\xvar), \_} \in \Op$ st. $\tup{\op_2, \op_3}, \tup{\op_3, \op_1} \in \hb$
+%
+%$\Phi_{\lin} = \forall \op_1 = \tup{Contains(\xvar), r} \in \Op, \exists \op_2 = \tup{Remove(\xvar), \bot} \in \Op$ st. $\tup{\op_2, \op_1} \in \rf$ iff $r = false$.
+%
+%
+%Enable-win-flag:
+%
+%$\Phi_{\rf} = \tup{\op_2, \op_1} \in \rf$ implies $\op_1 = \tup{Read(\xvar), \_}, \op_2 = \tup{Enable/Disable(\xvar), \bot}$
+%
+%$\Phi_{\hb} = \forall \op_1 = \tup{Read(\xvar), \_} \in \Op \land \op_2 = \tup{Enable/Disable(\xvar), \bot} \in \Op$ st. $\tup{\op_2, \op_1} \in \rf$ implies $\not\exists \op_3 = \tup{Enable/Disable(\xvar), \_} \in \Op$ st. $\tup{\op_2, \op_3}, \tup{\op_3, \op_1} \in \hb$
+%
+%$\Phi_{\lin} = \forall \op_1 = \tup{Read(\xvar), r} \in \Op, \exists \op_2 = \tup{Enable(\xvar), \bot} \in \Op$ st. $\tup{\op_2, \op_1} \in \rf$ iff $r = true$.
+%
+%Disable-win-flag:
+%
+%$\Phi_{\rf} = \tup{\op_2, \op_1} \in \rf$ implies $\op_1 = \tup{Read(\xvar), \_}, \op_2 = \tup{Enable/Disable(\xvar), \bot}$
+%
+%$\Phi_{\hb} = \forall \op_1 = \tup{Read(\xvar), \_} \in \Op \land \op_2 = \tup{Enable/Disable(\xvar), \bot} \in \Op$ st. $\tup{\op_2, \op_1} \in \rf$ implies $\not\exists \op_3 = \tup{Enable/Disable(\xvar), \_} \in \Op$ st. $\tup{\op_2, \op_3}, \tup{\op_3, \op_1} \in \hb$
+%
+%$\Phi_{\lin} = \forall \op_1 = \tup{Read(\xvar), r} \in \Op, \exists \op_2 = \tup{Disable(\xvar), \bot} \in \Op$ st. $\tup{\op_2, \op_1} \in \rf$ iff $r = false$.
+%
+%MVReg:
+%
+%$\Phi_{\rf} = \tup{\op_2, \op_1} \in \rf$ implies $\op_1 = \tup{Read(\xvar), \_}, \op_2 = \tup{Write(\xvar), \_}$
+%
+%$\Phi_{\hb} = \forall \op_1 = \tup{Read(\xvar), \_} \in \Op \land \op_2 = \tup{Write(\xvar), \_} \in \Op$ st. $\tup{\op_2, \op_1} \in \rf$ implies $\not\exists \op_3 = \tup{Write(\xvar), \_} \in \Op$ st. $\tup{\op_2, \op_3}, \tup{\op_3, \op_1} \in \hb$
+%
+%$\Phi_{\lin} = \forall \op_1 = \tup{Read(\xvar), r} \in \Op, v \in r$ iff $\exists \op_2 = \tup{Write(\xvar), v} \in \Op$ st. $\tup{\op_2, \op_1} \in \rf$
+%
+%
+%LWWReg:
+%
+%$\Phi_{\rf} = \tup{\op_2, \op_1} \in \rf$ implies $\op_1 = \tup{Read(\xvar), \_}, \op_2 = \tup{Write(\xvar), \_}$
+%
+%$\Phi_{\hb} = \forall \op_1 = \tup{Read(\xvar), \_} \in \Op \land \op_2 = \tup{Write(\xvar), \_} \in \Op$ st. $\tup{\op_2, \op_1} \in \rf$ implies $\not\exists \op_3 = \tup{Write(\xvar), \_} \in \Op$ st. $\tup{\op_2, \op_3}, \tup{\op_3, \op_1} \in \hb$
+%
+%$\Phi_{\lin} = \forall \op_1 = \tup{Read(\xvar), r} \in \Op$ iff $\exists \op_2 = \tup{Write(\xvar), r} \in \Op$ st. $\tup{\op_2, \op_1} \in \rf$ and $\forall \op_3 \in \Op$ st. $\tup{\op_3, \op_1} \in \rf$ implies $\tup{\op_3, \op_2} \in \lin \lor \op_3 = \op_2$
+%
+%Counter:
+%
+%$\Phi_{\rf} = \tup{\op_2, \op_1} \in \rf$ implies $\op_1 = \tup{Read(\xvar), \_}, \op_2 = \tup{Increase/Decrease(\xvar), \_} \land \forall \op_1 = \tup{Read(\xvar), v}, v = |\{\op_2 = Increase(\xvar) | \tup{\op_2, \op_1} \in \rf\}| - |\{\op_2 = Decrease(\xvar) | \tup{\op_2, \op_1} \in \rf\}|$.
+%
+%$\Phi_{\hb} = \forall \tup{\op_2, \op_1} \in \rf$ if $\op_2 = \tup{Increase/Descrease(\xvar), \_}$ and $\exists \op_3$ such that $\tup{\op_2, \op_3} \in \hb$ and $\tup{\op_3, \op_1} \in \rf$
+%
+%$\Phi_{\lin} = \top$
+%
+%RGA:
+%
+%$\Phi_{\rf} = \op_2 = \tup{AddAfter(\_, \xvar), \_}$ and $\op_1 = \tup{AddAfter(\xvar, \_)} \lor \op_1 = \tup{Remove(\xvar), \_} \lor \op_1 = \tup{Read, [\ldots,\xvar,\ldots]}$ implies $\tup{\op_2, \op_1} \in \rf$.
+%
+%$\Phi_{\hb} = \forall \op_1 = \tup{Read, array without \xvar} \in \Op \land \op_2 = \tup{AddAfter(\xvar), \_} \in \Op$ st. $\tup{\op_2, \op_1} \in \hb$ implies $\exists \op_3 = \tup{Remove(\xvar), \_} \in \Op$ st. $\tup{\op_3, \op_1} \in \rf$
+%
+%$\Phi_{\lin} = \forall \op_1 = \tup{AddAfter(\xvar, y), \_}, \op_2 = \tup{AddAfter(\xvar, z), \_} \in \Op$ if $\exists \op_3 = \tup{Read, [\ldots,y,\ldots,z,\ldots]} \in \Op$, $\tup{\op_2, \op_1} \in \lin$
+
+
+% TODO RANADEEP: DEFINE THE AXIOMS FOR THE OBJECTS WE CONSIDER

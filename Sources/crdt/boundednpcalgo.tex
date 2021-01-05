@@ -1,0 +1,48 @@
+%!TEX root = Thesis.tex
+\section{Polynomial-Time Algorithms for Replicated Counters}
+\label{sec:counter}
+
+In this section, we show that checking consistency for the replicated counter datatype becomes polynomial time assuming the number of replicas in the input history is fixed (i.e., the width of the replica order $\RO$ is fixed). We present an algorithm which constructs a valid happens-before order (note that the semantics of the replicated counter doesn't constrain the linearization order) incrementally, following the replica order. At any time, the happens-before order is uniquely determined by a \emph{prefix mapping} that associates to each replica a \emph{prefix} of the history, i.e., a set of operations which is downward-closed w.r.t. replica order (i.e., if it contains an operation it contains all its $\RO$ predecessors). This models the fact that the replica order is included in the happens-before and therefore, if an operation $o_1$ happens-before another operation $o_2$, then all the $\RO$ predecessors of $o_1$ happen-before $o_2$. The happens-before order can be extended in two ways: (1) adding an operation issued on the replica $i$ to the prefix of replica $i$, or (2) ``merging'' the prefix of a replica $j$ to the prefix of a replica $i$ (this models the delivery of an operation issued on replica $j$ and all its happens-before predecessors to the replica $i$). Verifying that an extension of the happens-before is valid, i.e., that the return values of newly-added {\sf read} operations satisfy the \textsc{RetvalCounter} axiom, doesn't depend on the happens-before order between the operations in the prefix associated to some replica (it is enough to count the {\sf inc} and {\sf dec} operations in that prefix). Therefore, the algorithm can be seen as a search in the space of prefix mappings. If the number of replicas in the input history is fixed, then the number of possible prefix mappings is polynomial in the size of the history, which implies that the search can be done in polynomial time.
+
+%\setlength{\textfloatsep}{3pt}
+\begin{algorithm}[t]
+  {\footnotesize\input{Sources/crdt/figures/alg-counter}}
+  \caption{The procedure $\mathsf{checkCounter}$, where $\ro^1$ denotes immediate $\ro$-successor, and $f[a\leftarrow b]$ updates function $f$ with mapping $a \mapsto b$.}
+  \label{countercrdtalgo:main}
+\end{algorithm}
+
+
+Let $\hist = (\Op, \ro)$ be a history.
+To simplify the notations, we assume that the replica order is a union of sequences, each sequence representing the operations issued on the same replica.
+Therefore, each operation $o\in \Op$ is associated with a replica identifier ${\sf rep}(o)\in [1..n_\hist]$, where $n_\hist$ is the number of replicas in $\hist$.
+
+A \emph{prefix} of $\hist$ is a set of operation $\Op'\subseteq \Op$ such that all the $\ro$ predecessors of operations in $\Op'$ are also in $\Op'$, i.e., $\forall \op\in \Op.\ \ro^{-1}(\op)\in \Op$. Note that the union of two prefixes of $\hist$ is also a prefix of $\hist$. The \emph{last operation} of replica $i$ in a prefix $\Op'$ is the $\ro$-maximal operation $o$ with ${\sf rep}(o)=i$ included in $\Op'$.
+A prefix $\Op'$ is called \emph{valid} if $(\Op',\ro')$, where $\ro'$ is the projection of $\ro$ on $\Op'$, is admitted by the replicated counter.
+
+A \emph{prefix map} is a mapping $m$ which associates a prefix of $\hist$ to each replica $i\in [1..n_\hist]$.
+%The \emph{last operation} of a replica $i$ in a prefix map $m$ is the maximal $\ro$ operation o
+Intuitively, a prefix map defines for each replica $i$ the set of operations which are ``known'' to $i$, i.e., happen-before the last operation of $i$ in its prefix. Formally, a prefix map $m$ is \emph{included} in a happens-before relation $\hb$, denoted by $m\subseteq \hb$, if for each replica $i\in [1..n_\hist]$, $\hb(o,o_i)$ for each operation in $o\in m(i)\setminus\{o_i\}$, where $o_i$ is the last operation of $i$ in $m(i)$. We call $o_i$ the \emph{last operation} of $i$ in $m$, and denoted it by ${\sf last}_i(m)$.
+A prefix map $m$ is \emph{valid} if it associates a valid prefix to each replica, and \emph{complete} if it associates the whole history $\hist$ to each replica $i$.
+
+Algorithm~\ref{countercrdtalgo:main} lists our algorithm for checking consistency of replicated counter histories. It is defined as a recursive procedure $\mathsf{checkCounter}$ that searches for a sequence of valid extensions of a given prefix map (initially, this prefix map is empty) until it becomes complete. The axiom \textsc{RetvalCounter} is enforced whenever extending the prefix map with a new {\sf read} operation (when the last operation of a replica $i$ is ``advanced'' to a {\sf read} operation). The following theorem states of the correctness of the algorithm.
+
+\vspace{-2mm}
+\begin{theorem}
+
+  $\mathsf{checkCounter}(\hist,\emptyset,\emptyset)$ returns $\mathit{true}$ if{f} the input history is consistent.
+
+\vspace{-2mm}
+\end{theorem}
+
+When the number of replicas is fixed, the number of prefix maps becomes polynomial in the size of the history. This follows from the fact that prefixes are uniquely defined by their $\ro$-maximal operations, whose number is fixed.
+
+\vspace{-2mm}
+\begin{corollary}
+
+  The admissibility problem for replicated counters is polynomial-time when the number of replicas is fixed.
+
+\vspace{-2mm}
+\end{corollary}
+
+
+% For instance, given the history in Figure~\ref{ser_algo_example:1}, the set of transactions $\{\op_0,\op_1,\op_2\}$ is a prefix with boundary $\{\op_1,\op_2\}$ (the latter is an antichain of the session order).

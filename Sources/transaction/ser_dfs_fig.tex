@@ -1,0 +1,56 @@
+%!TEX root = Thesis.tex
+
+
+\tikzset{
+ ser_history/.pic={
+   \node[draw, rounded corners=2mm, minimum width=6.5cm, minimum height=3.5cm] (-box) at (0, 0) {};
+   \node[draw, rounded corners=2mm] (-t1) at (0, 1.2) {\begin{tabular}{l} \texttt{x = 0;} \end{tabular}};
+   \node[draw, rounded corners=2mm] (-t2r) at (-1.6, 0) {\begin{tabular}{l} \texttt{read(x); // 0} \end{tabular}};
+   \node[draw, rounded corners=2mm] (-t2w) at (-1.6, -1.2) {\begin{tabular}{l}  \texttt{x = 1;} \end{tabular}};
+   \node[draw, rounded corners=2mm] (-t3r) at (1.6, 0) {\begin{tabular}{l} \texttt{read(x); // 0} \end{tabular}};
+   \node[draw, rounded corners=2mm] (-t3w) at (1.6, -1.2) {\begin{tabular}{l} \texttt{x = 2;} \end{tabular}};
+   \path [name prefix ..] (#1-t2r) edge node[pos=0.5] {$\so$} (#1-t2w);
+   \path [name prefix ..] (#1-t3r) edge node[pos=0.5] {$\so$} (#1-t3w);
+   \path [name prefix ..] (#1-t1) edge node[left, pos=0.5] {$\so$} (#1-t2r);
+   \path [name prefix ..] (#1-t1) edge node[pos=0.5] {$\so$} (#1-t3r);
+  }
+}
+
+\begin{figure}
+
+ \begin{subfigure}{.44\textwidth}
+  \resizebox{\textwidth}{!}{
+   \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+     semithick, transform shape]
+    \pic (v00) at (0, 0)    {ser_history=v00};
+    \pic (v10) at (-3.5, -4)    {ser_history=v10};
+    \pic (v20) at (-7, -8)    {ser_history=v20};
+    \pic (v11) at (0, -8)    {ser_history=v11};
+    \pic (v21) at (-3.5, -12)    {ser_history=v21};
+    \pic (v22) at (0, -16)    {ser_history=v22};
+    \path (v00-box) edge[blue] node {} (v10-box); 
+    \path (v10-box) edge[red] node {} (v20-box); 
+    \path (v10-box) edge[blue] node {} (v11-box); 
+    \path (v11-box) edge[blue] node {} (v21-box); 
+    \path (v21-box) edge[blue] node {} (v22-box);
+    
+    % \draw[-, blue, dashed] plot[smooth, tension=2] coordinates { (-1.5,1.5) (0, .5) (1.5, 1.5)};
+    \draw[-, blue, dashed] plot coordinates { (-1.2,1.7) (-1.2, .7) (1.2, .7) (1.2, 1.7)};
+    \draw[-, blue, dashed] plot coordinates { (-7,-2.3) (-7,-4.5) (-3.5,-4.5) (-3.5,-3.5) (-1.5,-3.5) (-1.5,-2.3) };
+    \draw[-, blue, dashed] plot coordinates { (-3.5,-6.3) (-3.5,-8.5) (3.4,-8.5) (3.4,-6.3) };
+    % \draw[-, blue, dashed] plot coordinates { (-10.5,-6.5) (-10.5,-10) (-7, -10) (-7, -7.5) (-3.6,-7.5) (-3.6,-6.5) };
+    \draw[-, blue, dashed] plot coordinates { (-10.5,-6.3) (-10.5,-8.5) };
+    \draw[-, red, dashed] plot coordinates { (-10.5,-8.5) (-10.5,-10) (-7,-10) (-7, -8.5) };
+    \draw[-, blue, dashed] plot coordinates { (-7, -8.5) (-7, -7.5) (-3.6,-7.5) (-3.6,-6.3) };
+    \draw[-, blue, dashed] plot coordinates { (-7,-10.3) (-7,-14) (-3.5, -14) (-3.5, -12.5) (-.1,-12.5) (-.1,-10.3) };
+    \draw[-, blue, dashed] plot coordinates { (-3.5,-14.3) (-3.5,-17.9) (3.4, -17.9) (3.4,-14.3) };
+    % \draw[-, blue, dashed] plot coordinates { (-10.5,-6.5) (-10.5,-8.5) (-3.5,-8.5) (-3.5,-6.5) };
+    
+   \end{tikzpicture}  
+  }
+  \caption{Depth first search for serializable order. Red arrow implies the DFS is blocked, blue arrow implies the DFS went through.}
+  \label{ser_algo_example:3}
+ \end{subfigure}
+ \caption{}
+ \label{}
+\end{figure}

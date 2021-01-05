@@ -1,0 +1,10 @@
+\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=2.5cm,
+  semithick, transform shape]
+ \node[draw, rounded corners=2mm] (op1) {$\op_1$:  Disable(x)};
+ \node[draw, rounded corners=2mm, below of = op1] (op2) {$\op_2$: \_(x)};
+ \node[draw, rounded corners=2mm, below of = op2] (op3) {$\op_3$: \_(x)};
+ \node[draw, rounded corners=2mm, right of = op2] (op) {$\op$: $Rd(x)$};
+ \path (op1) edge node {$\rf$} (op);
+ \path (op2) edge node {$\rf$} (op);
+ \path (op3) edge node {$\rf$} (op);
+\end{tikzpicture}

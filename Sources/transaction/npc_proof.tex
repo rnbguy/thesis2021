@@ -1,0 +1,193 @@
+%!TEX root = Thesis.tex
+
+\tikzset{transaction state /.style={draw=black!0}}
+\begin{proof}
+ Given a history, any of these three criteria %between \textsf{Prefix Consistency} and \textsf{Serializability} 
+ can be checked by guessing a total commit order on its transactions and verifying whether it satisfies the corresponding axioms. This shows that the problem is in NP.
+ 
+ To show NP-hardness, we define a reduction from boolean satisfiability. Therefore, let $\varphi=D_1\land\ldots\land D_m$ be a \textsf{CNF} formula over the boolean variables $x_1, \ldots, x_n$ where each $D_i$ is a disjunctive clause with $m_i$ literals.  %we reduce it to a history in polynominal time.
+ Let $\lambda_{ij}$ denote the $j$-th literal of $D_i$. 
+ 
+We construct a history $h_\varphi$ such that $\varphi$ is satisfiable if and only if $h_\varphi$ satisfies PC, SI, or SER. Since SER $\implies$ SI $\implies$ PC, we show that (1) if $h_\varphi$ satisfies PC, then $\varphi$ is satisfiable, and (2) if $\varphi$ is satisfiable, then $h_\varphi$ satisfies SER.
+
+\paragraph{Construction of $h_\varphi$}
+The main idea of the construction is to represent truth values of each of the variables and literals in $\varphi$ with the polarity of the commit order between corresponding transaction pairs.
+For each variable $x_k$, $h_\varphi$ contains a pair of transactions $a_k$ and $b_k$, and for each literal $\lambda_{ij}$, $h_\varphi$ contains a set of transactions $w_{ij}$, $y_{ij}$ and $z_{ij}$\footnote{We assume that the transactions $a_k$ and $b_k$ associated to a variable $x_k$ are distinct and different from the transactions associated to another variable $x_{k'}\neq x_k$ or to a literal $\lambda_{ij}$. Similarly, for the transactions $w_{ij}$, $y_{ij}$ and $z_{ij}$ associated to a literal $\lambda_{ij}$.}. We want to have that $x_k$ is false if and only if $\tup{a_k, b_k} \in \CO$, and $\lambda_{ij}$ is false if and only if $\tup{y_{ij}, z_{ij}} \in \CO$ (the transaction $w_{ij}$ is used to "synchronize" the truth value of the literals with that of the variables, which is explained later).
+
+The history $h_\varphi$ should ensure that the $\co$ ordering constraints corresponding to an assignment that falsifies the formula (\ie one of its clauses) form a cycle. 
+%If for an assignment does not satisfy a clause, we want the corresponding relations to create a cycle in $\CO$. 
+To achieve that, we add all pairs $\tup{z_{ij}, y_{i,(j+1)\% m_i}}$ in the session order $\so$. An unsatisfied clause $D_i$, \ie every $\lambda_{ij}$ is false, leads to a cycle of the form $y_{i1} \xrightarrow{\CO} z_{i1} \xrightarrow{\so} y_{i2} \xrightarrow{\co} z_{i2} \cdots z_{i m_i} \xrightarrow{\so} y_{i1}$.
+
+\begin{figure}[t]
+ \resizebox{\textwidth}{!}{
+  \begin{subfigure}{.55\textwidth}
+   \centering
+   \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+     semithick, transform shape]
+     % \node[transaction state,label={$\writeVar{}{v_j}$}] at (5, 2) (a_j)                                    {$a_j$};
+    \node[transaction state] at (5, 2) (a_j)                                    {$a_k$};
+    % \node[transaction state,label=below:{$\writeVar{}{v_j}$}] at (5,0)       (b_j)           {$b_j$};
+    \node[transaction state] at (5,0)       (b_j)           {$b_k$};
+    % \node[transaction state] at (-3,3)        (c_j)                     {$c_j$};
+    \node[transaction state] at (4,0)        (w_ik)                     {$w_{ij}$};
+    \node[transaction state,label={$\writeVar{}{v_{ij}}$}] at (2,2) (y_ik) {$y_{ij}$};
+    \node[transaction state] at (2,0) (z_ik) {$z_{ij}$};
+    \node[transaction state] at (.5,2.5) (z_ik1) {$z_{i,j-1}$};
+    \node[transaction state] at (.5, -.5) (y_ik1) {$y_{i,j+1}$};
+    
+    \path (a_j) edge[dotted, red, bend left=25] node {\CO} (b_j)
+    (b_j) edge[dashed, red, bend left=25] node {\CO} (a_j);
+    % (b_j) edge[bend left] node {\WR} (c_j)
+    % (c_j) edge[dashed, red, bend left] node {\RW} (a_j);
+    
+    \path (y_ik) edge[dotted, blue, bend left=25] node {\CO} (z_ik)
+    (z_ik) edge[dashed, blue, bend left=25] node {\CO} (y_ik)
+    (z_ik) edge node {$\wro[v_{ij}]$} (w_ik);
+    % (w_ik) edge[dashed, blue, bend left] node {\RW} (y_ik);
+    
+    \path (y_ik) edge node {$\so$} (a_j)
+    (b_j) edge node[above] {$\so$} (w_ik)
+    (z_ik1) edge node[below] {$\so$} (y_ik)
+    (z_ik) edge node {$\so$} (y_ik1);
+   \end{tikzpicture}
+   \caption{$\lambda_{ij} = x_k$}
+   \label{fig:lambda_i_k_x_j_}
+  \end{subfigure}
+  \begin{subfigure}{.55\textwidth}
+   \centering
+   \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+     semithick, transform shape]
+     % \node[transaction state,label={$\writeVar{}{v_j}$}] at (5, 2) (b_j)                                    {$b_j$};
+    \node[transaction state] at (5, 2) (b_j)                                    {$b_k$};
+    % \node[transaction state,label=below:{$\writeVar{}{v_j}$}] at (5,0)       (a_j)           {$a_j$};
+    \node[transaction state] at (5,0)       (a_j)           {$a_k$};
+    % \node[transaction state] at (-3,3)        (c_j)                     {$c_j$};
+    \node[transaction state] at (4,0)        (w_ik)                     {$w_{ij}$};
+    \node[transaction state,label={$\writeVar{}{v_{ij}}$}] at (2,2) (y_ik) {$y_{ij}$};
+    \node[transaction state] at (2,0) (z_ik) {$z_{ij}$};
+    \node[transaction state] at (.5,2.5) (z_ik1) {$z_{i,j-1}$};
+    \node[transaction state] at (.5, -.5) (y_ik1) {$y_{i,j+1}$};
+    
+    \path (a_j) edge[dashed, red, bend left=25] node {\CO} (b_j)
+    (b_j) edge[dotted, red, bend left=25] node {\CO} (a_j);
+    % (b_j) edge[bend right] node {\WR} (c_j)
+    % (c_j) edge[dashed, red, bend right] node {\RW} (a_j);
+    
+    \path (y_ik) edge[dotted, blue, bend left=25] node {\CO} (z_ik)
+    (z_ik) edge[dashed, blue, bend left=25] node {\CO} (y_ik)
+    (z_ik) edge node {$\wro[v_{ij}]$} (w_ik);
+    % (w_ik) edge[dashed, blue, bend left] node {\RW} (y_ik);
+    
+    \path (y_ik) edge node {$\so$} (b_j)
+    (a_j) edge node[above] {$\so$} (w_ik)
+    (z_ik1) edge node[below] {$\so$} (y_ik)
+    (z_ik) edge node {$\so$} (y_ik1);
+   \end{tikzpicture}
+   \caption{$\lambda_{ij} = \neg x_k$}
+   \label{fig:lambda_i_k_n_x_j_}
+  \end{subfigure}
+ }
+  \vspace{-2mm}
+ \caption{Sub-histories included in $h_\varphi$ for each literal $\lambda_{ij}$ and variable $x_k$.}
+ \vspace{-3mm}
+\end{figure}
+
+The most complicated part of the construction is to ensure some consistency between the truth value of the literals and the truth value of the variables, e.g., $\lambda_{ij} = x_k$ is true iff $x_k$ is true, for at least one literal $\lambda_{ij}$ interpreted as true in every clause $D_i$ (if such a literal exists).
+Figure~\ref{fig:lambda_i_k_x_j_} shows the sub-history associated to a positive literal $\lambda_{ij} = x_k$ while Figure~\ref{fig:lambda_i_k_n_x_j_} shows the case of a negative literal $\lambda_{ij} = \neg x_k$.
+For a positive literal $\lambda_{ij} = x_k$ (Figure~\ref{fig:lambda_i_k_x_j_}), (1) we enrich session order with the pairs $\tup{y_{ij}, a_k}$ and $\tup{b_k, w_{ij}}$, (2) we include writes to a variable $v_{ij}$ in the transactions $y_{ij}$ and $z_{ij}$, and (3) we make $w_{ij}$ read from $z_{ij}$, $\ie$ $\tup{z_{ij}, w_{ij}}\in \wro_{v_{ij}}$. The case of a negative literal is similar, switching the roles of $a_k$ and $b_k$.
+
+\paragraph{PC for $h_\varphi$ implies satisfiability of $\varphi$}
+If $h_\varphi$ satisfies PC, then there exists a total commit order $\co$ between the transactions described above, which together with $h_\varphi$ satisfies $\mathsf{Prefix}$. We show that the assignment of the variables $x_k$ explained above (defined by the $\co$ order between $a_k$ and $b_k$, for each $k$) satisfies the formula $\varphi$. For each clause $D_i$, the $\so$ constraints between the transactions $y_{ij}$, $z_{ij}$ with $1\leq j\leq m_i$ imply that there exist some $z_{ij}$ that is committed before its corresponding $y_{ij}$. These two transactions are included in the sub-history corresponding to the literal $\lambda_{ij}$ (Figure~\ref{fig:lambda_i_k_x_j_} or Figure~\ref{fig:lambda_i_k_n_x_j_} depending on the polarity of the literal).
+% and their order in $\co$ implies t
+
+The definition of this sub-history ensures that the interpretation to true of the literal $\lambda_{ij}$ (given by the order in $\co$ between $z_{ij}$ and $y_{ij}$) is consistent with the assignment of the variable it contains (defined by the $\co$ order between $a_k$, $b_k$). More precisely, it ensures that if the $\co$ goes upwards on the left-hand side ($\tup{z_{ij}, y_{ij}} \in \co$) like in this case, then it must also go upwards on the right-hand side ($\tup{b_k, a_k} \in \co$ in the case of a positive literal, and $\tup{a_k, b_k} \in \co$ in the case of a negative literal) to satisfy $\mathsf{Prefix}$. For instance, if $\lambda_{ij}=x_k$ is a positive literal and we assume by contradiction that $\tup{a_k, b_k} \in \co$, then $\tup{y_{ij}, w_{ij}} \in \so \circ \co \circ \so$. Therefore, for every commit order $\CO$ such that $\tup{h_\varphi,\co}$ satisfies $\mathsf{Prefix}$, $\tup{a_k, b_k} \in \CO$ implies $\tup{y_{ij}, z_{ij}} \in \co$, which contradicts the hypothesis. Indeed, if $\tup{a_k, b_k} \in \CO$, instantiating the $\mathsf{Prefix}$ axiom  where $y_{ij}$ plays the role of $t_2$, $z_{ij}$ plays the role of $t_1$, and $w_{ij}$ plays the role of $t_3$, we obtain that $\tup{y_{ij}, z_{ij}} \in \co$. 
+
+Therefore, the assignment of the variables $x_k$ leads to at least one literal interpreted to true in each clause $D_i$, and the formula $\varphi$ is satisfiable.
+
+%right-hand side ($\tup{a_k, b_k} \in \co$ in the case of a positive literal, and $\tup{b_k, a_k} \in \co$ in the case of a negative literal), then it must also go downwards on the left-hand side ($\tup{y_{ij}, z_{ij}} \in \co$) to satisfy $\mathsf{Prefix}$.
+%
+%
+%By the design of the sub-history corresponding to $\lambda_{ij}$
+%
+% since there exists no cycle between the transactions $y_{ij}$ and $z_{ij}$, which implies that for each clause $D_i$, there exists a $j$ such that $\tup{y_{ij}, z_{ij}} \not \in \CO$ which means that $\lambda_{ij}$ is satisfied.
+%
+%
+%We use special sub-histories to enforce that if history $h_\varphi$ satisfies PC (i.e., the axiom $\mathsf{Prefix}$), 
+%%any criteria between \textsf{Prefix Consistency} and \textsf{Serializability}, 
+%then there exists a commit order $\CO$ such that $\tup{h_\varphi,\co}$ satisfies $\mathsf{Prefix}$ (Figure~\ref{pre_def}) and:
+%\begin{align}
+%\mbox{$\tup{a_k, b_k} \in \CO$ iff $\tup{y_{ij}, z_{ij}} \in \CO$ when $\lambda_{ij} = x_k$, and }\label{eq:iffs}\\
+%\mbox{$\tup{a_k, b_k} \in \CO$ iff $\tup{z_{ij}, y_{ij}} \in \CO$ when $\lambda_{ij} = \neg x_k$}.\nonumber
+%\end{align}
+%%provided that the history $h_\varphi$ satisfies any criteria between \textsf{Prefix Consistency} and \textsf{Serializability}.
+%%
+%%We will particularly show if $\varphi_\hist$ satisfies \textsf{Prefix Consistency}(weakest criteria), then the $\varphi$ is satisfiable and if $\varphi$ is satisfiable, then $\varphi_\hist$ satisfies \textsf{Serializability}(strongest criteria).
+%%
+%%Now the truth value of each $\lambda_{ik} = x_j$ or $\neg x_j$ has a consistent truth value according to the truth value of $x_j$. We use special subhistories to enforce the equivalent consistency between $\tup{y_{ik}, z_{ik}}$ and $\tup{a_j, b_j}$.
+%%
+%%These sub-histories are shown in Figure~\ref{fig:lambda_i_k_x_j_} and Figure~\ref{fig:lambda_i_k_n_x_j_}. 
+%%show the special subhistories for each $\lambda_{ik} = x_j$ and $\lambda_{ik} = \neg x_j$ respectively. 
+%%
+%
+%
+%This construction ensures that if the $\co$ goes downwards on the right-hand side ($\tup{a_k, b_k} \in \co$ in the case of a positive literal, and $\tup{b_k, a_k} \in \co$ in the case of a negative literal), then it must also go downwards on the left-hand side ($\tup{y_{ij}, z_{ij}} \in \co$) to satisfy $\mathsf{Prefix}$. For instance, in the case of a positive literal, note that if $\tup{a_k, b_k} \in \co$, then $\tup{y_{ij}, w_{ij}} \in \so \circ \co \circ \so$. Therefore, for every commit order $\CO$ such that $\tup{h_\varphi,\co}$ satisfies $\mathsf{Prefix}$, $\tup{a_k, b_k} \in \CO$ implies $\tup{y_{ij}, z_{ij}} \in \co$. Indeed, if $\tup{a_k, b_k} \in \CO$, instantiating the $\mathsf{Prefix}$ axiom  where $y_{ij}$ plays the role of $t_2$, $z_{ij}$ plays the role of $t_1$, and $w_{ij}$ plays the role of $t_3$, we obtain that $\tup{y_{ij}, z_{ij}} \in \co$. 
+%
+%In contrast, when the $\co$ goes upwards on the right-hand side ($\tup{b_k, a_k} \in \co$ in the case of a positive literal, and $\tup{a_k, b_k} \in \co$ in the case of a negative literal) then it imposes no constraint on the direction of $\co$ on the left-hand side. Therefore, any commit order $\co$ satisfying $\mathsf{Prefix}$ that goes upwards on the right-hand side (e.g., $\tup{b_k, a_k} \in \co$ in the case of a positive literal) and downwards on the left-hand side ($\tup{y_{ij}, z_{ij}} \in \co$) in some sub-history (associated to some literal), thereby contradicting Property (\ref{eq:iffs}), can be modified into another commit order satisfying $\mathsf{Prefix}$ that goes upwards on the left-hand side as well. Formally, let $\CO$ be a commit order such that $\tup{h_\varphi,\co}$ satisfies $\mathsf{Prefix}$ and 
+%\begin{align*}
+%\tup{b_k, a_k} \in \CO \land \tup{y_{ij}, z_{ij}} \in \CO
+%\end{align*}
+%for some literal $\lambda_{ij} = x_k$ (the case of negative literals can be handled in a similar manner). Let $\CO_1$ be the restriction of $\CO$ on the set of tuples 
+%\begin{align*}
+%\{\tup{a_{k'}, b_{k'}}, \tup{b_{k'}, a_{k'}} | 1\leq k'\leq n\} \cup \{\tup{y_{i'j'}, z_{i'j'}}, \tup{z_{i'j'}, y_{i'j'}} | \text{for each }i', j'\} \cup \so \cup \wro. 
+%\end{align*}
+%Since $\CO_1 \subseteq \CO$, we have that $\CO_1$ is acyclic. 
+%%Let $\lambda_{ij} = x_k$ be a literal such that $\tup{y_{ij}, z_{ij}} \in \CO_1$ and $\tup{b_k, a_k} \in \CO_1$. 
+%Let $\CO_2$ be a relation obtained from $\CO_1$ by flipping the order between $y_{ij}$ and $z_{ij}$ (\ie $\CO_2 = \CO_1 \setminus \{ \tup{y_{ij}, z_{ij}} \} \cup \{ \tup{z_{ij}, y_{ij}} \}$). This flipping does not introduce any cycle because $\CO_2$ contains no path ending in $z_{ij}$ (see Fig~\ref{fig:lambda_i_k_x_j_}). Also, $\CO_2$ still satisfies the $\mathsf{Prefix}$ axiom (since $\tup{b_k, a_k} \in \CO_2$ there is no path from $y_{ij}$ to $w_{ij}$ satisfying the constraints in the $\mathsf{Prefix}$ axiom). Since $\CO_2$ is acyclic, it can be extended to a total commit order $\CO_3$ that satisfies $\mathsf{Prefix}$. This is a consequence of the following lemma whose proof follows easily from definitions (the part of this lemma concerning $\mathsf{Serializability}$ will be used later).%Moreover, $\CO_3$ has strictly less literals $\lambda_{ij} = x_k$ satisfying $\tup{y_{ij}, z_{ij}} \in \CO \land \tup{b_k, a_k} \in \CO$ than $\CO$, which contradicts the hypothesis.
+%
+%\begin{lemma}\label{lem:extensions}
+%Let $\co$ be an acyclic relation that includes $\so\cup\wro$, $\tup{a_{k}, b_{k}}$ or $\tup{b_{k}, a_{k}}$, for each $k$, and $\tup{y_{ij},z_{ij}}$ or $\tup{z_{ij},y_{ij}}$, for each $i$, $j$. For each axiom $A\in \{\mathsf{Prefix}, \mathsf{Serializability}\}$, if $\tup{h_\varphi,\co}$ satisfies $A$, then there exists a total commit order $\co'$ such that $\co\subseteq \co'$ and $\tup{h_\varphi,\co'}$ satisfies $A$.
+%\end{lemma}
+%
+%Therefore, $\tup{h_\varphi,\co_3}$ satisfies $\mathsf{Prefix}$, and $\tup{b_k, a_k} \in \CO_3 \land \tup{z_{ij}, y_{ij}} \in \CO_3$ ($\co_3$ goes upwards on both sides of a sub-history like in Figure~\ref{fig:lambda_i_k_x_j_}). This transformation can be applied iteratively until obtaining a commit order that satisfies both $\mathsf{Prefix}$ and Property (\ref{eq:iffs}).
+%
+%%Furthermore, if $h_\varphi$ satisfies PC, then it satisfies $\mathsf{Prefix}$. The axiom imply that $\tup{y_{ij}, z_{ij}} \in \co$ ($y_{ij}$ plays the role of $t_2$, $z_{ij}$ plays the role of $t_1$, and $w_{ij}$ plays the role of $t_3$ in Figure~\ref{pre_def} and Figure~\ref{ser_def}, respectively). This is proved for all witnessing commit orders $\CO$.
+%
+%%Now to prove that there exists a commit order $\CO$ such that $\tup{y_{ij}, z_{ij}} \in \CO$ implies $\tup{a_k, b_k} \in \CO$ if $\lambda_{ij} = x_k$. Assume by contradiction that there exists no such commit order. Let $\CO$ be a commit order satisfying the PC axioms in which the number of literals $\lambda_{ij} = x_k$ satisfying $\tup{y_{ij}, z_{ij}} \in \CO \land \tup{b_k, a_k} \in \CO$ (ie. the violation of $\tup{y_{ij}, z_{ij}} \in \CO$ implies $\tup{a_k, b_k} \in \CO$) is minimal. Let $\CO_1$ be the restriction of $\CO$ on the set of tuples $\{\tup{a_k, b_k}, \tup{b_k, a_k} | \text{for each }k\} \cup \{\tup{y_{ij}, z_{ij}}, \tup{z_{ij}, y_{ij}} | \text{for each }i, j\} \cup \so \cup \wro$. Since $\CO_1 \subseteq \CO$, we have that $\CO_1$ is acyclic. Let $\lambda_{ij} = x_k$ be a literal such that $\tup{y_{ij}, z_{ij}} \in \CO_1$ and $\tup{b_k, a_k} \in \CO_1$. Let $\CO_2$ be a relation obtained from $\CO_1$ by flipping the order between $y_{ij}$ and $z_{ij}$ (\ie $\CO_2 = \CO_1 \setminus \{ \tup{y_{ij}, z_{ij}} \} \cup \{ \tup{z_{ij}, y_{ij}} \}$). This flipping does not introduce any cycle because $\CO_2$ contains no path ending in $z_{ij}$ (see Fig~\ref{fig:lambda_i_k_x_j_}). Also, $\CO_2$ still satisfies the PC axiom (since $\tup{b_k, a_k} \in \CO$ there is no path from $y_{ij}$ to $w_{ij}$ satisfying the constraints in the PC axiom). Since $\CO_2$ is acyclic, it can be extended to a total commit order $\CO_3$ that satisfies the PC axiom. Moreover, $\CO_3$ has strictly less literals $\lambda_{ij} = x_k$ satisfying $\tup{y_{ij}, z_{ij}} \in \CO \land \tup{b_k, a_k} \in \CO$ than $\CO$, which contradicts the hypothesis.
+%%
+%%For the case of $\lambda_{ij} = \neg x_k$ in figure~\ref{fig:lambda_i_k_n_x_j_}, $\tup{b_k, a_k} \in \CO$ implies $\tup{y_{ij}, z_{ij}} \in \CO$ for any witnessing $\CO$. This direction can be proved similarly as the case of $\lambda_{ij} = x_k$ switching the roles of $a_k$ and $b_k$.
+%%
+%%Also, to prove that there exists a commit order $\CO$ such that $\tup{y_{ij}, z_{ij}} \in \CO$ implies $\tup{b_k, a_k} \in \CO$ if $\lambda_{ij} = \neg x_k$, we use the similar argument as $\lambda_{ij} = x_k$ switching the roles of $a_k$ and $b_k$. Only we start with a $\CO$ which does not include any violation of $\tup{y_{ij}, z_{ij}} \in \CO$ implies $\tup{a_k, b_k} \in \CO$ (we proved such $\CO$ exists) and prove existence of a $\CO'$ which does not contain any violation of $\tup{y_{ij}, z_{ij}} \in \CO$ implies $\tup{b_k, a_k} \in \CO$ if $\lambda_{ij} = \neg x_k$. While constructing the cases of $\lambda_{ij} = x_k$ remain same as $\CO$. So $\CO'$ also does not contain any violation of $\tup{y_{ij}, z_{ij}} \in \CO$ implies $\tup{a_k, b_k} \in \CO$ if $\lambda_{ij} = x_k$.
+%
+%%We can do a similar construction in figure \ref{fig:lambda_i_k_n_x_j_}, but we reverse the role of $a_j$ and $b_j$.
+%
+%%In figure \ref{fig:lambda_i_k_x_j_}, if $\tup{a_j, b_j} \in \co$, then $\tup{y_{ik}, w_{ik}} \in \so \circ \co \circ \so$. So by the axioms of SER, SI and PC in table \ref{consistency_defs}, $\tup{y_{ik}, z_{ik}} \in \co$. Similarly we can argue about the case of $\lambda_{ik} = \neg x_j$ in figure \ref{fig:lambda_i_k_n_x_j_} by reversing the role of $a_j$ and $b_j$.
+%%
+%%If $h_\varphi$ is SER, SI or PC, these subhistoies will enforce,
+%%
+%%\begin{itemize}
+%% \item If $\lambda_{ik} = x_j$, $\tup{a_j, b_j} \in \CO$ would imply $\tup{y_{ik}, z_{ik}} \in CO$ in $h_\varphi$.
+%% \item If $\lambda_{ik} = \neg x_j$, $\tup{a_j, b_j} \not\in \CO$ $\ie$ $\tup{b_j, a_j} \in \CO$ would imply $\tup{y_{ik}, z_{ik}} \in CO$.
+%%\end{itemize}
+%
+%Next, we complete the correctness proof of this reduction. % \ie $\varphi$ is satisfiable if and only if $h_\varphi$ satisfies any criteria between PC and SER. 
+%For the ``if'' direction, if $h_\varphi$ satisfies PC, then there exists a total commit order $\co$ between the transactions described above, which together with $h_\varphi$ satisfies $\mathsf{Prefix}$. The assignment of the variables $x_k$ explained above (defined by the $\co$ order between $a_k$ and $b_k$, for each $k$) satisfies the formula $\varphi$ since there exists no cycle between the transactions $y_{ij}$ and $z_{ij}$, which implies that for each clause $D_i$, there exists a $j$ such that $\tup{y_{ij}, z_{ij}} \not \in \CO$ which means that $\lambda_{ij}$ is satisfied.
+
+\paragraph{Satisfiability of $\varphi$ implies SER for $\hist_\varphi$}
+Let $\gamma$ be a satisfying assignment for $\varphi$. Also, let $\CO'$ be a binary relation that includes $\so$ and $\wro$ such that if $\gamma(x_k)=\mathit{false}$, then $\tup{a_k, b_k} \in \CO'$, $\tup{y_{ij}, z_{ij}} \in \CO'$ for each $\lambda_{ij} = x_k$, and $\tup{z_{ij}, y_{ij}} \in \CO'$ for each $\lambda_{ij} = \neg x_k$, and if $\gamma(x_k)=\mathit{true}$, then $\tup{b_k, a_k} \in \CO'$, $\tup{z_{ij}, y_{ij}} \in \CO'$ for each $\lambda_{ij} = x_k$, and $\tup{y_{ij}, z_{ij}} \in \CO'$ for each $\lambda_{ij} = \neg x_k$. Looking at the sub-histories corresponding to literals $\lambda_{ij}$ (Figure~\ref{fig:lambda_i_k_x_j_} or Figure~\ref{fig:lambda_i_k_n_x_j_}), $\co'$ goes in the same direction (upwards or downwards) on both sides. 
+
+Note that $\CO'$ is acyclic: no cycle can contain $w_{ij}$ because $w_{ij}$ has no ``outgoing'' dependency (\ie $\CO'$ contains no pair with $w_{ij}$ as a first component), there is no cycle including some pair of transactions $a_k$, $b_k$ and some pair $y_{ij}$, $z_{ij}$ because there is no way to reach $y_{ij}$ or $z_{ij}$ from $a_k$ or  $b_k$, there is no cycle including only transactions $a_k$ and $b_k$ because $a_{k_1}$ and $b_{k_1}$ are not related to $a_{k_2}$ and $b_{k_2}$, for $k_1\neq k_2$, there is no cycle including transactions $y_{i_1,j_1}$, $z_{i_1,j_1}$ and $y_{i_2,j_2}$, $z_{i_2,j_2}$ for $i_1\neq i_2$ since these are disconnected as well, and finally, there is no cycle including only transactions $y_{ij}$ and $z_{ij}$, for a fixed $i$, because $\varphi$ is satisfiable. It can be proved easily that the acyclic relation $\co'$ can be extended to a total commit order $\co$ which together with $h_\varphi$ satisfies the $\mathsf{Serializability}$ axiom. Therefore, $h_\varphi$ satisfies SER.
+%
+%TODO I STOPPED HERE
+%
+%Also, there is no cycle in $\co$. So there is no cycle of the form $y_{i1} \xrightarrow{\CO} z_{i1} \xrightarrow{\so} y_{i2} \cdots z_{ik} \xrightarrow{\so} y_{i1}$ for any $i$. So each clause $i$ has a $k$ such that $\tup{y_{ik}, z_{ik}} \not\in \co$ which implies there exists an assignment(given by $\tup{a_j, b_j}$) for which each clause is satisfied. Thus $\varphi$ is satisfiable.
+%
+%For the other direction, we show, there no other kind of cycle is possible in $h_\varphi$, when $\tup{y_{ik}, z_{ik}}$ and $\tup{a_j, b_j}$ pairs are fixed.
+%\begin{itemize}
+% \item First note, no cycle can contain $w_{ik}$ because it does not have any outgoing relation(TODO better word). 
+% \item Also it is easy to see, there is no cycle involving both $a_j, b_j, y_{ik}, z_{ik}$ because there is no way to reach $y_{ik}, z_{ik}$ from any $a_j, b_j$. 
+% \item $a_j, b_j$ can not have cycles because each of $a_{j1}, b_{j1}$ and $a_{j2}, b_{j2}$ are disconnected. 
+% \item Each of $y_{i1k1}, z_{i1k1}$ and $y_{i2k2}, z_{i2k2}$ are also disconnected.
+%\end{itemize}
+%
+%So only possible cycle is in $y_{ik}, z_{ik}$ for each clause $i$. But, given an satisfying assignment of $\phi$, we can set $\tup{a_j, b_j}$ and $\tup{y_{ik}, z_{ik}}$ accordingly. Since every clause $i$ is satisfied, there is at least one $\tup{y_{ik}, z_{ik}} \not\in \co$ \ie there is no cycle in $y_{ik}, z_{ik}$. Hence, we can extend that strict partial order to a total order $\CO$. Thus, $h_\varphi$ is PC, SI or SER.
+\end{proof}

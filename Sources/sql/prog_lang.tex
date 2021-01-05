@@ -1,0 +1,43 @@
+%!TEX root = Thesis.tex
+
+\section{Programming Language}
+
+\begin{figure}
+\small
+\begin{align*}
+\key\in \Keys\quad \xvar\in\Vars\quad \tab\in\Tables\quad \vec{c},\vec{c_1},\vec{c_2}\in \Columns^*
+\end{align*}
+\begin{align*}
+\mathsf{Prog} &  \eqdef  \mathsf{Sess} \ \mid\  \mathsf{Sess}\,||\,\mathsf{Prog} \\
+\mathsf{Sess} & \eqdef  \mathsf{Trans} \ \mid\  \mathsf{Trans}; \mathsf{Sess} \\
+\mathsf{Trans} & \eqdef  \ibegin; \mathsf{Body}; \icommit \\
+\mathsf{Body} & \eqdef  \mathsf{Instr} \ \mid\  \mathsf{Instr}; \mathsf{Body} \\
+\mathsf{Instr} & \eqdef  \mathsf{InstrKV} \ \mid\  \mathsf{InstrSQL}\ \mid\  x := e \mid\ \iif{\phi(\vec{x})}{\mathsf{Instr}} \\
+\mathsf{InstrKV} & \eqdef \xvar := \iread(\key)  \ \mid\  \iwrite(\key,\xvar) \\
+\mathsf{InstrSQL} & \eqdef  \iselect{\vec{c_1}}{\xvar}{\tab}{\phi(\vec{c_2})} \ \mid\ \\
+& \hspace{5mm} \iinsert{\tab}{\vec{x}} \ \mid\ \\
+& \hspace{5mm} \idelete{\tab}{\phi(\vec{c})} \ \mid\ \\
+& \hspace{5mm} \iupdate{\tab}{\vec{c_1}=\vec{x}}{\phi(\vec{c_2})} 
+%\mathsf{Local} & \eqdef  x := e
+\end{align*}
+\vspace{-6mm}
+\caption{Program syntax. The set of all keys is denoted by $\Keys$, $\Vars$ denotes the set of local variables, $\Tables$ the set of table names, and $\Columns$ the set of column names.
+We use $\phi$ to denote Boolean expressions, and $e$ to denote expressions interpreted as values. We use $\vec{\cdot}$ to denote vectors of elements.}
+\label{fig:syntax}
+\vspace{-4mm}
+\end{figure}
+
+Figure~\ref{fig:syntax} lists the definition of two simple programming languages that we use to represent applications running on top of Key-Value or SQL stores, respectively. A program is a set of \emph{sessions} running in parallel, each session being composed of a sequence of \emph{transactions}. Each transaction is delimited by $\ibegin$ and $\icommit$ instructions\footnote{For simplicity, we assume that all the transactions in the program commit. Aborted transactions can be ignored when reasoning about safety because their effects should be invisible to other transactions.}, and its body contains instructions that access the store, and manipulate a set of local variables $\Vars$ ranged over using $\xvar$, $\yvar$, $\ldots$.
+
+In case of a program running on top of a Key-Value store, the instructions can be reading the value of a key and storing it to a local variable $\xvar$ ($\xvar := \iread(\key)$) , writing the value of a local variable $\xvar$ to a key ($\iwrite(\key,\xvar)$), or an assignment to a local variable $\xvar$. The set of values of keys or local variables is denoted by $\Vals$. Assignments to local variables use expressions interpreted as values whose syntax is left unspecified. Each of these instructions can be guarded by a Boolean condition $\phi(\vec{x})$ over a set of local variables $\vec{x}$ (their syntax is not important). Other constructs like $\mathtt{while}$ loops can be defined in a similar way. Let $\KVProgs$ denote the set of programs where a transaction body can contain only such instructions.
+
+For programs running on top of SQL stores, the instructions include simplified
+versions of standard SQL instructions and assignments to local variables. These
+programs run in the context of a \emph{database schema} which is a (partial)
+function $\DBschema:\Tables\rightharpoonup 2^\Columns$ mapping table names in
+$\Tables$ to sets of column names in $\Columns$. The SQL store is an
+\emph{instance} of a database schema $\DBschema$, i.e., a function $\DBinst:
+\mathsf{dom}(\DBschema)\rightarrow 2^{\Rows}$ mapping each table $\tab$ in the
+domain of $\DBschema$ to a set of \emph{rows} of $\tab$, i.e., functions $r:\DBschema(\tab)\rightarrow\Vals$. We use $\Rows$ to denote the set of all rows.
+The $\mathtt{SELECT}$ instruction retrieves the columns $\vec{c_1}$ from the set of rows of $\tab$ that satisfy $\phi(\vec{c_2})$ ($\vec{c_2}$ denotes the set of columns used in this Boolean expression), and stores them into a variable $\xvar$. $\mathtt{INSERT}$ adds a new row to $\tab$ with values $\vec{x}$, and $\mathtt{DELETE}$ deletes all rows from $\tab$ that satisfy a condition $\phi(\vec{c})$. The $\mathtt{UPDATE}$ instruction assigns the columns $\vec{c_1}$ of all rows of $\tab$ that satisfy $\phi(\vec{c_2})$ with values in $\vec{x}$.
+Let $\SQLProgs$ denote the set of programs where a transaction body can contain only such instructions.

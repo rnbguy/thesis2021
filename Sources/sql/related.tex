@@ -1,0 +1,95 @@
+%!TEX root = Thesis.tex
+
+\section{Testing SQL Database}
+\label{sec:related}
+
+%AXIOMATIC FORMALIZATIONS OF ISOLATION LEVELS (ADYA, GOTSMAN, OOPSLA). RELATED TO WEAK CONSISTENCY FOR INDIVIDUAL OPERATIONS (POPL'14, ETC)
+
+There have been several directions of work addressing the correctness of database-backed applications. 
+We directly build upon one line of work concerned with the logical formalization
+of isolation levels 
+\cite{ansi,DBLP:conf/icde/AdyaLO00,DBLP:conf/sigmod/BerensonBGMOO95,DBLP:conf/concur/Cerone0G15,DBLP:journals/pacmpl/BiswasE19}.
+Our work relies on the axiomatic definitions of isolation levels, as given
+in~\cite{DBLP:journals/pacmpl/BiswasE19}, which also investigated
+the problem of checking whether a given history satisfies a certain isolation
+level. Our kv-store implementation relies on these algorithms 
+to check the validity of the values returned by read operations. Working with a
+logical formalization allowed us to avoid implementing an actual database with replication or
+sophisticated synchronization.
+
+Another line of work concentrates on the problem of finding ``anomalies'': 
+behaviors that are not possible under serializability. This is typically done
+via a static analysis of the application code that builds a static dependency graph that
+over-approximates the data dependencies in all possible
+executions of the application~\cite{DBLP:journals/jacm/CeroneG18,DBLP:journals/jacm/CeroneG18,DBLP:conf/concur/0002G16,DBLP:journals/tods/FeketeLOOS05,DBLP:conf/vldb/JorwekarFRS07,acidrain,isodiff}.
+Anomalies with respect to a given isolation level then corresponds to a
+particular class of cycles in this graph. Static dependency graphs turn out to
+be highly imprecise in representing feasible executions, leading to false
+positives. Another source of false positives is that an anomaly might not be a
+bug because the application may already be designed to handle the
+non-serializable behavior \cite{DBLP:conf/pldi/BrutschyD0V18,isodiff}. 
+Recent work has tried to address these issues by using more precise 
+logical encodings of the application,
+e.g.~\cite{DBLP:conf/popl/BrutschyD0V17,DBLP:conf/pldi/BrutschyD0V18} or
+by using user-guided heuristics~\cite{isodiff}. 
+
+Another approach consists of modeling the application
+logic and the isolation level in first-order logic and relying on SMT solvers to
+search for anomalies~\cite{DBLP:journals/pacmpl/KakiESJ18,DBLP:conf/concur/NagarJ18,burcu-netys},
+or defining specialized reductions to assertion
+checking~\cite{DBLP:conf/concur/BeillahiBE19,DBLP:conf/cav/BeillahiBE19}.
+The \textsc{Clotho} tool \cite{clotho}, for instance, uses a static analysis of the application to
+generate test cases with plausible anomalies, which are deployed in a concrete
+testing environment for generating actual executions. 
+
+Our approach, based on testing with MonkeyDB, has several practical advantages.
+There is no need for analyzing application code; we can work with any
+application. There are no false positives because we directly run the
+application and check for user-defined assertions, instead of looking for
+application-agnostic anomalies. The limitation, of course, is
+the inherent incompleteness of testing.
+
+Several works have looked at the problem of reasoning about the correctness of
+applications executing under weak isolation and introducing additional
+synchronization when
+necessary~\cite{DBLP:conf/eurosys/BalegasDFRPNS15,DBLP:conf/popl/GotsmanYFNS16,DBLP:conf/esop/NairP020,DBLP:conf/usenix/0001LCPRV14}.
+As in the previous case, our work based on testing has the advantage that it can
+scale to real sized applications (as opposed to these techniques which are based
+on static analysis or logical proof arguments), but it cannot prove that an
+application is correct. Moreover, the issue of repairing applications is
+orthogonal to our work. 
+% works rely on static analysis or logical proof arguments whose application to  is limited. 
+
+From a technical perspective, our operational semantics based on recording past
+operations and certain data-flow and control-flow dependencies is similar to
+recent work on stateless model checking in the context of weak memory
+models,
+e.g.~\cite{DBLP:journals/pacmpl/Kokologiannakis18,DBLP:conf/tacas/AbdullaAAJLS15}.
+This work, however, does not consider transactions. Furthermore, their focus is on
+avoiding enumerating equivalent executions, which is beyond the scope of our
+work (but an interesting direction for future work).
+
+%Proof techniques [CISE, Petri, Alvaro..]. Apply to particular isolation levels and to toy examples, hard to scale.
+%
+%Dynamic analyses [Acid, IsoDiff]: imprecise, or user input required
+
+%TECHNICALLY, THE OPERATIONAL SEMANTICS BASED ON MAINTAINING A HISTORY IS RELATED TO OTHER WORKS IN WEAK MEMORY (VAFEAIDIS, PAROSH)
+
+
+
+%To address developers' concerns in reasoning weak behaviours and in detecting invariant violations, 
+%there were recent efforts spanning static analyses~\cite{clotho, burcu-netys}, dynamic analyses~\cite{acidrain, maryam}, and testing~\cite{jepsen}.
+%
+%Static analyses~\cite{clotho,burcu-netys} encode transactions, database consistency specification, and application invariant (sometimes) etc., in verification logic and use SMT solvers to prove that logical formula.
+%While these static analyses provide full guarantees, using them requires expertise and also handling arbitrary code becomes challenging.
+%\tool{} requires no modifications to the client appication under test.
+%Also, new changes to the application may require renewed analysis, and using \tool{},
+%developers must be able to perform testing as a continual activity as the application evolves.
+%
+%
+%Dynamic analyses~\cite{acidrain,maryam} work on the abstract models built from the actual execution trace.
+% These techniques require instrumenting the application code and it becomes difficult to replay the findings of such an analysis in the actual test environment because the analysis was performed offline (not during execution), and also  the offline analysis can sometimes suffer from false positives.   
+%
+%
+%Although there are no automatic testing tools dedicated to database applications, random fuzzing based testing tools such as Jepsen~\cite{jepsen} designed for distributed applications can be used. 
+%However, these tools cannot provide high coverage.

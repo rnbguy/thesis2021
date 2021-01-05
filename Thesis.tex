@@ -62,7 +62,17 @@
   ]{biblatex}
 
 \input{bibliography-mimosis}
-\addbibresource{Thesis.bib}
+
+% \bibliography{dblp.bib}
+
+\addbibresource{Sources/crdt/dblp.bib}
+\addbibresource{Sources/crdt/misc.bib}
+
+\addbibresource{Sources/transaction/misc.bib}
+\addbibresource{Sources/transaction/dblp.bib}
+
+\addbibresource{Sources/sql/main.bib}
+\addbibresource{Sources/sql/dblp.bib}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Fonts
@@ -101,9 +111,11 @@
 % Incipit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\title{\texttt{latex-mimosis}}
-\subtitle{A minimal, modern \LaTeX{} package for typesetting your thesis}
-\author{Bastian Rieck}
+\title{Testing geo-distributed highly available data storages}
+\subtitle{Crashing modern distributed applications}
+\author{Ranadeep Biswas}
+
+\include{Sources/defs}
 
 \begin{document}
 
@@ -115,7 +127,58 @@
 
 \mainmatter
 
-  \include{Sources/Introduction}
+  \chapter{Introduction}
+
+  % \include{Sources/Introduction}
+
+  \chapter{Replicated Data Types}
+
+  \input{Sources/crdt/intro}
+  \input{Sources/crdt/definitions}
+
+  \chapter{Transactional System}
+  \input{Sources/transaction/introduction}
+  \input{Sources/transaction/overview}
+  \input{Sources/transaction/criteria}
+
+  \chapter{Algorithms and Complexity}
+
+  \input{Sources/crdt/npc}
+  \input{Sources/crdt/differentiated}
+  \input{Sources/crdt/boundednpcalgo}
+  \input{Sources/crdt/orset}
+
+  % \input{Sources/transaction/overview}
+  % \input{Sources/transaction/criteria}
+  %\input{Sources/transaction/sec3-temp}
+  \input{Sources/transaction/algorithms}
+  \input{Sources/transaction/experiments}
+
+  \chapter{Extension to SQL database}
+
+  \input{Sources/sql/intro}
+  \input{Sources/sql/prog_lang}
+  \input{Sources/sql/ax-kv}
+  \input{Sources/sql/op-kv}
+  \input{Sources/sql/formal}
+  \input{Sources/sql/impl}
+  \input{Sources/sql/microbenchmark}
+  \input{Sources/sql/oltp}
+
+  \chapter{Related work}
+
+  \input{Sources/crdt/related}
+  \input{Sources/transaction/related}
+  \input{Sources/sql/related}
+
+  \chapter{Conclusion}
+
+  \input{Sources/crdt/conclusion}
+  \input{Sources/sql/concl}
+
+  \chapter{Appendix}
+
+  \input{Sources/transaction/criteria-app}
 
 % This ensures that the subsequent sections are being included as root
 % items in the bookmark structure of your PDF reader.

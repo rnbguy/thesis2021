@@ -1,0 +1,34 @@
+\SetKwInOut{KwInput}{Input}
+\SetKwInOut{KwOutput}{Output}
+\KwIn{A history $\hist = \tup{\Op, \ro}$ of RGA.}
+\KwOut{An $\rf$ satisfying $\textsc{ReadFromRGA} \land \textsc{RetvalRGA}$, if exists; $\bot$ o/w}
+\BlankLine
+$\rf\leftarrow \{(o_1,o_2): {\sf meth}(o_1)={\sf addAfter}, {\sf meth}(o_2)\in \{{\sf addAfter},{\sf remove},{\sf read}\}, {\sf arg}_2(o_1)= {\sf arg}_1(o_2)\vee {\sf arg}_2(o_1)\in {\sf ret}(o_2)\}$\;
+\lIf {\emph{$\tup{\hist,\rf}\not\models \textsc{ReadFromRGA}$}} {
+  \Return{$\bot$}
+}
+%   $\rf \leftarrow \emptyset$\;
+%   \ForEach{$\xvar \in \vars{\hist}$}{
+%    \ForEach{$\op_2 \in \Op$ s.t $\op_2 = \tup{Read(), [\ldots,a,\ldots]}/\tup{AddAfter(a, \_), \bot}/\tup{Remove(a), \bot}$}{
+%      \eIf{$\exists \op_1 \in \Op$ s.t. $\op_1 = \tup{AddAfter(\_, a), \bot}$}{
+%      $\rf \leftarrow \rf \cup \{\tup{\op_1, \op_2}\}$\;
+%      }{
+%      \Return{$\bot$}\;
+%      }
+%    }
+%   }
+\While{true}{
+$\rf_1 \leftarrow \emptyset$\;
+ \ForEach{\emph{$\op_1, \op_2 \in \Op$ s.t. $\tup{\op_2, \op_1} \in (\rf\cup\ro)^+$ and ${\sf meth}(o_1) = {\sf read}$ and ${\sf meth}(o_2) = {\sf addAfter}$ and ${\sf arg}_2(o_2)\not\in {\sf ret}(o_1)$}}{
+ \eIf{\emph{$\exists \op_3 \in \Op$ s.t. ${\sf meth}(o_3) = {\sf remove}$ and ${\sf arg}(o_3)={\sf arg}_2(o_2)$}}{
+
+   $\rf_1 \leftarrow \rf_1 \cup \{\tup{\op_3, \op_1}\}$\;
+   }{
+   \Return{$\bot$}\;
+   }
+ }
+\lIf{\emph{$\rf_1 \subseteq \rf$}}{{\bf break}}
+\lElse{$\rf \leftarrow \rf \cup \rf_1$}
+
+}
+\Return{\emph{$\rf$}}\;
