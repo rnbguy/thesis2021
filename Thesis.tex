@@ -111,8 +111,8 @@
 % Incipit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\title{Testing geo-distributed highly available data storages}
-\subtitle{Crashing modern distributed applications}
+\title{Testing Weakly Consistent Geo-Distributed Data-Storages and Applications}
+\subtitle{Crashing modern distributed systems}
 \author{Ranadeep Biswas}
 
 \include{Sources/defs}
@@ -131,30 +131,27 @@
 
   % \include{Sources/Introduction}
 
-  \chapter{Replicated Data Types}
+  \chapter{Testing Consistency of Conflict-Free Replicated Data Types}
 
   \input{Sources/crdt/intro}
   \input{Sources/crdt/definitions}
-
-  \chapter{Transactional System}
-  \input{Sources/transaction/introduction}
-  \input{Sources/transaction/overview}
-  \input{Sources/transaction/criteria}
-
-  \chapter{Algorithms and Complexity}
-
   \input{Sources/crdt/npc}
   \input{Sources/crdt/differentiated}
   \input{Sources/crdt/boundednpcalgo}
   \input{Sources/crdt/orset}
+  \input{Sources/crdt/related}
+  \input{Sources/crdt/conclusion}
 
-  % \input{Sources/transaction/overview}
-  % \input{Sources/transaction/criteria}
-  %\input{Sources/transaction/sec3-temp}
+  \chapter{Testing Transactional Consistency}
+  \input{Sources/transaction/introduction}
+  \input{Sources/transaction/overview}
+  \input{Sources/transaction/criteria}
+  % \input{Sources/transaction/sec3-temp}
   \input{Sources/transaction/algorithms}
   \input{Sources/transaction/experiments}
+  \input{Sources/transaction/related}
 
-  \chapter{Extension to SQL database}
+  \chapter{Effectively Testing Applications Based on Weak Isolation Levels}
 
   \input{Sources/sql/intro}
   \input{Sources/sql/prog_lang}
@@ -164,16 +161,7 @@
   \input{Sources/sql/impl}
   \input{Sources/sql/microbenchmark}
   \input{Sources/sql/oltp}
-
-  \chapter{Related work}
-
-  \input{Sources/crdt/related}
-  \input{Sources/transaction/related}
   \input{Sources/sql/related}
-
-  \chapter{Conclusion}
-
-  \input{Sources/crdt/conclusion}
   \input{Sources/sql/concl}
 
   \chapter{Appendix}
