@@ -21,24 +21,24 @@ Another line of work concentrates on the problem of finding ``anomalies'':
 behaviors that are not possible under serializability. This is typically done
 via a static analysis of the application code that builds a static dependency graph that
 over-approximates the data dependencies in all possible
-executions of the application~\cite{DBLP:journals/jacm/CeroneG18,DBLP:journals/jacm/CeroneG18,DBLP:conf/concur/0002G16,DBLP:journals/tods/FeketeLOOS05,DBLP:conf/vldb/JorwekarFRS07,acidrain,isodiff}.
+executions of the application~\cite{DBLP:journals/jacm/CeroneG18,DBLP:journals/jacm/CeroneG18,DBLP:conf/concur/0002G16,DBLP:journals/tods/FeketeLOOS05,DBLP:conf/vldb/JorwekarFRS07,DBLP:conf/sigmod/WarszawskiB17,DBLP:journals/pvldb/GanRRB020}.
 Anomalies with respect to a given isolation level then corresponds to a
 particular class of cycles in this graph. Static dependency graphs turn out to
 be highly imprecise in representing feasible executions, leading to false
 positives. Another source of false positives is that an anomaly might not be a
 bug because the application may already be designed to handle the
-non-serializable behavior \cite{DBLP:conf/pldi/BrutschyD0V18,isodiff}. 
+non-serializable behavior \cite{DBLP:conf/pldi/BrutschyD0V18,DBLP:journals/pvldb/GanRRB020}. 
 Recent work has tried to address these issues by using more precise 
 logical encodings of the application,
 e.g.~\cite{DBLP:conf/popl/BrutschyD0V17,DBLP:conf/pldi/BrutschyD0V18} or
-by using user-guided heuristics~\cite{isodiff}. 
+by using user-guided heuristics~\cite{DBLP:journals/pvldb/GanRRB020}. 
 
 Another approach consists of modeling the application
 logic and the isolation level in first-order logic and relying on SMT solvers to
 search for anomalies~\cite{DBLP:journals/pacmpl/KakiESJ18,DBLP:conf/concur/NagarJ18,burcu-netys},
 or defining specialized reductions to assertion
 checking~\cite{DBLP:conf/concur/BeillahiBE19,DBLP:conf/cav/BeillahiBE19}.
-The \textsc{Clotho} tool \cite{clotho}, for instance, uses a static analysis of the application to
+The \textsc{Clotho} tool \cite{DBLP:journals/pacmpl/RahmaniNDJ19}, for instance, uses a static analysis of the application to
 generate test cases with plausible anomalies, which are deployed in a concrete
 testing environment for generating actual executions. 
 
@@ -78,16 +78,16 @@ work (but an interesting direction for future work).
 
 
 %To address developers' concerns in reasoning weak behaviours and in detecting invariant violations, 
-%there were recent efforts spanning static analyses~\cite{clotho, burcu-netys}, dynamic analyses~\cite{acidrain, maryam}, and testing~\cite{jepsen}.
+%there were recent efforts spanning static analyses~\cite{DBLP:journals/pacmpl/RahmaniNDJ19, burcu-netys}, dynamic analyses~\cite{DBLP:conf/sigmod/WarszawskiB17, DBLP:journals/sigsoft/DabaghchianROMT17}, and testing~\cite{jepsen}.
 %
-%Static analyses~\cite{clotho,burcu-netys} encode transactions, database consistency specification, and application invariant (sometimes) etc., in verification logic and use SMT solvers to prove that logical formula.
+%Static analyses~\cite{DBLP:journals/pacmpl/RahmaniNDJ19,burcu-netys} encode transactions, database consistency specification, and application invariant (sometimes) etc., in verification logic and use SMT solvers to prove that logical formula.
 %While these static analyses provide full guarantees, using them requires expertise and also handling arbitrary code becomes challenging.
 %\tool{} requires no modifications to the client appication under test.
 %Also, new changes to the application may require renewed analysis, and using \tool{},
 %developers must be able to perform testing as a continual activity as the application evolves.
 %
 %
-%Dynamic analyses~\cite{acidrain,maryam} work on the abstract models built from the actual execution trace.
+%Dynamic analyses~\cite{DBLP:conf/sigmod/WarszawskiB17,DBLP:journals/sigsoft/DabaghchianROMT17} work on the abstract models built from the actual execution trace.
 % These techniques require instrumenting the application code and it becomes difficult to replay the findings of such an analysis in the actual test environment because the analysis was performed offline (not during execution), and also  the offline analysis can sometimes suffer from false positives.   
 %
 %

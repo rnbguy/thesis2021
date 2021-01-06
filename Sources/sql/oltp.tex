@@ -3,7 +3,7 @@
 \section{Evaluation: OLTP Workloads}
 \label{sec:oltp}
 
-OLTPBench \cite{difallah2013oltp} is a benchmark suite of representative 
+OLTPBench \cite{DBLP:journals/pvldb/DifallahPCC13} is a benchmark suite of representative 
 OLTP workloads for relational databases.
 %, obtained from applications such as
 %wholesale supply, banking, seat booking, voting, collaborative-editing and so on. 
@@ -22,7 +22,7 @@ We modified OLTPBench by rewriting SQL join and aggregation
 operators 
 %(16.67\% of total queries) 
 into equivalent application-level
-loops, following a similar strategy as prior work \cite{clotho}. Except for
+loops, following a similar strategy as prior work \cite{DBLP:journals/pacmpl/RahmaniNDJ19}. Except for
 this change, we ran OLTPBench unmodified. 
 
 For TPC-C, we obtained a set of $12$ invariants from its specification
@@ -54,7 +54,7 @@ workloads.
 %We first discuss our results on TPC-C~\cite{tpcc-bench} in detail followed by
 %other benchmarks,
 % as TPC-C specifies its invariants and all its invariants are well studied by
-% previous works~\cite{clotho,isodiff}.
+% previous works~\cite{DBLP:journals/pacmpl/RahmaniNDJ19,DBLP:journals/pvldb/GanRRB020}.
 %We first discuss our results on SmallBank, SEATS, Voter and Wikipedia, followed by TPC-C in detail.
 
 \begin{table}
@@ -180,7 +180,7 @@ two (A10 and A12), even when increasing the number of sessions to $10$. We used
 the same time limit of $10$ seconds for the execution phase. We note that MySQL
 is much faster than MonkeyDB and ends up processing up to $50\times$ more
 transactions in the same time limit, yet is unable to violate most assertions. 
-Prior work \cite{clotho} attempted a more sophisticated test
+Prior work \cite{DBLP:journals/pacmpl/RahmaniNDJ19} attempted a more sophisticated test
 setup where TPC-C was executed on a Cassandra cluster, while running 
 Jepsen~\cite{jepsen} for fault injection. This setup also was unable to violate 
 all assertions, even when running without transactions, and on a weaker isolation level than read committed. 

@@ -75,7 +75,7 @@ Applications concerning supply chains, banking, etc. use traditional relational 
 for storing and processing data, whereas applications such as social networking
 software and e-commerce platforms 
 use cloud-based storage systems (such as Azure CosmosDb \cite{cosmosdb}, Amazon DynamoDb
-\cite{DBLP:conf/sosp/DeCandiaHJKLPSVV07}, Facebook TAO \cite{facebook-tao}, etc.). We use the term \textit{storage
+\cite{DBLP:conf/sosp/DeCandiaHJKLPSVV07}, Facebook TAO \cite{DBLP:conf/usenix/BronsonACCDDFGKLMPPSV13}, etc.). We use the term \textit{storage
 system} in this paper to refer to any such database system/service.
 
 
@@ -83,12 +83,12 @@ system} in this paper to refer to any such database system/service.
 %data persistence has also changed. It is no longer about storing data on a
 %single disk with a single point of access. Rather, modern applications such as
 %social networking software, e-commerce platforms, cloud micro-services, etc. are built using 
-%high-scale storage systems, such as Azure CosmosDb \cite{cosmosdb}, Amazon DynamoDb \cite{amazon-dynamodb}, 
-%Facebook TAO \cite{facebook-tao}. Applications such as 
+%high-scale storage systems, such as Azure CosmosDb \cite{cosmosdb}, Amazon DynamoDb \cite{DBLP:conf/sigmod/Sivasubramanian12}, 
+%Facebook TAO \cite{DBLP:conf/usenix/BronsonACCDDFGKLMPPSV13}. Applications such as 
  
 %These storage systems, commonly offered by most major cloud providers (such as
-%Azure CosmosDb \cite{cosmosdb}, Amazon DynamoDb \cite{amazon-dynamodb}, 
-%Facebook TAO \cite{facebook-tao}, etc.)
+%Azure CosmosDb \cite{cosmosdb}, Amazon DynamoDb \cite{DBLP:conf/sigmod/Sivasubramanian12}, 
+%Facebook TAO \cite{DBLP:conf/usenix/BronsonACCDDFGKLMPPSV13}, etc.)
 %create and manage multiple replicas of data. Having multiple replicas offers reliability and prevents
 %data loss, but it also offers availability and low-latency accesses by allowing
 %different clients to connect with different replicas. 
@@ -104,7 +104,7 @@ consequence, most storage systems use weaker isolation levels, such as
 {\it Snapshot Isolation}~\cite{DBLP:conf/sigmod/BerensonBGMOO95}, {\it Read
 Committed}~\cite{DBLP:conf/sigmod/BerensonBGMOO95}, etc. for better performance.
 In a recent survey of
-database administrators \cite{survey}, 86\% of the participants responded that
+database administrators \cite{DBLP:conf/sigmod/Pavlo17}, 86\% of the participants responded that
 most or all of the transactions in their databases execute at read committed isolation level.
 
 \begin{figure}
@@ -179,7 +179,7 @@ isolation levels. It is up to the developers then to ensure that their
 application can tolerate this larger set of behaviors. Unfortunately, weak
 isolation levels are hard to understand or reason about
 \cite{DBLP:conf/popl/BrutschyD0V17,adya-thesis} and resulting application bugs
-can cause loss of business \cite{acidrain}.
+can cause loss of business \cite{DBLP:conf/sigmod/WarszawskiB17}.
 Consider a simple shopping cart application that stores a per-client shopping
 cart in a key-value store (\textit{key} is the client ID and \textit{value} is a
 multi-set of items). \figref{motiv} shows procedures for adding an item to the cart
@@ -207,22 +207,22 @@ the test. If one runs the test
 against the actual production storage system, it is very likely to only result in
 serializable behaviors because of their optimized implementation. For
 instance, only 0.0004\% of all reads performed on Facebook's TAO storage system 
-were not serializable \cite{facebook-consistency}. 
+were not serializable \cite{DBLP:conf/sosp/LuVAHSTKL15}. 
 Emulators, offered by cloud providers for local development, on the other hand, do not support weaker
 isolation levels at all \cite{cosmosdb-local}. Another option, possible when
 the storage system is available open-source, is to set it up with a 
 tool like Jepsen~\cite{jepsen} to inject noise (bring down replicas or
 delay packets on the network). 
 This approach is unable to provide good coverage at the level of client operations
-\cite{clotho} (\sectref{oltp}). Another line of work has focussed on finding
+\cite{DBLP:journals/pacmpl/RahmaniNDJ19} (\sectref{oltp}). Another line of work has focussed on finding
 anomalies by identifying non-serializable behavior (\sectref{related}). Anomalies, however, do not
-always correspond to bugs \cite{DBLP:conf/pldi/BrutschyD0V18,isodiff}; they may
+always correspond to bugs \cite{DBLP:conf/pldi/BrutschyD0V18,DBLP:journals/pvldb/GanRRB020}; they may
 either not be important (e.g., gather statistics) or may already be handled in
 the application (e.g., checking and deleting duplicate items).
 
 %Prior work on this problem has largely focussed on
 %formal verification techniques: to establish correctness of code against a specification 
-%of a particular isolation level \cite{clotho,maryam} (\akash{others?}). Verification requires
+%of a particular isolation level \cite{DBLP:journals/pacmpl/RahmaniNDJ19,DBLP:journals/sigsoft/DabaghchianROMT17} (\akash{others?}). Verification requires
 %statically analyzing application code; with such an approach, in addition to
 %scalability problems, it is often difficult to support
 %various programming styles, libraries, frameworks and languages. 
@@ -249,17 +249,17 @@ the application (e.g., checking and deleting duplicate items).
 %However, unfortunately, maintaining strong consistency across these replicas
 %requires global synchronization which incurs high performance overheads.
 %Moreover, as stated by the Consistency, Availability, and Partition-tolerance
-%(CAP) theorem~\cite{cap-theorem},
+%(CAP) theorem~\cite{DBLP:journals/sigact/GilbertL02},
 %it is not possible for such storage systems to remain available and
 %simultaneously guarantee consistency under network partitions (which are
 %unavoidable).
 %Hence, to provide high availability and low latency, many distributed data
 %stores provide only weak consistency guarantees, formally defined as different
-%consistency models: {\it Causal Consistency}~\cite{constantin-causal,DBLP:journals/cacm/Lamport78},
+%consistency models: {\it Causal Consistency}~\cite{DBLP:conf/popl/BouajjaniEGH17,DBLP:journals/cacm/Lamport78},
 %{\it Snapshot Isolation}~\cite{DBLP:conf/sigmod/BerensonBGMOO95}, and {\it Read
 %Committed}~\cite{DBLP:conf/sigmod/BerensonBGMOO95}, etc.
 %This current scenario is also showcased in a recent Database Admin
-%Survey~\cite{survey} where more than 73\% participants responded that all the
+%Survey~\cite{DBLP:conf/sigmod/Pavlo17} where more than 73\% participants responded that all the
 %transactions in their databases execute at read committed consistency level.
 
 %THE NEXT PARAGRAPH SHOULD BE ONLY ABOUT: PROGRAMMING ON TOP OF WEAK ISOLATION IS HARD. 
@@ -417,7 +417,7 @@ It makes it possible to ``export'' formalizations of key-value store isolation l
 %We implemented MonkeyDB to support an interface consistent with key-value
 %stores and databases, which allows us to directly run real applications unmodified. 
 %We evaluated MonkeyDB on a series of micro-benchmarks, inspired from real
-%applications, as well as the well-known OLTPBench \cite{difallah2013oltp}
+%applications, as well as the well-known OLTPBench \cite{DBLP:journals/pvldb/DifallahPCC13}
 %that is used for evaluating
 %databases on OLTP workloads. 
 
