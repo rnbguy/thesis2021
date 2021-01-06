@@ -1,6 +1,5 @@
 {
     "latex": "Thesis.tex",
-    "texbin": "latex",
     "databases": {
         "DBLP": {
             "file": "dblp.bib",

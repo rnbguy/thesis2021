@@ -15,7 +15,7 @@ work; they all use MonkeyDB as a library, via its KV interface.
 %from real-world applications:  
 %Courseware~\cite{DBLP:conf/esop/NairP020}, Shopping
 %cart~\cite{sivaramakrishnan2015declarative} and Twitter~\cite{twissandra}, and
-%also a concurrent stack data-structure \cite{cavNagarMJ20}.
+%also a concurrent stack data-structure \cite{DBLP:conf/cav/NagarMJ20}.
 %We describe these applications in \sectref{micro-benchmarks}. We
 %perform two kinds of experiments. We evaluate the number of test iterations
 %required to fail an invalid assertion 
@@ -138,10 +138,10 @@ removed, no student should be seen as enrolled in that course.
 %\end{figure}
 
 \vspace{-2mm}
-\paragraph{Treiber Stack \cite{cavNagarMJ20}}
+\paragraph{Treiber Stack \cite{DBLP:conf/cav/NagarMJ20}}
 Treiber stack is a concurrent stack data structure that uses 
 compare-and-swap (CAS) instructions instead of locks for synchronization. This
-algorithm was ported to operate on a kv-store in prior work \cite{cavNagarMJ20}
+algorithm was ported to operate on a kv-store in prior work \cite{DBLP:conf/cav/NagarMJ20}
 and we use that implementation. Essentially, the stack contents are placed in
 a kv-store, instead of using an in-memory linked data structure.
 Each row in the store contains a pair consisting of the stack element and the key of the next

@@ -9,7 +9,7 @@ Applications concerning supply chains, banking, etc. use traditional relational 
 for storing and processing data, whereas applications such as social networking
 software and e-commerce platforms 
 use cloud-based storage systems (such as Azure CosmosDb \cite{cosmosdb}, Amazon DynamoDb
-\cite{decandia2007dynamo}, Facebook TAO \cite{facebook-tao}, etc.). We use the term \textit{storage
+\cite{DBLP:conf/sosp/DeCandiaHJKLPSVV07}, Facebook TAO \cite{facebook-tao}, etc.). We use the term \textit{storage
 system} in this paper to refer to any such database system/service.
 
 
@@ -130,7 +130,7 @@ happened second). However, with causal consistency (or read committed), it is po
 sequential reads of the shopping cart, the cart is empty in the first read
 (signaling that the delete has succeeded), but there are \textit{two} instances of $I$ 
 in the second read! Such anomalies, of deleted items reappearing, have been
-noted in previous work \cite{decandia2007dynamo}. 
+noted in previous work \cite{DBLP:conf/sosp/DeCandiaHJKLPSVV07}. 
 
 \paragraph{Testing storage-based applications}
 This paper addresses the problem of \textit{testing} code for correctness
@@ -209,7 +209,7 @@ the application (e.g., checking and deleting duplicate items).
 %one client. 
 %Under weak consistency, not only that delete operation can take some time to be
 %visible through another client, but even after viewing deletion, the item could
-%appear again in the cart \cite{decandia2007dynamo}.
+%appear again in the cart \cite{DBLP:conf/sosp/DeCandiaHJKLPSVV07}.
 %%\textcolor{blue}{Shopping cart example showing assertion violation on weak consistency.}
 %To prevent them, developers should be aware of such anomalies and use explicit
 %synchronization at appropriate program points in their applications. 
