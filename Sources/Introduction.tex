@@ -10,32 +10,11 @@ In this work we study the tractability of CRDT consistency checking; Figure~\ref
 
 Our setting captures executions across a set of replicas as per-replica sequences of operations called \emph{histories}. Roughly speaking, a history is \emph{consistent} so long as each operation’s return value can be justified according to the operations that its replica has observed so far. In the setting of CRDTs, the determination of a replica’s observations is essentially an implementation choice: replicas are only obliged to observe their own operations, and the predecessors of those it has already observed. This relatively-weak constraint on replicas’ observations makes the CRDT consistency checking problem unique.
 
-\begin{figure}[t]
-  \centering
-  \input{Sources/crdt/figures/result-table}
-  \caption{The complexity of consistency checking for various replicated data types. We demonstrate intractability and tractability results in Sections~\ref{sec:intractability} and~\ref{sec:algorithms}, respectively.}
-  \label{fig:results}
-\end{figure}
-
 Our study proceeds in three parts. First, to precisely characterize the consistency of various CRDTs, and facilitate symbolic reasoning, we develop novel logical characterizations to capture their guarantees. Our logical models are built on a notion of \emph{abstract execution}, which relates the operations of a given history with three separate relations: a \emph{read-from} relation, governing the observations from which a given operation constitutes its own return value; a \emph{happens-before} relation, capturing the causal relationships among operations; and a \emph{linearization} relation, capturing any necessary arbitration among non-commutative effects which are executed concurrently, e.g.,~following a \emph{last-writer-wins} policy. Accordingly, we capture data type specifications with logical axioms interpreted over the read-from, happens-before, and linearization relations of abstract executions, reducing the consistency problem to: does there exist an abstract execution over the given history which satisfies the axioms of the given data type?
 
 Second, we demonstrate the intractability of several replicated data types by reduction from propositional satisfiability (SAT) problems. In particular, we consider the 1-in-3 SAT problem~\cite{DBLP:books/fm/GareyJ79}, which asks for a truth assignment to the variables of a given set of clauses such that exactly one literal per clause is assigned true. Our reductions essentially simulate the existential choice of a truth assignment with the existential choice of the read-from and happens-before relations of an abstract execution. For a given 1-in-3 SAT instance, we construct a history of replicas obeying carefully-tailored synchronization protocols, which is consistent exactly when the corresponding SAT instance is positive.
 
 Third, we develop tractable consistency-checking algorithms for individual data types and special cases: replicated growing arrays; multi-value and last-writer-wins registers, when each value is written only once; counters, when replicas are bounded; and sets and flags, when their sizes are also bounded. While the algorithms for each case are tailored to the algebraic properties of the data types they handle, they essentially all function by constructing abstract executions incrementally, processing replicas’ operations in prefix order.
-
-The remainder of this article is organized around our three key contributions:
-% \vspace{-3.5mm}
-\begin{enumerate}
-
-  \item We develop novel logical characterizations of consistency for the replicated register, flag, set, counter, and array data types (§\ref{sec:consistency});
-
-  \item We develop novel reductions from propositional satisfiability problems to consistency checking to demonstrate intractability for replicated flags, sets, counters, and registers (§\ref{sec:intractability}); and
-
-  \item We develop tractable consistency-checking algorithms for replicated growable arrays, registers, when written values are unique, counters, when replicas are bounded, and sets and flags, when their sizes are also bounded (§\ref{sec:algorithms}–\ref{sec:ptime:sets}).
-
-\end{enumerate}
-% \vspace{-1.5mm}
-Section~\ref{sec:related} overviews related work, and Section~\ref{sec:conclusion} concludes.
 
 
 
@@ -82,22 +61,6 @@ Our implementation reports violations of these criteria in all cases.
 The consistency violations we found for AntidoteDB are novel and have been confirmed by its developers. We show that our algorithms are efficient and scalable.
 %and they outperform an encoding to boolean satisfiability of the consistency models. 
 In particular, we show that, although the asymptotic complexity of our algorithms is exponential in general (w.r.t. the number of sessions), the worst-case behavior is not exercised in practice.
-
-To summarize, the contributions of this work are fourfold:
-\begin{itemize}
-
-  \item We develop a new specification framework for describing common transactional-consistency criteria (§\ref{sec:def});
-
-  \item We show that checking RC, RA, and CC is polynomial time while checking PC and SI is NP-complete (§\ref{sec:general});
-
-  \item We show that PC, SI, and SER are polynomial-time checkable assuming that the communication graph of the input execution has fixed-size biconnected components (§\ref{sec:bounded_width} and §\ref{sec:communication});
-  
-  \item We perform an empirical evaluation of our algorithms on executions generated by production databases (§\ref{sec:exp});
-
-\end{itemize}
-Combined, these contributions form an effective algorithmic framework for the verification of transactional-consistency models. To the best of our knowledge, we are the first to investigate the asymptotic complexity for most of these consistency models, despite their prevalence in practice.
-
-Additional material can be found in~\cite{arxiv}. 
 
 
 %%%%%%
