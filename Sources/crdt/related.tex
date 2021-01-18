@@ -1,6 +1,6 @@
 %!TEX root = Thesis.tex
 
-\section{Conflict Free Replicated Data Type}
+\section{Related Work}
 \label{sec:related}
 
 Many have considered consistency models applicable to CRDTs, including causal consistency~\cite{DBLP:journals/cacm/Lamport78}, sequential consistency~\cite{DBLP:journals/tc/Lamport79}, linearizability~\cite{DBLP:journals/toplas/HerlihyW90}, session consistency~\cite{DBLP:conf/pdis/TerryDPSTW94}, eventual consistency~\cite{DBLP:conf/sosp/TerryTPDSH95}, and happens-before consistency~\cite{DBLP:conf/popl/MansonPA05}. Burckhardt et al.~\cite{DBLP:journals/ftpl/Burckhardt14, DBLP:conf/popl/BurckhardtGYZ14} propose a unifying framework to formalize these models. Many have also studied the complexity of verifying data-type agnostic notions of consistency, including serializability, sequential consistency and linearizability~\cite{DBLP:journals/jacm/Papadimitriou79b, DBLP:journals/siamcomp/GibbonsK97, DBLP:journals/iandc/AlurMP00, DBLP:conf/spaa/BinghamCH03, DBLP:conf/cav/FarzanM08, DBLP:conf/esop/BouajjaniEEH13, DBLP:conf/netys/Hamza15}, as well as causal consistency~\cite{DBLP:conf/popl/BouajjaniEGH17}. Our definition of the replicated LWW register corresponds to the notion of causal convergence in~\cite{DBLP:conf/popl/BouajjaniEGH17}. This work studies the complexity of the admissibility problem for the replicated LWW register. It shows that this problem is NP-complete in general and polynomial time when each value is written only once. 
