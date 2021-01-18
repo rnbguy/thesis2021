@@ -1,37 +1,73 @@
-%!TEX root = Thesis.tex
+%!TEX root = ../Thesis.tex
+
+% \section{Distributed Systems}
+
+%% What is distributed system. Why it is necessary. Where it is used.
+
+As \internet{} grows to be cheaper and faster, distributed systems and applications are also becoming popular over past decades.
+Today they are the backbone of almost any online application like banking, shopping, ticketing, social networking \etc{}.
+As the popularity of these softwares increases, it is very important that these systems are reliable and secure.
+
+%% How does it work.
+
+Distributed systems are usually deployed over multiple locations connected through \internet{}.
+There are multiple good reasons why an online application would need that.
+The users of the application may require data availability and fast response.
+Or, if some location goes offline, the other locations can still serve the users.
+Usually each distributed \emph{nodes} maintains a replica of the global data.
+A user connects to the node \emph{nearest} to them and that node serves their requests.
+This way the distributed system reduces responses time and distributes the workload to multiple nodes. 
+
+%% insert small example maybe
+
+%% What is the problem.
+
+Distributed systems are the solution to a fast, concurrent, scalable online applications. But it actually offers a trade off.
+As we allow concurrent operations at multiple nodes, they still need to synchronize among them and maintain a meaningful or \emph{consistent} global data.
+A global lock defeats the whole purpose of the distributed system, because taking a lock over a multiple distributed nodes means more communication over internet and slow response time.
+
+Over the past few years, the community came up with many implementations \emph{weakly-consistent} distributed system.
+They throw away strong consistent guarantees of the global data in favour of a scalable system.
+This is almost always alright. Because in most cases, the distributed applications do not really require strong guarantees over the data.
+
+But these implementations are often not correctly reasoned.
+%% examples of real world problems
+Many cases the guaranteed weak consistencies are explained in words and not formalized, which makes it difficult to reason about them.
+Also, often these systems promise a weak consistency on paper, but implements something else in practice.
+So it is very crucial, these systems are tested thoroughly against the consistency needs of an application.
+
+This dissertation is an effort to give solutions to these problems. We first study \emph{Conflict Free Replicated Data Type} or \emph{CRDT}. CRDTs are popular data types like sets, flags, registers, but replicated and maintained at multiple nodes. Then we move on to \emph{Transactional Systems} which allows to perform a set of operations isolated from other sets of operations. In both cases we reason about their consistency guarantees and provide algorithms to test their histories against the promised weak-consistency. Lastly, we study the correctness of applications implemented over distributed systems guaranteeing weak consistency level. We implement an artificial data storage, \tool{}, based on our previous formalization of consistency levels to simulate the possible abstraction of weak scenarios such as network partition, packet drops \etc{}. These applications can use \tool{} as a drop-in replacement to their backend databases to inject faults without any external control over network.
 
 %%%%%%%%%
 % CRDT
 %%%%%%%%
 
+\section{Conflict Free Replicated Data Types}
+
 Recent distributed systems have introduced variations of familiar abstract data types (ADTs) like counters, registers, flags, and sets, that provide high availability and partition tolerance. These \emph{conflict-free replicated data types} (CRDTs)~\cite{DBLP:conf/sss/ShapiroPBZ11} efficiently resolve the effects of concurrent updates to replicated data. Naturally they weaken consistency guarantees to achieve availability and partition-tolerance, and various notions of \emph{weak consistency} capture such guarantees~\cite{DBLP:conf/pdis/TerryDPSTW94, DBLP:conf/sosp/TerryTPDSH95, DBLP:conf/popl/MansonPA05, DBLP:journals/ftpl/Burckhardt14, DBLP:conf/popl/BurckhardtGYZ14}.
 
-In this work we study the tractability of CRDT consistency checking; Figure~\ref{fig:results} summarizes our results. In particular, we consider \emph{runtime verification}: deciding whether a given execution of a CRDT is consistent with its ADT specification. This problem is particularly relevant as distributed-system testing tools like Jepsen~\cite{MISC:Jepsen} are appearing; without efficient, general consistency-checking algorithms, such tools could be limited to specialized classes of errors like node crashes.
+In this work we study the tractability of CRDT consistency checking. In particular, we consider \emph{runtime verification}: deciding whether a given execution of a CRDT is consistent with its ADT specification. This problem is particularly relevant as distributed-system testing tools like Jepsen~\cite{MISC:Jepsen} are appearing; without efficient, general consistency-checking algorithms, such tools could be limited to specialized classes of errors like node crashes.
 
-Our setting captures executions across a set of replicas as per-replica sequences of operations called \emph{histories}. Roughly speaking, a history is \emph{consistent} so long as each operation’s return value can be justified according to the operations that its replica has observed so far. In the setting of CRDTs, the determination of a replica’s observations is essentially an implementation choice: replicas are only obliged to observe their own operations, and the predecessors of those it has already observed. This relatively-weak constraint on replicas’ observations makes the CRDT consistency checking problem unique.
-
-Our study proceeds in three parts. First, to precisely characterize the consistency of various CRDTs, and facilitate symbolic reasoning, we develop novel logical characterizations to capture their guarantees. Our logical models are built on a notion of \emph{abstract execution}, which relates the operations of a given history with three separate relations: a \emph{read-from} relation, governing the observations from which a given operation constitutes its own return value; a \emph{happens-before} relation, capturing the causal relationships among operations; and a \emph{linearization} relation, capturing any necessary arbitration among non-commutative effects which are executed concurrently, e.g.,~following a \emph{last-writer-wins} policy. Accordingly, we capture data type specifications with logical axioms interpreted over the read-from, happens-before, and linearization relations of abstract executions, reducing the consistency problem to: does there exist an abstract execution over the given history which satisfies the axioms of the given data type?
-
-Second, we demonstrate the intractability of several replicated data types by reduction from propositional satisfiability (SAT) problems. In particular, we consider the 1-in-3 SAT problem~\cite{DBLP:books/fm/GareyJ79}, which asks for a truth assignment to the variables of a given set of clauses such that exactly one literal per clause is assigned true. Our reductions essentially simulate the existential choice of a truth assignment with the existential choice of the read-from and happens-before relations of an abstract execution. For a given 1-in-3 SAT instance, we construct a history of replicas obeying carefully-tailored synchronization protocols, which is consistent exactly when the corresponding SAT instance is positive.
-
-Third, we develop tractable consistency-checking algorithms for individual data types and special cases: replicated growing arrays; multi-value and last-writer-wins registers, when each value is written only once; counters, when replicas are bounded; and sets and flags, when their sizes are also bounded. While the algorithms for each case are tailored to the algebraic properties of the data types they handle, they essentially all function by constructing abstract executions incrementally, processing replicas’ operations in prefix order.
-
-
-
+Our study proceeds in three parts.
+First, to precisely characterize the consistency of various CRDTs, and facilitate symbolic reasoning, we develop novel logical characterizations to capture their guarantees.
+Second, we demonstrate the intractability of several replicated data types by reduction from propositional satisfiability (SAT) problems.
+Third, we develop tractable consistency-checking algorithms for individual data types and special cases: replicated growing arrays; multi-value and last-writer-wins registers, when each value is written only once; counters, when replicas are bounded; and sets and flags, when their sizes are also bounded.
 
 %%%%%%%%%%
 % Transaction
 %%%%%%%%%%
 
-Transactions simplify concurrent programming by enabling computations on shared data that are isolated from other concurrent computations and resilient to failures. Modern databases provide transactions in various forms corresponding to different tradeoffs between consistency and availability. The strongest level of consistency is achieved with \emph{serializable} transactions~\cite{DBLP:journals/jacm/Papadimitriou79b} whose outcome in concurrent executions is the same as if the transactions were executed atomically in some order. Unfortunately, serializability carries a significant penalty on the availability of the system assuming, for instance, that the database is accessed over a network that can suffer from partitions or failures. For this reason, modern databases often provide weaker guarantees about transactions, formalized by weak consistency models, e.g., causal consistency~\cite{DBLP:journals/cacm/Lamport78} and snapshot isolation~\cite{DBLP:conf/sigmod/BerensonBGMOO95}.
+\section{Transactional Systems}
+
+Transactions simplify concurrent programming by enabling multiple computations on shared data that are isolated from other concurrent computations and resilient to failures. Modern databases provide transactions in various forms corresponding to different tradeoffs between consistency and availability. The strongest level of consistency is achieved with \emph{serializable} transactions~\cite{DBLP:journals/jacm/Papadimitriou79b} whose outcome in concurrent executions is the same as if the transactions were executed atomically in some order. Unfortunately, serializability carries a significant penalty on the availability of the system assuming, for instance, that the database is accessed over a network that can suffer from partitions or failures. For this reason, modern databases often provide weaker guarantees about transactions, formalized by weak consistency models, e.g., causal consistency~\cite{DBLP:journals/cacm/Lamport78} and snapshot isolation~\cite{DBLP:conf/sigmod/BerensonBGMOO95}.
 
 Implementations of large-scale databases providing transactions are difficult to build and test. For instance, distributed (replicated) databases must account for partial failures, where some components or the network can fail and produce incomplete results. Ensuring fault-tolerance relies on intricate protocols that are difficult to design and reason about. The black-box testing framework Jepsen~\cite{jepsen} found a remarkably large number of subtle problems in many production distributed databases. %\footnote{https://www.infoq.com/presentations/partitioning-comparison}.
 
-Testing a transactional database raises two issues: (1) deriving a suitable set of testing scenarios, e.g., faults to inject into the system and the set of transactions to be executed, and (2) deriving efficient algorithms for checking whether a given execution satisfies the considered consistency model. The Jepsen framework aims to address the first issue by using randomization, 
+Testing a transactional database raises two issues. First, deriving a suitable set of testing scenarios, e.g., faults to inject into the system and the set of transactions to be executed, and second, deriving efficient algorithms for checking whether a given execution satisfies the considered consistency model. The Jepsen framework aims to address the first issue by using randomization, 
 %shows that the first issue can be solved using randomization, 
 e.g., introducing faults at random and choosing the operations in a transaction randomly. The effectiveness of this approach has been proved formally in recent work~\cite{DBLP:journals/pacmpl/OzkanMNBW18}. The second issue is, however, largely unexplored. Jepsen checks consistency in a rather ad-hoc way, focusing on specific classes of violations to a given consistency model, e.g., dirty reads (reading values from aborted transactions). This problem is challenging because the consistency specifications are non-trivial and they cannot be checked using, for instance, standard local assertions added to the client's code. 
 
-Besides serializability, the complexity of checking correctness of an execution w.r.t. some consistency model is unknown. Checking serializability has been shown to be NP-complete~\cite{DBLP:journals/jacm/Papadimitriou79b}, and checking causal consistency in a \emph{non-transactional} context is known to be polynomial time~\cite{DBLP:conf/popl/BouajjaniEGH17}. In this work, we try to fill this gap by investigating the complexity of this problem w.r.t. several consistency models and, in the case of NP-completeness, devising algorithms that are polynomial time assuming fixed bounds for certain parameters of the input executions, e.g., the number of sessions. 
+Besides serializability, the complexity of checking correctness of an execution w.r.t. some consistency model is unknown. Checking serializability has been shown to be NP-complete~\cite{DBLP:journals/jacm/Papadimitriou79b}, and checking causal consistency in a \emph{non-transactional} context is known to be polynomial time~\cite{DBLP:conf/popl/BouajjaniEGH17}. In this work, we try to fill this gap by investigating the complexity of this problem w.r.t. several consistency models and, in the case of NP-completeness, devising algorithms that are polynomial time assuming fixed bounds for certain parameters of the input executions, e.g., the number of sessions. We consider several consistency models that are the most prevalent in practice. \emph{Read Committed} (RC)~\cite{DBLP:conf/sigmod/BerensonBGMOO95}, \emph{Read Atomic} (RA)~\cite{DBLP:conf/concur/Cerone0G15},  \emph{Causal Consistency} (CC)~\cite{DBLP:journals/cacm/Lamport78}, \emph{Prefix Consistency} (PC)~\cite{DBLP:conf/ecoop/BurckhardtLPF15}, \emph{Snapshot Isolation} (SI)~\cite{DBLP:conf/sigmod/BerensonBGMOO95} and Serializability (SER).
 
 %
 %The only result that explores the complexity of this problem 
@@ -41,14 +77,14 @@ Besides serializability, the complexity of checking correctness of an execution 
 %
 %
 %The success of Jepsen relies on random transactions as well as randomly introduced partition faults, therefore it is solved. We tackle the second issue for a series of consistency models (Jepsen implements a test of linearizability https://github.com/jepsen-io/knossos and an ad-hoc test for causal consistency restricted to bounded executions, \url{https://github.com/jepsen-io/jepsen/blob/f345226dba1266bc37487d734a02caddf7d1d125/jepsen/src/jepsen/tests/causal.clj})
-We consider several consistency models that are the most prevalent in practice. The weakest of them, \emph{Read Committed} (RC)~\cite{DBLP:conf/sigmod/BerensonBGMOO95}, requires that every value read in a transaction is written by a committed transaction. \emph{Read Atomic} (RA)~\cite{DBLP:conf/concur/Cerone0G15} requires that successive reads of the same variable in a transaction return the same value (also known as Repeatable Reads~\cite{DBLP:conf/sigmod/BerensonBGMOO95}), and that a transaction ``sees'' the values written by previous transactions in the same session. In general, we assume that transactions are organized in \emph{sessions}~\cite{DBLP:conf/pdis/TerryDPSTW94}, an abstraction of the sequence of transactions performed during the execution of an application.
-\emph{Causal Consistency} (CC)~\cite{DBLP:journals/cacm/Lamport78} requires that if a transaction~$\tr_1$ ``affects'' another transaction $\tr_2$, e.g., $\tr_1$ is ordered before $\tr_2$ in the same session or $\tr_2$ reads a value written by $\tr_1$, then these two transactions are observed by any other transaction in this order. \emph{Prefix Consistency} (PC)~\cite{DBLP:conf/ecoop/BurckhardtLPF15} requires that there exists a total commit order between all the transactions such that each transaction observes a prefix of this sequence. \emph{Snapshot Isolation} (SI)~\cite{DBLP:conf/sigmod/BerensonBGMOO95} further requires that two different transactions observe different prefixes if they both write to a common variable.
+% We consider several consistency models that are the most prevalent in practice. The weakest of them, \emph{Read Committed} (RC)~\cite{DBLP:conf/sigmod/BerensonBGMOO95}, requires that every value read in a transaction is written by a committed transaction. \emph{Read Atomic} (RA)~\cite{DBLP:conf/concur/Cerone0G15} requires that successive reads of the same variable in a transaction return the same value (also known as Repeatable Reads~\cite{DBLP:conf/sigmod/BerensonBGMOO95}), and that a transaction ``sees'' the values written by previous transactions in the same session. In general, we assume that transactions are organized in \emph{sessions}~\cite{DBLP:conf/pdis/TerryDPSTW94}, an abstraction of the sequence of transactions performed during the execution of an application.
+% \emph{Causal Consistency} (CC)~\cite{DBLP:journals/cacm/Lamport78} requires that if a transaction~$\tr_1$ ``affects'' another transaction $\tr_2$, e.g., $\tr_1$ is ordered before $\tr_2$ in the same session or $\tr_2$ reads a value written by $\tr_1$, then these two transactions are observed by any other transaction in this order. \emph{Prefix Consistency} (PC)~\cite{DBLP:conf/ecoop/BurckhardtLPF15} requires that there exists a total commit order between all the transactions such that each transaction observes a prefix of this sequence. \emph{Snapshot Isolation} (SI)~\cite{DBLP:conf/sigmod/BerensonBGMOO95} further requires that two different transactions observe different prefixes if they both write to a common variable.
 %Two different transactions $\tr_1$ and $\tr_2$ may observe the same prefix, which is not allowed under \emph{Snapshot Isolation} (SI)~\cite{DBLP:conf/sigmod/BerensonBGMOO95} when these two transactions write on a common variable. 
-Finally, we also provide new results concerning the problem of checking serializability (SER) that complement the known result about its NP-completeness. 
+% Finally, we also provide new results concerning the problem of checking serializability (SER) that complement the known result about its NP-completeness. 
 
-The algorithmic issues we explore in this paper have led to a new specification framework for these consistency models that relies on the fact that the \emph{write-read} relation in an execution (also known as \emph{read-from}), relating reads with the transactions that wrote their value, can be defined effectively. The write-read relation can be extracted easily from executions where each value is written at most once (a variable can be written an arbitrary number of times). This can be easily enforced by tagging values with unique identifiers (e.g., a local counter that is incremented with every new write coupled with a client/session identifier)\footnote{This is also used in Jepsen, e.g., checking dirty reads in Galera~\cite{jepsen-galera}.}. Since practical database implementations are data-independent~\cite{DBLP:conf/popl/Wolper86}, i.e., their behavior doesn't depend on the concrete values read or written in the transactions, any potential buggy behavior can be exposed in executions where each value is written at most once. Therefore, this assumption is without loss of generality.
+% The algorithmic issues we explore in this paper have led to a new specification framework for these consistency models that relies on the fact that the \emph{write-read} relation in an execution (also known as \emph{read-from}), relating reads with the transactions that wrote their value, can be defined effectively. The write-read relation can be extracted easily from executions where each value is written at most once (a variable can be written an arbitrary number of times). This can be easily enforced by tagging values with unique identifiers (e.g., a local counter that is incremented with every new write coupled with a client/session identifier)\footnote{This is also used in Jepsen, e.g., checking dirty reads in Galera~\cite{jepsen-galera}.}. Since practical database implementations are data-independent~\cite{DBLP:conf/popl/Wolper86}, i.e., their behavior doesn't depend on the concrete values read or written in the transactions, any potential buggy behavior can be exposed in executions where each value is written at most once. Therefore, this assumption is without loss of generality.
 
-Previous work~\cite{DBLP:conf/popl/BouajjaniEGH17,DBLP:conf/popl/BurckhardtGYZ14,DBLP:conf/concur/Cerone0G15} has formalized such consistency models using two auxiliary relations: a \emph{visibility} relation defining for each transaction the set of transactions it observes, and a \emph{commit order} defining the order in which transactions are committed to the ``global'' memory. An execution satisfying some consistency model is defined as the existence of a visibility relation and a commit order obeying certain axioms. In our case, the write-read relation derived from the execution plays the role of the visibility relation. This simplification allows us to state a series of axioms defining these consistency models, which have a common shape. Intuitively, they define lower bounds on the set of transactions $\tr_1$ that \emph{must} precede in commit order a transaction $\tr_2$ that is read in the execution. Besides shedding a new light on the differences between these consistency models, these axioms are essential for the algorithmic issues we investigate afterwards.
+% Previous work~\cite{DBLP:conf/popl/BouajjaniEGH17,DBLP:conf/popl/BurckhardtGYZ14,DBLP:conf/concur/Cerone0G15} has formalized such consistency models using two auxiliary relations: a \emph{visibility} relation defining for each transaction the set of transactions it observes, and a \emph{commit order} defining the order in which transactions are committed to the ``global'' memory. An execution satisfying some consistency model is defined as the existence of a visibility relation and a commit order obeying certain axioms. In our case, the write-read relation derived from the execution plays the role of the visibility relation. This simplification allows us to state a series of axioms defining these consistency models, which have a common shape. Intuitively, they define lower bounds on the set of transactions $\tr_1$ that \emph{must} precede in commit order a transaction $\tr_2$ that is read in the execution. Besides shedding a new light on the differences between these consistency models, these axioms are essential for the algorithmic issues we investigate afterwards.
 
 %Based on our formalization of these criteria, 
 We establish that checking whether an execution satisfies RC, RA, or CC is polynomial time, while the same problem is NP-complete for PC and SI. Moreover, in the case of the NP-complete consistency models (PC, SI, SER), we show that their verification problem becomes polynomial time provided that, roughly speaking, the number of sessions in the input executions is considered to be fixed (i.e., not counted for in the input size). In more detail, we establish that checking SER reduces to a search problem in a space that has polynomial size when the number of sessions is fixed. (This algorithm applies to arbitrary executions, but its complexity would be exponential in the number of sessions in general.) Then, we show that checking PC or SI can be reduced in polynomial time to checking SER using a transformation of executions that, roughly speaking, splits each transaction in two parts: one part containing all the reads, and one part containing all the writes (SI further requires adding some additional variables in order to deal with transactions writing on a common variable).
@@ -67,16 +103,15 @@ In particular, we show that, although the asymptotic complexity of our algorithm
 % MonkeyDB
 %%%%%%
 
+\section{Applications implemented on Distributed Datastores}
 
-Data storage is no longer about writing data to a single
-disk with a single point of access. Modern applications require not just data
+Modern applications require not just data
 reliability, but also high-throughput concurrent accesses. 
 Applications concerning supply chains, banking, etc. use traditional relational databases
 for storing and processing data, whereas applications such as social networking
 software and e-commerce platforms 
 use cloud-based storage systems (such as Azure CosmosDb \cite{cosmosdb}, Amazon DynamoDb
-\cite{DBLP:conf/sosp/DeCandiaHJKLPSVV07}, Facebook TAO \cite{DBLP:conf/usenix/BronsonACCDDFGKLMPPSV13}, etc.). We use the term \textit{storage
-system} in this paper to refer to any such database system/service.
+\cite{DBLP:conf/sosp/DeCandiaHJKLPSVV07}, Facebook TAO \cite{DBLP:conf/usenix/BronsonACCDDFGKLMPPSV13}, etc.).
 
 
 %As applications have moved from a single-box environment to the cloud, the notion of
@@ -107,99 +142,14 @@ In a recent survey of
 database administrators \cite{DBLP:conf/sigmod/Pavlo17}, 86\% of the participants responded that
 most or all of the transactions in their databases execute at read committed isolation level.
 
-\begin{figure}
-	\begin{minipage}{4.2cm}
-		\begin{lstlisting}[basicstyle=\ttfamily\footnotesize,escapeinside={(*}{*)},language=MyLang]
-// Append item to cart
-AddItem(item i, userId) {
-  Begin()
-  key = "cart:" + userId
-  cart = read(key)
-  cart.append(i)
-  write(key, cart)
-  Commit()
-}
-		\end{lstlisting}
-	\end{minipage}
-	\hspace{-5mm}
-	\begin{minipage}{4.2cm}
-		\begin{lstlisting}[xleftmargin=4mm,basicstyle=\ttfamily\footnotesize,escapeinside={(*}{*)},language=MyLang]
-// Fetch cart and delete item
-DeleteItem(item i, userId) {
-  Begin()
-  key = "cart:" + userId
-  cart = read(key)
-  cart.remove(i)
-  write(key, cart)
-  Commit()
-}
-		\end{lstlisting}
-	\end{minipage}
-	
-\vspace{-6mm}	
-  \resizebox{8.5cm}{!}{
-   \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
-     semithick, transform shape]
-    \node (s11l) at (1.15, 2.1) {\textbf{Initial state}};
-    \node[draw, rounded corners=2mm] (t0) at (2.05, 1.5) {\begin{tabular}{l} $\wrt{\texttt{cart:}u}{\{..\, I\, ..\}}$ \end{tabular}};
-    \node[draw, rounded corners=2mm, minimum width=3.6cm, minimum height=1.3cm] (s1) at (0, -0.1) {};
-    \node[style={inner sep=0,outer sep=0}] (s11) at (0, 0.3) {\begin{tabular}{l} $\rd{\texttt{cart:}u}{\{..\, I\, ..\}}$\end{tabular}};
-    \node[style={inner sep=0,outer sep=0}] (s12) at (0, -0.5) {\begin{tabular}{l} $\wrt{\texttt{cart:}u}{\{..\, I,I\, ..\}}$ \end{tabular}};
-    \node (s11l) at (-1, 0.8) {\textbf{AddItem}};
-    \node[draw, rounded corners=2mm, minimum width=3.6cm, minimum height=1.3cm] (s2) at (4.1, -0.1) {};
-    \node[style={inner sep=0,outer sep=0}] (s21) at (4.1, 0.3) {\begin{tabular}{l} $\rd{\texttt{cart:}u}{\{..\, I\, ..\}}$ \end{tabular}};
-    \node[style={inner sep=0,outer sep=0}] (s22) at (4.1, -0.5) {\begin{tabular}{l} $\wrt{\texttt{cart:}u}{\{..\, ..\}}$ \end{tabular}};
-    \node (s11l) at (4.9, 0.8) {\textbf{DeleteItem}};
-    \node[draw, rounded corners=2mm] (r1) at (8.3, 0) {\begin{tabular}{l} $\rd{\texttt{cart:}u}{\{..\, ..\}}$ \end{tabular}};
-    \node[draw, rounded corners=2mm] (r2) at (8.3, -1.3) {\begin{tabular}{l} $\rd{\texttt{cart:}u}{\{..\, I, I\, .\}}$ \end{tabular}};
-    \path (s11) edge[left] node {$\po$} (s12);
-    \path (s21) edge[left] node {$\po$} (s22);
-    \path (t0) edge[left] node {$\wro$} (s1);
-    \path (t0) edge[right] node {$\wro$} (s2);
-    \path (r1) edge[left] node {$\so$} (r2);
-    \path (s2) edge[above] node {$\wro$} (r1);
-    \path (s1) edge[below,bend right=11] node {$\wro$} (r2);
-%    \path (t0) edge[red, right, bend left=20] node[pos=0.4,xshift=-1] {$\wro$} (s11);
-%    \path (t0) edge[red, left, bend right=20] node[pos=0.9,xshift=-1] {$\wro$} (s12);
-   \end{tikzpicture}  
-  }
-
-%  \begin{lstlisting}[xleftmargin=4mm,basicstyle=\ttfamily\footnotesize,escapeinside={(*}{*)},language=MyLang,morekeywords={Test,GetCart}]
-%Test: 
-%{ AddItem(I, u); GetCart(u); GetCart(u) } || DeleteItem(I, u)
-%		\end{lstlisting}
-\vspace{-2mm}
-	\caption{A simple shopping cart service.}
-	\label{fig:motiv}
-\vspace{-3mm}
-\end{figure}
-
 A weaker isolation level allows for more possible behaviors than stronger
 isolation levels. It is up to the developers then to ensure that their
 application can tolerate this larger set of behaviors. Unfortunately, weak
 isolation levels are hard to understand or reason about
 \cite{DBLP:conf/popl/BrutschyD0V17,adya-thesis} and resulting application bugs
 can cause loss of business \cite{DBLP:conf/sigmod/WarszawskiB17}.
-Consider a simple shopping cart application that stores a per-client shopping
-cart in a key-value store (\textit{key} is the client ID and \textit{value} is a
-multi-set of items). \figref{motiv} shows procedures for adding an item to the cart
-(\texttt{AddItem}) and deleting \textit{all} instances of an item from the cart
-(\texttt{DeleteItem}). Each procedure executes in a transaction, represented by
-the calls to \texttt{Begin} and \texttt{Commit}. Suppose that initially, a user $u$ has 
-a single instance of item $I$ in their cart.
-Then the user connects to the application via two different
-sessions (for instance, via two browser windows), adds $I$ in one session
-(\texttt{AddItem($I$, $u$)}) and deletes $I$ in the other session
-(\texttt{DeleteItem($I$, $u$)}). With serializability, the cart can either be
-left in the state $\{ I \}$ (delete happened first, followed by the add) or $\emptyset$ (delete
-happened second). However, with causal consistency (or read committed), it is possible that with two
-sequential reads of the shopping cart, the cart is empty in the first read
-(signaling that the delete has succeeded), but there are \textit{two} instances of $I$ 
-in the second read! Such anomalies, of deleted items reappearing, have been
-noted in previous work \cite{DBLP:conf/sosp/DeCandiaHJKLPSVV07}. 
 
-\paragraph{Testing storage-based applications}
-This paper addresses the problem of \textit{testing} code for correctness
+This work addresses the problem of \textit{testing} code for correctness
 against weak behaviors: a developer should be able to write a test that runs
 their application and then asserts for correct behavior. 
 The main difficulty today is getting coverage of weak behaviors during
@@ -299,19 +249,18 @@ can be configured with one of several isolation levels.
 %Currently,
 %MonkeyDB supports Serializability, Causal Consistency as well as Read
 %Committed. (Addition of other isolation levels is easy.)
-On a read operation, MonkeyDB computes the set of all possible return values
-allowed under the chosen isolation level, and randomly returns one of them. The
-developer can then simply execute their test multiple times to get coverage of
-possible weak behaviors. For the program in \figref{motiv}, if we write a test
-asserting that two sequential reads cannot return empty-cart followed by $\{I,
-I\}$, then it takes only 20 runs of the test (on average) to fail the
-assert. In contrast, the test does not fail when using MySQL with read committed, 
-even after 100k runs. 
+% On a read operation, MonkeyDB computes the set of all possible return values
+% allowed under the chosen isolation level, and randomly returns one of them. The
+% developer can then simply execute their test multiple times to get coverage of
+% possible weak behaviors. For the program in \figref{motiv}, if we write a test
+% asserting that two sequential reads cannot return empty-cart followed by $\{I,
+% I\}$, then it takes only 20 runs of the test (on average) to fail the
+% assert. In contrast, the test does not fail when using MySQL with read committed, 
+% even after 100k runs. 
 %MonkeyDB can work with any application with little to no modifications:
 %a developer simply needs to link their tests to MonkeyDB, instead of the
 %production storage system.
 
-\paragraph{Design of MonkeyDB}
 MonkeyDB does not rely on stress generation, fault
 injection, or data replication. 
 Rather, it works directly with a formalization of
@@ -354,51 +303,53 @@ The theory behind MonkeyDB builds on the axiomatic definitions of isolation
 levels introduced by Biswas et al. \cite{DBLP:journals/pacmpl/BiswasE19}. These
 definitions use logical constraints (called \emph{axioms}) to characterize the
 set of executions of a key-value store that conform to a particular isolation
-level (we discuss SQL queries later). These constraints refer to a specific set of
-relations between events/transactions in an execution that describe control-flow
-or data-flow dependencies: a program order $\po$ between events in the same
-transaction, a session order $\so$ between transactions in the same session\footnote{A
-session is a sequential interface to the storage system. It corresponds to what
-is also called a connection.}, and a write-read $\wro$ (read-from) relation that
-associates each read event with a transaction that writes the value returned by
-the read. These relations along with the events (also called, operations) in an
-execution are called a \emph{history}. The history corresponding to the 
-shopping cart anomaly explained above is given on the bottom of Figure~\ref{fig:motiv}.
-Read operations include the read value, and boxes group events from the same transaction.
-%The initial value of the key is supposed to be written in a fictitious transaction. 
-A history describes only the
-interaction with the key-value store, omitting application side events (e.g., computing
-the value to be written to a key). 
+level (we discuss SQL queries later).
+% These constraints refer to a specific set of
+% relations between events/transactions in an execution that describe control-flow
+% or data-flow dependencies: a program order $\po$ between events in the same
+% transaction, a session order $\so$ between transactions in the same session\footnote{A
+% session is a sequential interface to the storage system. It corresponds to what
+% is also called a connection.}, and a write-read $\wro$ (read-from) relation that
+% associates each read event with a transaction that writes the value returned by
+% the read. These relations along with the events (also called, operations) in an
+% execution are called a \emph{history}. The history corresponding to the 
+% shopping cart anomaly explained above is given on the bottom of Figure~\ref{fig:motiv}.
+% Read operations include the read value, and boxes group events from the same transaction.
+% %The initial value of the key is supposed to be written in a fictitious transaction. 
+% A history describes only the
+% interaction with the key-value store, omitting application side events (e.g., computing
+% the value to be written to a key). 
 
-MonkeyDB implements a \emph{centralized} operational semantics for key-value stores, which is based on these axiomatic definitions. Transactions are executed \emph{serially}, one after another, the concurrency being simulated during the handling of read events.  
-This semantics maintains a history that contains all the past events (from all
-transactions/sessions), and write events are simply added to the history. The
-value returned by a read event is established based on a non-deterministic
-choice of a write-read dependency (concerning this read event) that satisfies
-the axioms of the considered isolation level.
-%(MonkeyDB resolves any non-determinism in a random fashion). 
-Depending on the weakness of the isolation
-level, this makes it possible to return values written in arbitrarily ``old''
-transactions, and simulate any concurrent behavior. For instance, the history in Figure~\ref{fig:motiv}
-can be obtained by executing \texttt{AddItem}, \texttt{DeleteItem}, and then the two reads (serially).
-The read in \texttt{DeleteItem} can take its value from the initial state and ``ignore'' the
-previously executed \texttt{AddItem}, because the obtained history validates the axioms of 
-causal consistency (or read committed). The same happens for the two later reads in the same
-session, the first one being able to read from \texttt{DeleteItem} and the second one
-from \texttt{AddItem}.
+% MonkeyDB implements a \emph{centralized} operational semantics for key-value stores, which is based on these axiomatic definitions. Transactions are executed \emph{serially}, one after another, the concurrency being simulated during the handling of read events.  
+% This semantics maintains a history that contains all the past events (from all
+% transactions/sessions), and write events are simply added to the history. The
+% value returned by a read event is established based on a non-deterministic
+% choice of a write-read dependency (concerning this read event) that satisfies
+% the axioms of the considered isolation level.
+% %(MonkeyDB resolves any non-determinism in a random fashion). 
+% Depending on the weakness of the isolation
+% level, this makes it possible to return values written in arbitrarily ``old''
+% transactions, and simulate any concurrent behavior. For instance, the history in Figure~\ref{fig:motiv}
+% can be obtained by executing \texttt{AddItem}, \texttt{DeleteItem}, and then the two reads (serially).
+% The read in \texttt{DeleteItem} can take its value from the initial state and ``ignore'' the
+% previously executed \texttt{AddItem}, because the obtained history validates the axioms of 
+% causal consistency (or read committed). The same happens for the two later reads in the same
+% session, the first one being able to read from \texttt{DeleteItem} and the second one
+% from \texttt{AddItem}.
 
-We formally prove that this semantics does indeed simulate any concurrent behavior, by 
-showing that it is equivalent to a semantics where transactions are allowed to interleave.
-In comparison with concrete implementations, this semantics makes it possible to handle 
-a wide range of isolation levels in a uniform way. It only has two sources of
-non-determinism: 
-the order in which entire transactions are submitted, and the choice of write-read dependencies in read 
-events. This enable better coverage of possible behaviors, the penalty in performance not
-being an issue in safety testing workloads which are usually small (see our evaluation). 
+% We formally prove that this semantics does indeed simulate any concurrent behavior, by 
+% showing that it is equivalent to a semantics where transactions are allowed to interleave.
+% In comparison with concrete implementations, this semantics makes it possible to handle 
+% a wide range of isolation levels in a uniform way. It only has two sources of
+% non-determinism: 
+% the order in which entire transactions are submitted, and the choice of write-read dependencies in read 
+% events. This enable better coverage of possible behaviors, the penalty in performance not
+% being an issue in safety testing workloads which are usually small (see our evaluation). 
 
 
-We also extend our semantics to cover SQL queries as well, by compiling SQL queries down to transactions with multiple key-value reads/writes. A table in a relational database is represented using a set of primary key values (identifying uniquely the set of rows) and a set of keys, one for each cell in the table. The set of primary key values is represented using a set of Boolean key-value pairs that simulate its characteristic function (adding or removing an element corresponds to updating one of these keys to $\btrue$ or $\bfalse$). Then, SQL queries are compiled to read or write accesses to the keys representing a table. For instance, a $\mathtt{SELECT}$ query that retrieves the set of rows in a table that satisfy a $\mathtt{WHERE}$ condition is compiled to (1) reading Boolean keys to identify the primary key values of the rows contained in the table, (2) reading keys that represent columns used in the $\mathtt{WHERE}$ condition, and (3) reading all the keys that represent cells in a row satisfying the $\mathtt{WHERE}$ condition. This rewriting contains the minimal set of accesses to the cells of a table that are needed to ensure the conventional specification of SQL.
-It makes it possible to ``export'' formalizations of key-value store isolation levels to SQL transactions.
+We also extend our semantics to cover SQL queries as well, by compiling SQL queries down to transactions with multiple key-value reads/writes.
+% A table in a relational database is represented using a set of primary key values (identifying uniquely the set of rows) and a set of keys, one for each cell in the table. The set of primary key values is represented using a set of Boolean key-value pairs that simulate its characteristic function (adding or removing an element corresponds to updating one of these keys to $\btrue$ or $\bfalse$). Then, SQL queries are compiled to read or write accesses to the keys representing a table. For instance, a $\mathtt{SELECT}$ query that retrieves the set of rows in a table that satisfy a $\mathtt{WHERE}$ condition is compiled to (1) reading Boolean keys to identify the primary key values of the rows contained in the table, (2) reading keys that represent columns used in the $\mathtt{WHERE}$ condition, and (3) reading all the keys that represent cells in a row satisfying the $\mathtt{WHERE}$ condition. This rewriting contains the minimal set of accesses to the cells of a table that are needed to ensure the conventional specification of SQL.
+% It makes it possible to ``export'' formalizations of key-value store isolation levels to SQL transactions.
 
 %This paper first presents an axiomatic semantics for various isolation levels 
 %in Key-Value stores that allows one to reason about the set of valid behaviors
@@ -413,7 +364,7 @@ It makes it possible to ``export'' formalizations of key-value store isolation l
 %We also extend our semantics to cover SQL queries as well, by compiling SQL
 %queries down to transactions with multiple key-value updates.
 
-\paragraph{Contributions}
+% \paragraph{Contributions}
 %We implemented MonkeyDB to support an interface consistent with key-value
 %stores and databases, which allows us to directly run real applications unmodified. 
 %We evaluated MonkeyDB on a series of micro-benchmarks, inspired from real
@@ -421,24 +372,20 @@ It makes it possible to ``export'' formalizations of key-value store isolation l
 %that is used for evaluating
 %databases on OLTP workloads. 
 
-This paper makes the following contributions:
-\begin{itemize}
-\item We define an operational semantics for key-value stores under various
-  isolation levels, which simulates all concurrent behaviors with executions
-  where transactions execute serially (\sectref{op-kv}) and which is based 
-  on the axiomatic definitions in~\cite{DBLP:journals/pacmpl/BiswasE19} (and outlined in \S\ref{sec:ax-kv}),
-\item We broaden the scope of the key-value store semantics to SQL transactions
-  using a compiler that rewrites SQL queries to key-value accesses (\sectref{SQL-to-KV}),
-\item The operational semantics and the SQL compiler are implemented in a tool
-  called MonkeyDB (\sectref{impl}). It randomly resolves possible choices to provide coverage
-  of weak behaviors. It supports both a key-value interface as well as SQL,
-  making it readily compatible with any storage-backed application.
-\item We present an evaluation of MonkeyDB on several applications, showcasing
-its superior coverage of weak behaviors as well as bug-finding abilities
-(\sectref{micro}, \sectref{oltp}).\footnote{Source code of our benchmarks is available
-as supplementary material.}
-\end{itemize}
-
-
-
- 
+% This paper makes the following contributions:
+% \begin{itemize}
+% \item We define an operational semantics for key-value stores under various
+%   isolation levels, which simulates all concurrent behaviors with executions
+%   where transactions execute serially (\sectref{op-kv}) and which is based 
+%   on the axiomatic definitions in~\cite{DBLP:journals/pacmpl/BiswasE19} (and outlined in \S\ref{sec:ax-kv}),
+% \item We broaden the scope of the key-value store semantics to SQL transactions
+%   using a compiler that rewrites SQL queries to key-value accesses (\sectref{SQL-to-KV}),
+% \item The operational semantics and the SQL compiler are implemented in a tool
+%   called MonkeyDB (\sectref{impl}). It randomly resolves possible choices to provide coverage
+%   of weak behaviors. It supports both a key-value interface as well as SQL,
+%   making it readily compatible with any storage-backed application.
+% \item We present an evaluation of MonkeyDB on several applications, showcasing
+% its superior coverage of weak behaviors as well as bug-finding abilities
+% (\sectref{micro}, \sectref{oltp}).\footnote{Source code of our benchmarks is available
+% as supplementary material.}
+% \end{itemize}

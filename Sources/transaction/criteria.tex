@@ -505,13 +505,17 @@ The axioms used throughout the paper are given in Figure~\ref{consistency_defs}.
 
 In the following, we explain the rest of the consistency criteria we consider and the axioms defining them. \textsc{Read Atomic} (RA)~\cite{DBLP:conf/concur/Cerone0G15} is a strengthening of \textsc{Read Committed} defined by the axiom $\mathsf{Read\ Atomic}$, which states that for any transaction $\tr_1$ writing a variable $\xvar$ that is read in a transaction $\tr_3$, the set of $\wro$ or $\so$ predecessors of $\tr_3$ writing $\xvar$ must precede $\tr_1$ in commit order. The case of $\wro$ predecessors corresponds to the Repeatable Read criterion in~\cite{DBLP:conf/sigmod/BerensonBGMOO95}, which requires that successive reads of the same variable in the same transaction return the same value, Figure~\ref{rr_example:1} showing a violation, and also that every read of a variable $\xvar$ in a transaction $\tr$ returns the value written by the maximal transaction $\tr'$ (w.r.t. the commit order) that is read by $\tr$, Figure~\ref{ra_example:1} showing a violation (for any commit order between the transactions on the left, either ${\tt read(x)}$ or ${\tt read(y)}$ will return a value not written by the maximal transaction). The case of $\so$ predecessors corresponds to the  ``read-my-writes'' guarantee~\cite{DBLP:conf/pdis/TerryDPSTW94} concerning sessions, which states that a transaction $\tr$ must observe previous writes in the same session. For instance, {\tt read(y)} returning 1 in Figure~\ref{rmw_example:1} shows that the last transaction on the right does not satisfy this guarantee: the transaction writing 1 to {\tt y} was already visible to that session before it wrote 2 to {\tt y}, and therefore the value 2 should have been read. $\mathsf{Read\ Atomic}$ requires that the $\so$ predecessor of the transaction reading {\tt y} be ordered in $\co$ before the transaction writing 1 to {\tt y}, which makes the union $\co\cup\wro$ cyclic.
 
-The following lemma shows that for histories satisfying $\mathsf{Read\ Atomic}$, the inverse of $\wro[\xvar]$ extended to transactions is a total function (see Appendix~\ref{app:definitions} for the proof).
+The following lemma shows that for histories satisfying $\mathsf{Read\ Atomic}$, the inverse of $\wro[\xvar]$ extended to transactions is a total function.
 
 \begin{lemma}
  Let $\hist=\tup{T, \so, \wro}$ be a history. 
  If $\tup{\hist,\co}$ satisfies $\mathsf{Read\ Atomic}$, then %the extension of $\wro[\xvar]$ to transactions 
  for every transaction $\tr$ and two reads $\rd[\id_1]{\xvar}{\val_1},\rd[\id_2]{\xvar}{\val_2}\in \readOp{\tr}$, $\wro^{-1}(\rd[\id_1]{\xvar}{\val_1})=\wro^{-1}(\rd[\id_2]{\xvar}{\val_2})$ and $\val_1 = \val_2$.
 \end{lemma}
+
+\begin{proof}
+  Let $\tup{\tr_1, \rd[\id_1]{\xvar}{\val_1}}, \tup{\tr_2, \rd[\id_2]{\xvar}{\val_2}} \in \wro[\xvar]$. Then $\tr_1, \tr_2$ write to $\xvar$. Let us assume by contradiction, that $\tr_1\neq\tr_2$. By \textsf{Read Atomic}, $\tup{\tr_2, \tr_1} \in \co$ because $\tup{\tr_1, \rd[\id_1]{\xvar}{\val_1}} \in \wro[\xvar]$ and $\tr_2$ writes to $\xvar$. Similarly, we can also show that $\tup{\tr_1, \tr_2} \in \co$. This contradicts the fact that $\co$ is a strict total order. Therefore, $\tr_1 = \tr_2$. We also have that $\val_1 = \val_2$ because each transaction contains a single write to $\xvar$.
+\end{proof}
 
 \textsc{Causal Consistency} (CC)~\cite{DBLP:journals/cacm/Lamport78} is defined by the axiom $\mathsf{Causal}$, which states that for any transaction $\tr_1$ writing a variable $\xvar$ that is read in a transaction $\tr_3$, the set of $(\wro\cup \so)^+$ predecessors of $\tr_3$ writing $\xvar$ must precede $\tr_1$ in commit order ($(\wro\cup \so)^+$ is usually called the \emph{causal} order). A violation of this axiom can be found in Figure~\ref{cc_example:1}: the transaction $\tr_2$ writing 2 to {\tt x} is a $(\wro\cup \so)^+$ predecessor of the transaction $\tr_3$ reading 1 from {\tt x} because the transaction $\tr_4$, writing 1 to {\tt y}, reads {\tt x} from $\tr_2$ and $\tr_3$ reads {\tt y} from $\tr_4$. This implies that $\tr_2$ should precede in commit order the transaction $\tr_1$ writing 1 to {\tt x}, which again, is inconsistent with the write-read relation ($\tr_2$ reads from $\tr_1$).
 
@@ -552,7 +556,7 @@ The following lemma shows that for histories satisfying $\mathsf{Read\ Atomic}$,
 
 Finally, \textsc{Serializability} (SER)~\cite{DBLP:journals/jacm/Papadimitriou79b} is defined by the axiom with the same name, which requires that for any transaction $\tr_1$ writing to a variable $\xvar$ that is read in a transaction $\tr_3$, the set of $\co$ predecessors of $\tr_3$ writing $\xvar$ must precede $\tr_1$ in commit order. This ensures that each transaction observes the effects of all the $\co$ predecessors. Figure~\ref{ser_example:1} shows a $\mathsf{Serializability}$ violation.
 
-The next lemma states the relationship between these axioms (see Appendix~\ref{app:definitions} for the proof).
+The next lemma states the relationship between these axioms.
 
 \begin{lemma}
  The following entailments hold:
@@ -563,6 +567,39 @@ The next lemma states the relationship between these axioms (see Appendix~\ref{a
  \end{align*} 
  \label{axioms-rel}
 \end{lemma}
+
+\begin{proof}
+  We will show the contrapositive of each implication:
+ \begin{itemize}
+   \item If $\tup{\hist, \co}$ does not satisfy \textsf{Read Committed},  then
+\begin{align*}
+\exists \xvar,\ \exists \tr_1,\tr_2,\ \exists \alpha,\beta.\ \tup{\tr_1,\alpha}\in \wro[\xvar] \land \writeVar{\tr_2}{\xvar}\ \land \tup{\tr_2,\beta}\in\wro \land \tup{\beta,\alpha} \in \po \land \tup{\tr_1,\tr_2}\in\co. 
+\end{align*}
+Let $\tr_3$ the transaction containing $\alpha$ and $\beta$. We have that $\tup{\tr_2, \tr_3} \in \wro$. But then we have $\tr_1, \tr_2, \tr_3$ such that $\tup{\tr_1, \tr_3} \in \wro[\xvar]$ and $\tup{\tr_2, \tr_3} \in \wro$ and $\writeVar{\tr_2}{\xvar}$. So by \textsf{Read Atomic}, $\tup{\tr_2, \tr_1} \in \co$. This contradicts the fact that $\co$ is a strict total order. Therefore, $\tup{\hist, \co}$ does not satisfy \textsf{Read\ Atomic}.
+   \item If $\tup{\hist, \co}$ does not satisfy \textsf{Read Atomic}, then 
+ \begin{align*}  
+ \exists \xvar, \exists \tr_1,\tr_2,\tr_3.\ \tup{\tr_1,\tr_3}\in \wro[\xvar] \land \writeVar{\tr_2}{\xvar}\ \land \tup{\tr_2,\tr_3}\in\wro\cup\so \land \tup{\tr_1,\tr_2}\in\co.
+ \end{align*}
+  Then $\tup{\tr_2,\tr_3}\in(\wro\cup\so)^+$. Then, by \textsf{Causal}, we have $\tup{\tr_2, \tr_1} \in \co$, which contradicts the fact that $\co$ is a strict total order. Therefore, $\tup{\hist, \co}$ does not satisfy \textsf{Causal}.
+   \item If $\tup{\hist, \co}$ does not satisfy \textsf{Causal}, then
+\begin{align*}
+\exists \xvar, \exists \tr_1,\tr_2,\tr_3.\ \tup{\tr_1,\tr_3}\in \wro[\xvar] \land \writeVar{\tr_2}{\xvar}\ \land \tup{\tr_2,\tr_3}\in(\wro\cup\so)^+ \land\tup{\tr_1,\tr_2}\in\co.
+\end{align*}
+   But, $(\wro\cup\so)^+ = (\wro\cup\so)^* \circ (\wro\cup\so) \subseteq \co^* \circ (\wro\cup\so)$. Therefore, $\tup{\tr_2,\tr_3}\in\co^* \circ (\wro\cup\so)$. Then, by \textsf{Prefix}, we have $\tup{\tr_2, \tr_1} \in \co$, which contradicts the fact that $\co$ is a strict total order. Therefore, $\tup{\hist, \co}$ does not satisfy \textsf{Prefix}.
+   \item If $\tup{\hist, \co}$ does not satisfy \textsf{Prefix} or \textsf{Conflict}, then 
+\begin{align*}
+\exists \xvar, \exists \tr_1,\tr_2,\tr_3, \tr_4.\ \tup{\tr_1,\tr_3}\in \wro[\xvar] \land \writeVar{\tr_2}{\xvar}\ \land \tup{\tr_2,\tr_4}\in\co^* \land \tup{\tr_1,\tr_2}\in\co
+\end{align*}
+and 
+       \begin{itemize}
+         \item $\tup{\tr_4,\tr_3}\in \co \land \writeVar{\tr_3}{\yvar}\ \land \writeVar{\tr_3}{\yvar}$ if it violates \textsf{Conflict}.
+         \item $\tup{\tr_4,\tr_3}\in (\wro \cup \so)$ if it violates \textsf{Prefix}.
+       \end{itemize}
+       
+In both cases, we have that $\tup{\tr_4, \tr_3} \in \co$. Because $\co$ is transitive, $\tup{\tr_2, \tr_4} \in \co^*$ and $\tup{\tr_4, \tr_3} \in \co$ imply that $\tup{\tr_2, \tr_3} \in \co$. Then by \textsf{Serializability}, we have $\tup{\tr_2, \tr_1} \in \co$, which contradicts the fact that $\co$ is a strict total order. Therefore, $\tup{\hist, \co}$ does not satisfy \textsf{Serializability}.
+ \end{itemize}
+\end{proof}
+
 
 \begin{definition}
  Given a set of axioms $X$ defining a criterion $C$ like in Table~\ref{weakconsistency:2}, a history $\hist=\tup{T, \so, \wro}$ \emph{satisfies} $C$ iff there exists a strict total order $\co$ such that $\wro\cup\so\subseteq \co$ and $\tup{h,\co}$ satisfies $X$.

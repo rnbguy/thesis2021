@@ -113,14 +113,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \title{Testing Weakly Consistent Geo-Distributed Data-Storages and Applications}
-\subtitle{Crash in the Cloud}
+\subtitle{\emph{Crash in the Cloud}}
 \author{Ranadeep Biswas}
 
 \include{Sources/defs}
 
 \begin{document}
 
-\frontmatter
+\frontmatter  
   \include{Sources/Title}
   \include{Sources/Abstract}
 
@@ -132,9 +132,9 @@
 
   \chapter{Introduction}
 
-  \include{Sources/Introduction}
+  \input{Sources/Introduction}
 
-  \chapter{Testing Consistency of Conflict-Free Replicated Data Types}
+  \chapter{Consistency of Conflict-Free Replicated Data Types}
 
   \input{Sources/crdt/intro}
   \input{Sources/crdt/definitions}
@@ -145,7 +145,7 @@
   \input{Sources/crdt/related}
   \input{Sources/crdt/conclusion}
 
-  \chapter{Testing Transactional Consistency}
+  \chapter{Transactional Consistency}
   \input{Sources/transaction/introduction}
   \input{Sources/transaction/overview}
   \input{Sources/transaction/criteria}
@@ -154,11 +154,11 @@
   \input{Sources/transaction/experiments}
   \input{Sources/transaction/related}
 
-  \chapter{Effectively Testing Applications Based on Weak Isolation Levels}
+  \chapter{Applications implemented on Distributed Datastores}
 
   \input{Sources/sql/intro}
   \input{Sources/sql/prog_lang}
-  \input{Sources/sql/ax-kv}
+  % \input{Sources/sql/ax-kv}
   \input{Sources/sql/op-kv}
   \input{Sources/sql/formal}
   \input{Sources/sql/impl}
@@ -167,22 +167,18 @@
   \input{Sources/sql/related}
   \input{Sources/sql/concl}
 
-  \chapter{Appendix}
-
-  \input{Sources/transaction/criteria-app}
-
 % This ensures that the subsequent sections are being included as root
 % items in the bookmark structure of your PDF reader.
 \bookmarksetup{startatroot}
 \backmatter
 
-  \begingroup
-    \let\clearpage\relax
-    \glsaddall
-    \printglossary[type=\acronymtype]
-    \newpage
-    \printglossary
-  \endgroup
+  % \begingroup
+  %   \let\clearpage\relax
+  %   \glsaddall
+  %   \printglossary[type=\acronymtype]
+  %   \newpage
+  %   \printglossary
+  % \endgroup
 
   \printindex
   \printbibliography
