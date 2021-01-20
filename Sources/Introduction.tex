@@ -18,10 +18,6 @@ Usually each distributed \emph{nodes} maintains a replica of the global data.
 A user connects to the node \emph{nearest} to them and that node serves their requests.
 This way the distributed system reduces responses time and distributes the workload to multiple nodes. 
 
-%% insert small example maybe
-
-%% What is the problem.
-
 Distributed systems are the solution to a fast, concurrent, scalable online applications. But it actually offers a trade off.
 As we allow concurrent operations at multiple nodes, they still need to synchronize among them and maintain a meaningful or \emph{consistent} global data.
 A global lock defeats the whole purpose of the distributed system, because taking a lock over a multiple distributed nodes means more communication over internet and slow response time.
@@ -44,7 +40,25 @@ This dissertation is an effort to give solutions to these problems. We first stu
 
 \section{Conflict Free Replicated Data Types}
 
-Recent distributed systems have introduced variations of familiar abstract data types (ADTs) like counters, registers, flags, and sets, that provide high availability and partition tolerance. These \emph{conflict-free replicated data types} (CRDTs)~\cite{DBLP:conf/sss/ShapiroPBZ11} efficiently resolve the effects of concurrent updates to replicated data. Naturally they weaken consistency guarantees to achieve availability and partition-tolerance, and various notions of \emph{weak consistency} capture such guarantees~\cite{DBLP:conf/pdis/TerryDPSTW94, DBLP:conf/sosp/TerryTPDSH95, DBLP:conf/popl/MansonPA05, DBLP:journals/ftpl/Burckhardt14, DBLP:conf/popl/BurckhardtGYZ14}.
+Replication is used in any distributed system. But to maintain a reliable replicated data, one has to maintain some level of consistency through clever synchronization techniques. The standard \emph{strong consistency} approach is to find a linearization of the set of all global operations. But as CAP theorem shows, achieving strong consistency is not possible while maintaining availability and network partition.
+
+When network delays are big and network partition is an issue, \emph{eventual consistency} promises better performance and availability. An update gets executed at some replica but it may be sent to other replicas later as a delayed synchronization. Although updates eventually reaches to all replicas, these updates may be seen concurrently, even in different orders, by different replicas. If these concurrent updates are \emph{conflicting}, they need to be resolved. This is not trivial because the resolved outcome need to be the \emph{same} in all replicas such that the replicas do not diverge.
+
+\emph{Conflict-free replicated data types} (CRDTs)~\cite{DBLP:conf/sss/ShapiroPBZ11} efficiently resolve the effects of concurrent updates to replicated data. In figure \ref{fig:crdt:intro}, we demonstrate a CRDT, specifically an \emph{OR-Set}.
+OR-Set implements a distributed Set with natural \texttt{add(\_)}, \texttt{remove(\_)}, \texttt{contain(\_)} operations. \texttt{add(\_)} and \texttt{remove(\_)} are the only update operations. Two updates are in conflict if they are trying to insert or remove a same element. As its CRDT based conflict-resolve technique, an \texttt{add(\_)} operation will always win among multiple conflicting updates. In figure \ref{fig:crdt:intro}, the first replica receives the update from third replica. Even though that update was in conflict, there was no \texttt{add(x)}. So \texttt{contain(x)} returns false. But in the third replica receives all the concurrent updates. Since there is one concurrent \texttt{add(x)}, they all get resolved to \texttt{add(x)} and the later \texttt{contain(x)} returns true. Similarly, \emph{And-Set} is a CRDT in which \texttt{remove(\_)} always wins among multiple conflicting updates.
+
+Recent distributed systems have introduced variations of familiar abstract data types (ADTs) like counters, registers, flags, and sets, that provide high availability and partition tolerance. Naturally they weaken consistency guarantees to achieve availability and partition-tolerance, and various notions of \emph{weak consistency} capture such guarantees~\cite{DBLP:conf/pdis/TerryDPSTW94, DBLP:conf/sosp/TerryTPDSH95, DBLP:conf/popl/MansonPA05, DBLP:journals/ftpl/Burckhardt14, DBLP:conf/popl/BurckhardtGYZ14}.
+
+
+\subsection{State of the Art}
+
+Many have considered consistency models applicable to CRDTs, including causal consistency~\cite{DBLP:journals/cacm/Lamport78}, sequential consistency~\cite{DBLP:journals/tc/Lamport79}, linearizability~\cite{DBLP:journals/toplas/HerlihyW90}, session consistency~\cite{DBLP:conf/pdis/TerryDPSTW94}, eventual consistency~\cite{DBLP:conf/sosp/TerryTPDSH95}, and happens-before consistency~\cite{DBLP:conf/popl/MansonPA05}. Burckhardt et al.~\cite{DBLP:journals/ftpl/Burckhardt14, DBLP:conf/popl/BurckhardtGYZ14} propose a unifying framework to formalize these models. Many have also studied the complexity of verifying data-type agnostic notions of consistency, including serializability, sequential consistency and linearizability~\cite{DBLP:journals/jacm/Papadimitriou79b, DBLP:journals/siamcomp/GibbonsK97, DBLP:journals/iandc/AlurMP00, DBLP:conf/spaa/BinghamCH03, DBLP:conf/cav/FarzanM08, DBLP:conf/esop/BouajjaniEEH13, DBLP:conf/netys/Hamza15}, as well as causal consistency~\cite{DBLP:conf/popl/BouajjaniEGH17}.
+% Our definition of the replicated LWW register corresponds to the notion of causal convergence in~\cite{DBLP:conf/popl/BouajjaniEGH17}. This work studies the complexity of the admissibility problem for the replicated LWW register. It shows that this problem is NP-complete in general and polynomial time when each value is written only once. 
+% Our NP-completeness result is stronger since it assumes a fixed number of replicas, and our algorithm for the case of unique values is more general and can be applied uniformly to MVR and RGA. 
+Bouajjani et al.~\cite{DBLP:journals/iandc/BouajjaniEEH18, DBLP:journals/pacmpl/EmmiE18} consider the complexity for individual linearizable collection types. Others have developed effective consistency checking algorithms for sequential consistency~\cite{DBLP:conf/cav/HenzingerQR99a, DBLP:journals/tpds/Qadeer03, DBLP:conf/cav/BinghamCHQZ04, DBLP:conf/pldi/BurckhardtAM07}, serializability~\cite{DBLP:conf/fmcad/0002OPTZ07, DBLP:conf/cav/FarzanM08, DBLP:conf/pldi/GuerraouiHJS08, DBLP:conf/pldi/EmmiMM10}, linearizability~\cite{DBLP:journals/jpdc/WingG93, DBLP:conf/pldi/BurckhardtDMT10, DBLP:conf/pldi/EmmiEH15, DBLP:journals/concurrency/Lowe17}, and even weaker notions like eventual consistency~\cite{DBLP:conf/popl/BouajjaniEH14} and sequential happens-before consistency~\cite{DBLP:conf/cav/EmmiE18, DBLP:journals/pacmpl/EmmiE19}.
+
+
+\subsection{Contribution}
 
 In this work we study the tractability of CRDT consistency checking. In particular, we consider \emph{runtime verification}: deciding whether a given execution of a CRDT is consistent with its ADT specification. This problem is particularly relevant as distributed-system testing tools like Jepsen~\cite{MISC:Jepsen} are appearing; without efficient, general consistency-checking algorithms, such tools could be limited to specialized classes of errors like node crashes.
 
@@ -52,6 +66,38 @@ Our study proceeds in three parts.
 First, to precisely characterize the consistency of various CRDTs, and facilitate symbolic reasoning, we develop novel logical characterizations to capture their guarantees.
 Second, we demonstrate the intractability of several replicated data types by reduction from propositional satisfiability (SAT) problems.
 Third, we develop tractable consistency-checking algorithms for individual data types and special cases: replicated growing arrays; multi-value and last-writer-wins registers, when each value is written only once; counters, when replicas are bounded; and sets and flags, when their sizes are also bounded.
+
+
+\begin{figure}
+% \resizebox{\textwidth}{!}{
+\centering
+\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,semithick, transform shape]
+
+\node[draw, rounded corners=2mm] (r11) at (0, 0) {\begin{tabular}{l} \texttt{remove(x)} \end{tabular}};
+\node[draw, rounded corners=2mm] (r21) at (0, -1) {\begin{tabular}{l} \texttt{add(x)} \end{tabular}};
+\node[draw, rounded corners=2mm] (r31) at (0, -2) {\begin{tabular}{l} \texttt{remove(x)} \end{tabular}};
+
+\node[draw=black!0] (r12) at (3, 0) {};
+\node[draw=black!0] (r22) at (3, -1) {};
+\node[draw=black!0] (r32) at (3, -2) {};
+
+\node[draw, rounded corners=2mm] (r13) at (6, 0) {\begin{tabular}{l} \texttt{contain(x) = False} \end{tabular}};
+\node[draw, rounded corners=2mm] (r23) at (6, -1) {\begin{tabular}{l} \texttt{contain(x) = True} \end{tabular}};
+\node[draw, rounded corners=2mm] (r33) at (6, -2) {\begin{tabular}{l} \texttt{contain(x) = True} \end{tabular}};
+
+\path (r11) edge node {} (r13);
+\path (r21) edge node {} (r23);
+\path (r31) edge node {} (r33);
+
+\path(r11) edge node {} (r32);
+\path (r21) edge node {} (r32);
+\path (r31) edge node {} (r12);
+\end{tikzpicture}  
+% }
+\caption{OR-Set}
+\label{fig:crdt:intro}
+\end{figure}
+
 
 %%%%%%%%%%
 % Transaction
@@ -63,11 +109,17 @@ Transactions simplify concurrent programming by enabling multiple computations o
 
 Implementations of large-scale databases providing transactions are difficult to build and test. For instance, distributed (replicated) databases must account for partial failures, where some components or the network can fail and produce incomplete results. Ensuring fault-tolerance relies on intricate protocols that are difficult to design and reason about. The black-box testing framework Jepsen~\cite{jepsen} found a remarkably large number of subtle problems in many production distributed databases. %\footnote{https://www.infoq.com/presentations/partitioning-comparison}.
 
+\subsection{State of the Art}
+
 Testing a transactional database raises two issues. First, deriving a suitable set of testing scenarios, e.g., faults to inject into the system and the set of transactions to be executed, and second, deriving efficient algorithms for checking whether a given execution satisfies the considered consistency model. The Jepsen framework aims to address the first issue by using randomization, 
 %shows that the first issue can be solved using randomization, 
 e.g., introducing faults at random and choosing the operations in a transaction randomly. The effectiveness of this approach has been proved formally in recent work~\cite{DBLP:journals/pacmpl/OzkanMNBW18}. The second issue is, however, largely unexplored. Jepsen checks consistency in a rather ad-hoc way, focusing on specific classes of violations to a given consistency model, e.g., dirty reads (reading values from aborted transactions). This problem is challenging because the consistency specifications are non-trivial and they cannot be checked using, for instance, standard local assertions added to the client's code. 
 
-Besides serializability, the complexity of checking correctness of an execution w.r.t. some consistency model is unknown. Checking serializability has been shown to be NP-complete~\cite{DBLP:journals/jacm/Papadimitriou79b}, and checking causal consistency in a \emph{non-transactional} context is known to be polynomial time~\cite{DBLP:conf/popl/BouajjaniEGH17}. In this work, we try to fill this gap by investigating the complexity of this problem w.r.t. several consistency models and, in the case of NP-completeness, devising algorithms that are polynomial time assuming fixed bounds for certain parameters of the input executions, e.g., the number of sessions. We consider several consistency models that are the most prevalent in practice. \emph{Read Committed} (RC)~\cite{DBLP:conf/sigmod/BerensonBGMOO95}, \emph{Read Atomic} (RA)~\cite{DBLP:conf/concur/Cerone0G15},  \emph{Causal Consistency} (CC)~\cite{DBLP:journals/cacm/Lamport78}, \emph{Prefix Consistency} (PC)~\cite{DBLP:conf/ecoop/BurckhardtLPF15}, \emph{Snapshot Isolation} (SI)~\cite{DBLP:conf/sigmod/BerensonBGMOO95} and Serializability (SER).
+Besides serializability, the complexity of checking correctness of an execution w.r.t. some consistency model is unknown. Checking serializability has been shown to be NP-complete~\cite{DBLP:journals/jacm/Papadimitriou79b}, and checking causal consistency in a \emph{non-transactional} context is known to be polynomial time~\cite{DBLP:conf/popl/BouajjaniEGH17}.
+
+\subsection{Contribution}
+
+In this work, we try to fill this gap by investigating the complexity of this problem w.r.t. several consistency models and, in the case of NP-completeness, devising algorithms that are polynomial time assuming fixed bounds for certain parameters of the input executions, e.g., the number of sessions. We consider several consistency models that are the most prevalent in practice. \emph{Read Committed} (RC)~\cite{DBLP:conf/sigmod/BerensonBGMOO95}, \emph{Read Atomic} (RA)~\cite{DBLP:conf/concur/Cerone0G15},  \emph{Causal Consistency} (CC)~\cite{DBLP:journals/cacm/Lamport78}, \emph{Prefix Consistency} (PC)~\cite{DBLP:conf/ecoop/BurckhardtLPF15}, \emph{Snapshot Isolation} (SI)~\cite{DBLP:conf/sigmod/BerensonBGMOO95} and Serializability (SER).
 
 %
 %The only result that explores the complexity of this problem 
@@ -88,7 +140,8 @@ Besides serializability, the complexity of checking correctness of an execution 
 
 %Based on our formalization of these criteria, 
 We establish that checking whether an execution satisfies RC, RA, or CC is polynomial time, while the same problem is NP-complete for PC and SI. Moreover, in the case of the NP-complete consistency models (PC, SI, SER), we show that their verification problem becomes polynomial time provided that, roughly speaking, the number of sessions in the input executions is considered to be fixed (i.e., not counted for in the input size). In more detail, we establish that checking SER reduces to a search problem in a space that has polynomial size when the number of sessions is fixed. (This algorithm applies to arbitrary executions, but its complexity would be exponential in the number of sessions in general.) Then, we show that checking PC or SI can be reduced in polynomial time to checking SER using a transformation of executions that, roughly speaking, splits each transaction in two parts: one part containing all the reads, and one part containing all the writes (SI further requires adding some additional variables in order to deal with transactions writing on a common variable).
-We extend these results even further by relying on an abstraction of executions called \emph{communication graphs}~\cite{DBLP:journals/pacmpl/ChalupaCPSV18}. Roughly speaking, the vertices of a communication graph correspond to sessions, and the edges represent the fact that two sessions access (read or write) the same variable. We show that all these criteria are polynomial-time checkable provided that the \emph{biconnected} components of the communication graph are of fixed size.
+
+% We extend these results even further by relying on an abstraction of executions called \emph{communication graphs}~\cite{DBLP:journals/pacmpl/ChalupaCPSV18}. Roughly speaking, the vertices of a communication graph correspond to sessions, and the edges represent the fact that two sessions access (read or write) the same variable. We show that all these criteria are polynomial-time checkable provided that the \emph{biconnected} components of the communication graph are of fixed size.
 
 We provide an experimental evaluation of our algorithms on executions of CockroachDB~\cite{cockroach}, which claims to implement serializability~\cite{cockroach-claim} acknowledging however the possibility of anomalies, Galera~\cite{galera}, whose documentation contains contradicting claims about whether it implements snapshot isolation~\cite{galera-claim,galera-notclaim}, and AntidoteDB~\cite{antidote}, which claims to implement causal consistency~\cite{antidote-claim}.
 %Galera~\cite{galera}, and AntidoteDB~\cite{antidote}, which claim to implement serializability~\cite{cockroach-claim}, snapshot isolation~\cite{galera-claim} and causal consistency~\cite{antidote-claim}, respectively (in the default configuration). 
@@ -100,7 +153,7 @@ In particular, we show that, although the asymptotic complexity of our algorithm
 
 
 %%%%%%
-% MonkeyDB
+% \tool{}
 %%%%%%
 
 \section{Applications implemented on Distributed Datastores}
@@ -149,6 +202,9 @@ isolation levels are hard to understand or reason about
 \cite{DBLP:conf/popl/BrutschyD0V17,adya-thesis} and resulting application bugs
 can cause loss of business \cite{DBLP:conf/sigmod/WarszawskiB17}.
 
+
+\subsection{State of the Art}
+
 This work addresses the problem of \textit{testing} code for correctness
 against weak behaviors: a developer should be able to write a test that runs
 their application and then asserts for correct behavior. 
@@ -169,6 +225,8 @@ anomalies by identifying non-serializable behavior (\sectref{related}). Anomalie
 always correspond to bugs \cite{DBLP:conf/pldi/BrutschyD0V18,DBLP:journals/pvldb/GanRRB020}; they may
 either not be important (e.g., gather statistics) or may already be handled in
 the application (e.g., checking and deleting duplicate items).
+
+\subsection{Contribution}
 
 %Prior work on this problem has largely focussed on
 %formal verification techniques: to establish correctness of code against a specification 
@@ -240,16 +298,16 @@ the application (e.g., checking and deleting duplicate items).
 %only rough guidelines on which one to pick~\cite{cosmosdb-consistency}.
 %(THE FLOW IS A LITTLE BIT AKWARD: WEAK ISOLATION IS HARD TO UNDERSTAND COMPARED TO SERIALIZABILITY; MENTION THE Cosmos DB STUFF AS SUPPORT => INSERTING THE RIGHT SYNCHRONIZATION IS HARD => APPLICATION DEVELOPMENT IS HARD. WHY IS TESTING HARD BECAUSE WEAK ISOLATION IS COMPLICATED ?) 
 
-We present MonkeyDB, a mock in-memory storage system meant for testing
+We present \tool{}, a mock in-memory storage system meant for testing
 correctness of storage-backed applications. 
-MonkeyDB supports 
+\tool{} supports 
 common APIs for accessing data (key-value updates, as well as SQL queries),
-making it an easy substitute for an actual storage system. MonkeyDB
+making it an easy substitute for an actual storage system. \tool{}
 can be configured with one of several isolation levels. 
 %Currently,
-%MonkeyDB supports Serializability, Causal Consistency as well as Read
+%\tool{} supports Serializability, Causal Consistency as well as Read
 %Committed. (Addition of other isolation levels is easy.)
-% On a read operation, MonkeyDB computes the set of all possible return values
+% On a read operation, \tool{} computes the set of all possible return values
 % allowed under the chosen isolation level, and randomly returns one of them. The
 % developer can then simply execute their test multiple times to get coverage of
 % possible weak behaviors. For the program in \figref{motiv}, if we write a test
@@ -257,50 +315,16 @@ can be configured with one of several isolation levels.
 % I\}$, then it takes only 20 runs of the test (on average) to fail the
 % assert. In contrast, the test does not fail when using MySQL with read committed, 
 % even after 100k runs. 
-%MonkeyDB can work with any application with little to no modifications:
-%a developer simply needs to link their tests to MonkeyDB, instead of the
+%\tool{} can work with any application with little to no modifications:
+%a developer simply needs to link their tests to \tool{}, instead of the
 %production storage system.
 
-MonkeyDB does not rely on stress generation, fault
+\tool{} does not rely on stress generation, fault
 injection, or data replication. 
 Rather, it works directly with a formalization of
-the given isolation level in order to compute allowed return values. 
-
-
-%MonkeyDB makes it straightforward
-%to unit test any storage-backed application. Testing, as opposed to formal
-%verification, is still the more widely adopted engineering practice. 
-
-%Given these concerns, we propose our idea {\emph \tool{}}, 
-% an in-memory storage system meant for testing. 
-%It offers the same interface as most databases (both SQL and Key-Value stores). 
-%Internally, it uses a generative model of various (configurable) consistency levels. 
-%On read operations, it can systematically pick from the set of all values valid under the given consistency level. 
-%%a database model which systematically explores possible behaviors allowed by the used consistency model 
-%% and allows developers to check whether their application invariants hold with respect to these possible executions, providing high coverage.
-%\tool{} can be used for exhaustive testing (by enumerating all possible read values) or randomized testing that provides much better coverage than otherwise (THIS STATEMENT IS STRONG AND NEEDS SUPPORT).
-%%{\tool{}} works as an operational model 
-%%and provides the interface of an actual database to any client application. 
-%Our design choice addresses above-mentioned concerns and is advantageous in several ways.
-%First, it does not need to access the internals of any real database.
-%Further, it requires no modifications to the client application under test.
-%Furthermore, we can use the same model for a number of databases which leads to effortless testing of client applications against various levels of consistency that are provided by different databases (WHAT DO YOU MEAN BY "SAME MODEL"?) 
-%Our design makes \tool{} readily support different modern software architectures such as microservices~\cite{microservice,eshop} where varied databases can be plugged-in and each microservice connects to its own database having a specific consistency model.
-%%Our effort is building something that any developer can use by themselves.
-%%The key features of \tool{} is:
-%% (1) works on real applications directly and requires no modifications to the system under test,
-%% (2) expects no expertise from developers because its integration and use is same as that of a real database,
-%% (3) provides good coverage,
-%% (4) does not report false positives.
-
-
-%\constantin{FROM THIS POINT ON, WE NEED A "DEEPER" PRESENTATION OF THE THEORY
-%  USED IN THE IMPLEMENTATION. STARTING FROM AXIOMATIC SEMANTICS FOR ISOLATION
-%  LEVELS IN KEY-VALUE STORES, OPERATIONAL SEMANTICS (STRESS THE SERIAL
-%EXECUTION), COMPILING SQL TO KEY-VALUE STORE API. }
-
-The theory behind MonkeyDB builds on the axiomatic definitions of isolation
-levels introduced by Biswas et al. \cite{DBLP:journals/pacmpl/BiswasE19}. These
+the given isolation level in order to compute allowed return values.
+The theory behind \tool{} builds on the axiomatic definitions of isolation
+levels introduced in chapter \ref{chap:txn} \cite{DBLP:journals/pacmpl/BiswasE19}. These
 definitions use logical constraints (called \emph{axioms}) to characterize the
 set of executions of a key-value store that conform to a particular isolation
 level (we discuss SQL queries later).
@@ -320,13 +344,13 @@ level (we discuss SQL queries later).
 % interaction with the key-value store, omitting application side events (e.g., computing
 % the value to be written to a key). 
 
-% MonkeyDB implements a \emph{centralized} operational semantics for key-value stores, which is based on these axiomatic definitions. Transactions are executed \emph{serially}, one after another, the concurrency being simulated during the handling of read events.  
+% \tool{} implements a \emph{centralized} operational semantics for key-value stores, which is based on these axiomatic definitions. Transactions are executed \emph{serially}, one after another, the concurrency being simulated during the handling of read events.  
 % This semantics maintains a history that contains all the past events (from all
 % transactions/sessions), and write events are simply added to the history. The
 % value returned by a read event is established based on a non-deterministic
 % choice of a write-read dependency (concerning this read event) that satisfies
 % the axioms of the considered isolation level.
-% %(MonkeyDB resolves any non-determinism in a random fashion). 
+% %(\tool{} resolves any non-determinism in a random fashion). 
 % Depending on the weakness of the isolation
 % level, this makes it possible to return values written in arbitrarily ``old''
 % transactions, and simulate any concurrent behavior. For instance, the history in Figure~\ref{fig:motiv}
@@ -346,8 +370,17 @@ level (we discuss SQL queries later).
 % events. This enable better coverage of possible behaviors, the penalty in performance not
 % being an issue in safety testing workloads which are usually small (see our evaluation). 
 
+We consider a set of micro-benchmarks Twitter \cite{twissandra}, Shopping Cart \cite{DBLP:conf/pldi/Sivaramakrishnan15}, Courseware \cite{DBLP:conf/esop/NairP020}, Treiber Stack \cite{DBLP:conf/cav/NagarMJ20} inspired from real-world applications 
+(\sectref{micro-benchmarks}) and evaluate the number of test iterations
+required to fail an invalid assertion 
+(\sectref{micro-assertion-violations}). We also measure the \textit{coverage} of
+weak behaviors provided by \tool{} (\sectref{micro-coverage}). Each of these
+applications were implemented based on their specifications described in prior
+work; they all use \tool{} as a library, via its KV interface.  
 
-We also extend our semantics to cover SQL queries as well, by compiling SQL queries down to transactions with multiple key-value reads/writes.
+
+We also extend our semantics to cover SQL queries as well, by compiling SQL queries down to transactions with multiple key-value reads/writes. Naturally, we considered OLTPBench \cite{DBLP:journals/pvldb/DifallahPCC13}, a popular benchmark suite of representative 
+OLTP workloads for relational databases. We picked a subset of OLTPBench, including TPC-C, for which we had reasonable assertions. We showed using our technique, \tool{} was able to violate these assertion under weak isolation levels.
 % A table in a relational database is represented using a set of primary key values (identifying uniquely the set of rows) and a set of keys, one for each cell in the table. The set of primary key values is represented using a set of Boolean key-value pairs that simulate its characteristic function (adding or removing an element corresponds to updating one of these keys to $\btrue$ or $\bfalse$). Then, SQL queries are compiled to read or write accesses to the keys representing a table. For instance, a $\mathtt{SELECT}$ query that retrieves the set of rows in a table that satisfy a $\mathtt{WHERE}$ condition is compiled to (1) reading Boolean keys to identify the primary key values of the rows contained in the table, (2) reading keys that represent columns used in the $\mathtt{WHERE}$ condition, and (3) reading all the keys that represent cells in a row satisfying the $\mathtt{WHERE}$ condition. This rewriting contains the minimal set of accesses to the cells of a table that are needed to ensure the conventional specification of SQL.
 % It makes it possible to ``export'' formalizations of key-value store isolation levels to SQL transactions.
 
@@ -359,15 +392,15 @@ We also extend our semantics to cover SQL queries as well, by compiling SQL quer
 %The operational semantics maintains a history of the read-write operations,
 %including a \textit{read-from} relationship that matches reads to previous
 %writes. On the submission of a new operation, this history is extended in
-%accordance with this operational semantics. MonkeyDB implements the operational
+%accordance with this operational semantics. \tool{} implements the operational
 %semantics, while resolving any non-determinism in a random fashion. 
 %We also extend our semantics to cover SQL queries as well, by compiling SQL
 %queries down to transactions with multiple key-value updates.
 
 % \paragraph{Contributions}
-%We implemented MonkeyDB to support an interface consistent with key-value
+%We implemented \tool{} to support an interface consistent with key-value
 %stores and databases, which allows us to directly run real applications unmodified. 
-%We evaluated MonkeyDB on a series of micro-benchmarks, inspired from real
+%We evaluated \tool{} on a series of micro-benchmarks, inspired from real
 %applications, as well as the well-known OLTPBench \cite{DBLP:journals/pvldb/DifallahPCC13}
 %that is used for evaluating
 %databases on OLTP workloads. 
@@ -381,10 +414,10 @@ We also extend our semantics to cover SQL queries as well, by compiling SQL quer
 % \item We broaden the scope of the key-value store semantics to SQL transactions
 %   using a compiler that rewrites SQL queries to key-value accesses (\sectref{SQL-to-KV}),
 % \item The operational semantics and the SQL compiler are implemented in a tool
-%   called MonkeyDB (\sectref{impl}). It randomly resolves possible choices to provide coverage
+%   called \tool{} (\sectref{impl}). It randomly resolves possible choices to provide coverage
 %   of weak behaviors. It supports both a key-value interface as well as SQL,
 %   making it readily compatible with any storage-backed application.
-% \item We present an evaluation of MonkeyDB on several applications, showcasing
+% \item We present an evaluation of \tool{} on several applications, showcasing
 % its superior coverage of weak behaviors as well as bug-finding abilities
 % (\sectref{micro}, \sectref{oltp}).\footnote{Source code of our benchmarks is available
 % as supplementary material.}
