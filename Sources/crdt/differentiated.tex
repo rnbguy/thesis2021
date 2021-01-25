@@ -1,7 +1,9 @@
-%!TEX root = Thesis.tex
+%!TEX root = ../../Thesis.tex
 
-\section{Polynomial-Time Algorithms for Registers and Arrays}
+\section{Polynomial-Time Algorithms}
 \label{sec:algorithms}
+\subsection{Registers and Arrays}
+\label{sec:registers_array}
 
 We show that the problem of checking consistency is polynomial time for RGA, and even for LWW and MVR under the assumption that each value is written at most once, i.e., for each value $v$, the input history contains at most one write operation {\sf write}($x$,$v$). Histories satisfying this assumption are called \emph{differentiated}. The latter is a restriction motivated by the fact that practical implementations of these datatypes are data-independent~\cite{DBLP:conf/popl/Wolper86}, i.e., their behavior doesn't depend on the concrete values read or written and any potential buggy behavior can be exposed in executions where each value is written at most once. Also, in a testing environment, this restriction can be enforced by tagging each value with a replica identifier and a sequence number.
 

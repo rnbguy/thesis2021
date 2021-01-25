@@ -45,13 +45,16 @@ Replication is used in any distributed system. But to maintain a reliable replic
 When network delays are big and network partition is an issue, \emph{eventual consistency} promises better performance and availability. An update gets executed at some replica but it may be sent to other replicas later as a delayed synchronization. Although updates eventually reaches to all replicas, these updates may be seen concurrently, even in different orders, by different replicas. If these concurrent updates are \emph{conflicting}, they need to be resolved. This is not trivial because the resolved outcome need to be the \emph{same} in all replicas such that the replicas do not diverge.
 
 \emph{Conflict-free replicated data types} (CRDTs)~\cite{DBLP:conf/sss/ShapiroPBZ11} efficiently resolve the effects of concurrent updates to replicated data. In figure \ref{fig:crdt:intro}, we demonstrate a CRDT, specifically an \emph{OR-Set}.
-OR-Set implements a distributed Set with natural \texttt{add(\_)}, \texttt{remove(\_)}, \texttt{contain(\_)} operations. \texttt{add(\_)} and \texttt{remove(\_)} are the only update operations. Two updates are in conflict if they are trying to insert or remove a same element. As its CRDT based conflict-resolve technique, an \texttt{add(\_)} operation will always win among multiple conflicting updates. In figure \ref{fig:crdt:intro}, the first replica receives the update from third replica. Even though that update was in conflict, there was no \texttt{add(x)}. So \texttt{contain(x)} returns false. But in the third replica receives all the concurrent updates. Since there is one concurrent \texttt{add(x)}, they all get resolved to \texttt{add(x)} and the later \texttt{contain(x)} returns true. Similarly, \emph{And-Set} is a CRDT in which \texttt{remove(\_)} always wins among multiple conflicting updates.
+OR-Set implements a distributed Set with natural \texttt{add(\_)}, \texttt{remove(\_)}, \texttt{contain(\_)} operations. \texttt{add(\_)} and \texttt{remove(\_)} are the only update operations. Two updates are in conflict if they are trying to insert or remove a same element. As its CRDT based conflict-resolve technique, an \texttt{add(\_)} operation will always win among multiple conflicting updates.
+In figure \ref{fig:crdt:intro}, \texttt{read()} can seen as performing \texttt{contain(\_)} on $a$ and $b$. In each replica $r_i$, everything seems fine when only \texttt{add(\_)} is happening. In $r_1$, after adding $a$ and $b$ and getting the update from $r_2$, the internal set contains both $a$ and $b$. After performing \texttt{remove(b)}, $b$ gets remove from the set. Now, the update of \texttt{add(b)} from $r_2$ reaches $r_1$. Since last \texttt{remove(b)} on $r_1$ and \texttt{add(b)} from $r_2$ are concurrent, meaning they are not causally related, they are in conflict. The OR-Set resolves them to the \texttt{add(b)}, so $b$ gets added in the set. Then the \texttt{remove(a)} from $r_2$ reaches to $r_1$. Like before, the \texttt{add(a)} on $r_1$ and \texttt{remove(a)} from $r_2$ are in conflict. The OR-Set resolves them to the \texttt{add(a)} and ignores the \texttt{remove(b)} from $r_2$. So $a$ and $b$ both persists in the set. The same can be explained for $r_2$'s observation. It can be shown, this behavior is not linearizable. This behavior is not possible when strong guarantees are promised.
+Similarly, \emph{And-Set} is a CRDT in which \texttt{remove(\_)} always wins among multiple conflicting updates.
 
-Recent distributed systems have introduced variations of familiar abstract data types (ADTs) like counters, registers, flags, and sets, that provide high availability and partition tolerance. Naturally they weaken consistency guarantees to achieve availability and partition-tolerance, and various notions of \emph{weak consistency} capture such guarantees~\cite{DBLP:conf/pdis/TerryDPSTW94, DBLP:conf/sosp/TerryTPDSH95, DBLP:conf/popl/MansonPA05, DBLP:journals/ftpl/Burckhardt14, DBLP:conf/popl/BurckhardtGYZ14}.
+Recent distributed systems have introduced variations of familiar abstract data types (ADTs) like counters, registers, flags, and sets, that provide high availability and partition tolerance. Naturally they weaken consistency guarantees to achieve availability and partition-tolerance, and various notions of \emph{weak consistency} capture such guarantees~\cite{DBLP:conf/pdis/TerryDPSTW94, DBLP:conf/sosp/TerryTPDSH95, DBLP:conf/popl/MansonPA05, DBLP:journals/ftpl/Burckhardt14, DBLP:conf/popl/BurckhardtGYZ14}. Although, there are not much work to verify these implementations. We try to solve the problem using runtime-testing.
 
 
 \subsection{State of the Art}
 
+The consistency models to specify these replicated data types.
 Many have considered consistency models applicable to CRDTs, including causal consistency~\cite{DBLP:journals/cacm/Lamport78}, sequential consistency~\cite{DBLP:journals/tc/Lamport79}, linearizability~\cite{DBLP:journals/toplas/HerlihyW90}, session consistency~\cite{DBLP:conf/pdis/TerryDPSTW94}, eventual consistency~\cite{DBLP:conf/sosp/TerryTPDSH95}, and happens-before consistency~\cite{DBLP:conf/popl/MansonPA05}. Burckhardt et al.~\cite{DBLP:journals/ftpl/Burckhardt14, DBLP:conf/popl/BurckhardtGYZ14} propose a unifying framework to formalize these models. Many have also studied the complexity of verifying data-type agnostic notions of consistency, including serializability, sequential consistency and linearizability~\cite{DBLP:journals/jacm/Papadimitriou79b, DBLP:journals/siamcomp/GibbonsK97, DBLP:journals/iandc/AlurMP00, DBLP:conf/spaa/BinghamCH03, DBLP:conf/cav/FarzanM08, DBLP:conf/esop/BouajjaniEEH13, DBLP:conf/netys/Hamza15}, as well as causal consistency~\cite{DBLP:conf/popl/BouajjaniEGH17}.
 % Our definition of the replicated LWW register corresponds to the notion of causal convergence in~\cite{DBLP:conf/popl/BouajjaniEGH17}. This work studies the complexity of the admissibility problem for the replicated LWW register. It shows that this problem is NP-complete in general and polynomial time when each value is written only once. 
 % Our NP-completeness result is stronger since it assumes a fixed number of replicas, and our algorithm for the case of unique values is more general and can be applied uniformly to MVR and RGA. 
@@ -73,28 +76,47 @@ Third, we develop tractable consistency-checking algorithms for individual data 
 \centering
 \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,semithick, transform shape]
 
-\node[draw, rounded corners=2mm] (r11) at (0, 0) {\begin{tabular}{l} \texttt{remove(x)} \end{tabular}};
-\node[draw, rounded corners=2mm] (r21) at (0, -1) {\begin{tabular}{l} \texttt{add(x)} \end{tabular}};
-\node[draw, rounded corners=2mm] (r31) at (0, -2) {\begin{tabular}{l} \texttt{remove(x)} \end{tabular}};
+\draw (0, 0) -- (10, 0);
+\draw (0, 3) -- (10, 3);
 
-\node[draw=black!0] (r12) at (3, 0) {};
-\node[draw=black!0] (r22) at (3, -1) {};
-\node[draw=black!0] (r32) at (3, -2) {};
+\node[label=left:{$r_2$}] at (0, 0) {};
+\node[label=left:{$r_1$}] at (0, 3) {};
 
-\node[draw, rounded corners=2mm] (r13) at (6, 0) {\begin{tabular}{l} \texttt{contain(x) = False} \end{tabular}};
-\node[draw, rounded corners=2mm] (r23) at (6, -1) {\begin{tabular}{l} \texttt{contain(x) = True} \end{tabular}};
-\node[draw, rounded corners=2mm] (r33) at (6, -2) {\begin{tabular}{l} \texttt{contain(x) = True} \end{tabular}};
+\node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{add(a)}}](r21) at (.5, 0) {};
+\node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{add(b)}}](r22) at (2, 0) {};
+\node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{remove(a)}}](r23) at (5, 0) {};
+\node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{read()=\{a,b\}}}] at (9, 0) {};
 
-\path (r11) edge node {} (r13);
-\path (r21) edge node {} (r23);
-\path (r31) edge node {} (r33);
+\node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{add(b)}}](r11) at (.5, 3) {};
+\node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{add(a)}}](r12) at (2, 3) {};
+\node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{remove(b)}}](r13) at (5, 3) {};
+\node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{read()=\{a,b\}}}] at (9, 3) {};
 
-\path(r11) edge node {} (r32);
-\path (r21) edge node {} (r32);
-\path (r31) edge node {} (r12);
+\node[label=above:{\texttt{\{a\}}}] at (1, 0) {};
+\node[label=above:{\texttt{\{a,b\}}}] at (2.5, 0) {};
+\node[label=above:{\texttt{\{a,b\}}}] at (4, 0) {};
+\node[label=above:{\texttt{\{b\}}}] at (5.5, 0) {};
+\node[label=above:{\texttt{\{a,b\}}}] at (7, 0) {};
+\node[label=above:{\texttt{\{a,b\}}}] at (8.5, 0) {};
+
+\node[label=below:{\texttt{\{b\}}}] at (1, 3) {};
+\node[label=below:{\texttt{\{a,b\}}}] at (2.5, 3) {};
+\node[label=below:{\texttt{\{a,b\}}}] at (4, 3) {};
+\node[label=below:{\texttt{\{a\}}}] at (5.5, 3) {};
+\node[label=below:{\texttt{\{a,b\}}}] at (7, 3) {};
+\node[label=below:{\texttt{\{a,b\}}}] at (8.5, 3) {};
+
+\draw (r11) edge[out=-90,in=90] (3.5, 0);
+\draw (r12) edge[out=-90,in=90] (6.5, 0);
+\draw (r13) edge[out=-90,in=90] (8, 0);
+
+\draw (r21) edge[out=90,in=-90] (3.5, 3);
+\draw (r22) edge[out=90,in=-90] (6.5, 3);
+\draw (r23) edge[out=90,in=-90] (8, 3);
+
 \end{tikzpicture}  
 % }
-\caption{OR-Set}
+\caption{A non-linearizable OR-Set execution}
 \label{fig:crdt:intro}
 \end{figure}
 
@@ -105,9 +127,69 @@ Third, we develop tractable consistency-checking algorithms for individual data 
 
 \section{Transactional Systems}
 
-Transactions simplify concurrent programming by enabling multiple computations on shared data that are isolated from other concurrent computations and resilient to failures. Modern databases provide transactions in various forms corresponding to different tradeoffs between consistency and availability. The strongest level of consistency is achieved with \emph{serializable} transactions~\cite{DBLP:journals/jacm/Papadimitriou79b} whose outcome in concurrent executions is the same as if the transactions were executed atomically in some order. Unfortunately, serializability carries a significant penalty on the availability of the system assuming, for instance, that the database is accessed over a network that can suffer from partitions or failures. For this reason, modern databases often provide weaker guarantees about transactions, formalized by weak consistency models, e.g., causal consistency~\cite{DBLP:journals/cacm/Lamport78} and snapshot isolation~\cite{DBLP:conf/sigmod/BerensonBGMOO95}.
 
-Implementations of large-scale databases providing transactions are difficult to build and test. For instance, distributed (replicated) databases must account for partial failures, where some components or the network can fail and produce incomplete results. Ensuring fault-tolerance relies on intricate protocols that are difficult to design and reason about. The black-box testing framework Jepsen~\cite{jepsen} found a remarkably large number of subtle problems in many production distributed databases. %\footnote{https://www.infoq.com/presentations/partitioning-comparison}.
+% \texttt{Payment(k)} \\
+% \texttt{x = read_balance()} \\
+% \texttt{x = read_balance()} \\ 
+% \texttt{update_balance(x - k)} \\
+
+\begin{figure}
+    \centering
+    \begin{subfigure}{.45\textwidth}
+        \resizebox{\textwidth}{!}{
+         \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+           semithick, transform shape]
+          \node (t1) at (0, 0) {\begin{tabular}{l}
+            \texttt{Payment(k):} \\
+            \texttt{  x = read\_balance()} \\
+            \texttt{  ...} \\ 
+            \texttt{  update\_balance(x - k)} \end{tabular}};
+            \node (t2) at (5, 0) {\begin{tabular}{l}
+              \texttt{Payment(k):} \\
+              \texttt{  x = read\_balance()} \\
+              \texttt{  ...} \\ 
+              \texttt{  update\_balance(x - k)} \end{tabular}};
+          \path (2, 0.2) edge (3, 0.2);
+          \path (3, 0.2) edge (2, -0.7);
+          \path (2, -0.7) edge (3, -0.7);
+        %   \path (t1) edge[red, bend left] node {$\co$} (t2);
+        %   \path (t4_2) edge node {$\po$} (t4_3);
+        %   \path (t2) edge[blue, bend left] node {$\co$} (t1);
+         \end{tikzpicture}  
+        }
+        \caption{Non-transactional execution}
+        \label{fig:txn:intro:1}
+       \end{subfigure}
+       \begin{subfigure}{.45\textwidth}
+        \resizebox{\textwidth}{!}{
+         \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
+           semithick, transform shape]
+          \node[draw, rounded corners=2mm] (t1) at (0, 0) {\begin{tabular}{l}
+            \texttt{Payment(k):} \\
+            \texttt{  x = read\_balance()} \\
+            \texttt{  ...} \\ 
+            \texttt{  update\_balance(x - k)} \end{tabular}};
+            \node[draw, rounded corners=2mm] (t2) at (6, 0) {\begin{tabular}{l}
+              \texttt{Payment(k):} \\
+              \texttt{  x = read\_balance()} \\
+              \texttt{  ...} \\ 
+              \texttt{  update\_balance(x - k) // error} \end{tabular}};
+        %   \path (t4_1) edge node {$\po$} (t4_2);
+        %   \path (t1) edge[red, bend left] node {$\co$} (t2);
+        %   \path (t4_2) edge node {$\po$} (t4_3);
+        %   \path (t2) edge[blue, bend left] node {$\co$} (t1);
+         \end{tikzpicture}  
+        }
+        \caption{Transactional execution}
+        \label{fig:txn:intro:2}
+    \end{subfigure}
+\caption{Behaviors in non-transactional and transactional system}
+\end{figure}
+
+Transactions simplify concurrent programming by enabling multiple computations on shared data that are isolated from other concurrent computations and resilient to failures.
+In figure \ref{fig:txn:intro:1}, we have two distributed nodes tries to perform a simple \textsf{Payment} code. If we allow the internal read and write operations to be interleaved, we can have a scenario where the reads happens first and then the write. This would allow a user to pay 200 euros spending only 100 euros from their balance. So transactions are introduced to keep such critical code blocks to be performed in isolation. In figure \ref{fig:txn:intro:1}, the same code is run under transactions and one of them throws error. Modern databases provide transactions in various forms corresponding to different tradeoffs between consistency and availability. The strongest level of consistency is achieved with \emph{serializable} transactions~\cite{DBLP:journals/jacm/Papadimitriou79b} whose outcome in concurrent executions is the same as if the transactions were executed atomically in some order. Unfortunately, serializability carries a significant penalty on the availability of the system assuming, for instance, that the database is accessed over a network that can suffer from partitions or failures. For this reason, modern databases often provide weaker guarantees about transactions, formalized by weak consistency models, e.g., causal consistency~\cite{DBLP:journals/cacm/Lamport78} and snapshot isolation~\cite{DBLP:conf/sigmod/BerensonBGMOO95}.
+
+Implementations of large-scale databases providing transactions are difficult to build and test. For instance, distributed (replicated) databases must account for partial failures, where some components or the network can fail and produce incomplete results. Ensuring fault-tolerance relies on intricate protocols that are difficult to design and reason about. The black-box testing framework Jepsen~\cite{jepsen} found a remarkably large number of subtle problems in many production distributed databases. \footnote{https://www.infoq.com/presentations/partitioning-comparison}.
 
 \subsection{State of the Art}
 
