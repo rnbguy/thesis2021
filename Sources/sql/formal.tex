@@ -1,4 +1,4 @@
-%!TEX root = Thesis.tex
+%!TEX root = ../../Thesis.tex
 
 \section{Compiling SQL to Key-Value API}
 \label{sec:SQL-to-KV}
@@ -14,6 +14,7 @@ Let $\DBschema:\Tables\rightharpoonup 2^\Columns$ be a database schema (recall t
 \end{itemize}
 
 \begin{figure}[t]
+\centering
 %\hspace{-4mm}
 {\footnotesize
 \begin{minipage}[t]{3cm}
@@ -29,7 +30,7 @@ Id & Name & City \\ \hline
 2 & Bob & Bangalore \\ \hline
 3 & Charles & Bucharest \\ \hline
 \end{tabular}
-\end{minipage}
+\end{minipage}\hspace{1cm}
 \begin{minipage}[t]{5cm}
 \begin{center}
 Intermediate representation:
@@ -56,8 +57,9 @@ The table A on the left of Figure~\ref{fig:sql-example}, where the primary key i
 \end{example}
 
 \begin{figure}[t]
+\centering
 \small
-%\begin{minipage}{6cm}
+\begin{minipage}{6cm}
 \begin{flushleft}
 \texttt{SELECT}/\texttt{DELETE}/\texttt{UPDATE}
 \end{flushleft}
@@ -78,8 +80,8 @@ for ( let pkeyVal of rows ) {
       for ( let c of (*$\vec{c_1}$*) )
          write( tab.pkeyVal.c, (*$\gamma$*)((*$\vec{x}$*)[c]) )
 \end{lstlisting}
-%\end{minipage}
-%\begin{minipage}{3cm}
+% \end{minipage}
+% \begin{minipage}{3cm}
 
 \begin{flushleft}
 $\iinsert{\tab}{\vec{x}}$
@@ -91,6 +93,7 @@ if ( add(tab,pkeyVal) ) {
    for ( let c of (*$\DBschema(\texttt{tab})$*) ) {
       write( tab.pkeyVal.c, (*$\gamma$*)((*$\vec{x}$*)[c]) )
 \end{lstlisting}
+\end{minipage}
 \vspace{-4mm}
     \caption{Compiling SQL queries to the intermediate representation. Above, $\gamma$ is a valuation of local variables. Also, in the case of $\mathtt{INSERT}$, we assume that the first element of $\vec{x}$ represents the value of the primary key.}
     \label{fig:sql-ir}
@@ -106,6 +109,7 @@ $\mathsf{SELECT}$, $\mathsf{DELETE}$, and $\mathsf{UPDATE}$ start by reading the
 \paragraph{Manipulating Set Variables}
 
 \begin{figure}[t]
+\centering
 \small
 \begin{minipage}[t]{4.2cm}
 \begin{flushleft}

@@ -1,14 +1,14 @@
-%!TEX root = Thesis.tex
+%!TEX root = ../../Thesis.tex
 
 
 \begin{table*}
 
- \begin{tabular}{|c|c|c|c|}
-  \hline &   &  & \\
+ \begin{tabular}{|c|c|}
+  \hline & \\
   
-  \begin{subfigure}{0.22\textwidth}
+  \begin{subfigure}{0.45\textwidth}
    \centering
-   \scalebox{0.6}{
+   \scalebox{0.8}{
     \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=.5cm,
       semithick, transform shape]
      \node[draw, rounded corners=2mm, label=left:{Alice}] (alice) {W(Alice): Be here by 8};
@@ -24,9 +24,9 @@
   
          &        
   
-  \begin{subfigure}{0.22\textwidth}
+  \begin{subfigure}{0.45\textwidth}
    \centering
-   \scalebox{0.6}{
+   \scalebox{0.8}{
     \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=.8cm,
       semithick, transform shape]
      \node[draw, rounded corners=2mm, label=left:{Alice}] (alice1) {W(Charles): 15};
@@ -36,39 +36,42 @@
      \draw  (alice1) edge node{$\so$} (alice2);
      \draw  (bob1) edge node{$\wro$} (bob2);
      \draw  (bob1) edge node{$\wro$} (alice2);
-    \end{tikzpicture}}
+    \end{tikzpicture}
+    }
    \caption{Lost update}
    \label{lost_update_demo}
   \end{subfigure}
   
-         &        
+         \\ \hline & \\
   
-  \begin{subfigure}{0.22\textwidth}
+  \begin{subfigure}{0.45\textwidth}
    \centering
-   \scalebox{0.5}{
+   \scalebox{0.8}{
     \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=.6cm,
       semithick, transform shape]
      \node[draw, rounded corners=2mm, label=left:{Alice}] (alice1) {W(Alice): J3};
-     \node[draw, rounded corners=2mm, right = of alice1] (alice2) {R(Bob): $\bot$, R(Alice): J3};
-     \node[draw, rounded corners=2mm, label=left:{Bob}, below = of alice1] (bob1) {W(Bob): J3};
-     \node[draw, rounded corners=2mm, below = of alice2] (bob2) {R(Alice): $\bot$, R(Bob): J3};
+     \node[draw, rounded corners=2mm, right = of alice1, align=left] (alice2) {R(Bob): $\bot$\\ R(Alice): J3};
+     \node[draw, rounded corners=2mm, below = of alice2,align=left] (bob2) {R(Alice): $\bot$\\ R(Bob): J3};
+     \node[draw, rounded corners=2mm, label=left:{Bob}, left = of bob2] (bob1) {W(Bob): J3};
      \draw  (alice1) edge node{$\wro$} (alice2);
      \draw  (bob1) edge node{$\wro$} (bob2);
-    \end{tikzpicture}}
+    \end{tikzpicture}
+    }
    \caption{Long Fork}
    \label{long_fork_demo}
   \end{subfigure}
   
          &        
   
-  \begin{subfigure}{0.22\textwidth}
+  \begin{subfigure}{0.45\textwidth}
    \centering
-   \scalebox{0.7}{
+   \scalebox{0.8}{
     \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=.5cm,
       semithick, transform shape]
      \node[draw, rounded corners=2mm, label=left:{Alice}, align=left] (alice1) {R(Alice): 90, R(Bob): 80\\ W(Alice) = 90 + 10};
      \node[draw, rounded corners=2mm, label=left:{Bob}, align=left,below = of alice1] (bob1) {R(Alice): 90, R(Bob): 80\\ W(Bob) = 80 + 30};
-    \end{tikzpicture}}
+    \end{tikzpicture}
+    }
    \caption{Write Skew}
    \label{write_skew_demo}
   \end{subfigure}

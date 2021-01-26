@@ -42,6 +42,7 @@ database administrators \cite{DBLP:conf/sigmod/Pavlo17}, 86\% of the participant
 most or all of the transactions in their databases execute at read committed isolation level.
 
 \begin{figure}
+  \centering
 	\begin{minipage}{4.2cm}
 		\begin{lstlisting}[basicstyle=\ttfamily\footnotesize,escapeinside={(*}{*)},language=MyLang]
 // Append item to cart
@@ -76,7 +77,7 @@ DeleteItem(item i, userId) {
      semithick, transform shape]
     \node (s11l) at (1.15, 2.1) {\textbf{Initial state}};
     \node[draw, rounded corners=2mm] (t0) at (2.05, 1.5) {\begin{tabular}{l} $\wrt{\texttt{cart:}u}{\{..\, I\, ..\}}$ \end{tabular}};
-    \node[draw, rounded corners=2mm, minimum width=3.6cm, minimum height=1.3cm] (s1) at (0, -0.1) {};
+    \node[draw, rounded corners=2mm, minimum width=4cm, minimum height=1.3cm] (s1) at (0, -0.1) {};
     \node[style={inner sep=0,outer sep=0}] (s11) at (0, 0.3) {\begin{tabular}{l} $\rd{\texttt{cart:}u}{\{..\, I\, ..\}}$\end{tabular}};
     \node[style={inner sep=0,outer sep=0}] (s12) at (0, -0.5) {\begin{tabular}{l} $\wrt{\texttt{cart:}u}{\{..\, I,I\, ..\}}$ \end{tabular}};
     \node (s11l) at (-1, 0.8) {\textbf{AddItem}};

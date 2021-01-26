@@ -1,4 +1,4 @@
-%!TEX root = Thesis.tex
+%!TEX root = ../../Thesis.tex
 
 % \section{Algorithms}
 % 
@@ -372,7 +372,7 @@ We present an algorithm for checking serializability of a given history which co
 ``linearizing'' transactions one by one in an order consistent with the session order. At any time, the set of already linearized transactions is uniquely determined by an antichain of the session order (i.e., a set of mutually-unordered transactions w.r.t. $\so$), and the next transaction to linearize is chosen among the immediate $\so$ successors of the transactions in this antichain. The crux of the algorithm is that the next transaction to linearize can be chosen such that it does not produce violations of $\mathsf{Serialization}$ in a way that  does not depend on the order between the already linearized transactions. Therefore, the algorithm can be seen as a search in the space of $\so$ antichains. If the width of the history is bounded (by a fixed constant), then the number of possible $\so$ antichains is polynomial in the size of the history, which implies that the search can be done in polynomial time.
 
 \begin{figure}
-  
+  \centering
   \begin{subfigure}{.4\textwidth}
   \resizebox{\textwidth}{!}{
   \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,
@@ -851,9 +851,9 @@ between two transactions from the same biconnected component includes only trans
  Assume by contradiction, that $\pi$ traverses multiple biconnected components.
  We define a path $\pi_s=v_0,\ldots,v_m$ between sessions, i.e., vertices of $\mathsf{Comm}(\hist)$, which contains an edge $(v_j,v_{j+1})$ iff $\pi$ contains an edge $(\tr_i,\tr_{i+1})$ with $\tr_i$ a transaction of session $v_j$ and $\tr_{i+1}$ a transaction of session $v_{j+1}\neq v_j$. Since any graph decomposes to a forest of biconnected components, this path must necessarily leave and enter some biconnected component $B_1$ to and from the same biconnected component $B_2$, i.e., $\pi_s$ must contain two vertices $v_{j_1}$ and $v_{j_2}$ in $B_1$ such that the successor $v_{j_1+1}$ of $v_{j_1}$ and the predecessor $v_{j_2-1}$ of $v_{j_2}$ are from $B_2$. Let $\tr_1$, $\tr_2$, $\tr_3$, $\tr_4$ be the transactions in the path $\pi$ corresponding to $v_{j_1}$, $v_{j_2}$, $v_{j_1+1}$, and $v_{j_2-1}$, respectively. Now, since any two biconnected components share at most one vertex, it follows that $t_3$ and $t_4$ are from the same session and
   \vspace{-1mm}
-\begin{wrapfigure}{l}{0.43\textwidth} 
+\begin{figure}
   \centering
-  \begin{subfigure}{.18\textwidth}
+  \begin{subfigure}{.26\textwidth}
    \resizebox{\textwidth}{!}{
     \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
       semithick, transform shape]
@@ -877,7 +877,7 @@ between two transactions from the same biconnected component includes only trans
    \caption{$\tup{\tr_3,\tr_4} \in \so$}
    \label{comm_graph_proof:1a}
   \end{subfigure}\hspace{3mm}
-  \begin{subfigure}{.18\textwidth}
+  \begin{subfigure}{.26\textwidth}
    \resizebox{\textwidth}{!}{
     \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
       semithick, transform shape]
@@ -905,7 +905,7 @@ between two transactions from the same biconnected component includes only trans
   \caption{Minimal paths between transactions in the same biconnected component.}
   \label{comm_graph_proof:1}
 %   \vspace{-2mm}
- \end{wrapfigure}
+ \end{figure}
  \begin{itemize}
   \item if $\tup{\tr_3, \tr_4} \in \so$, then there exists a shorter path between $\tr_0$ and $\tr_1$ that uses the $\so$ relation between $\tup{\tr_3, \tr_4}$ (we recall that $\so\subseteq \bigcup_i \co_i$) instead of the transactions in $B_2$, pictured in Figure~\ref{comm_graph_proof:1a}, which is a contradiction to the minimality of $\pi$,
   \item if $\tup{\tr_4, \tr_3} \in \so$, then, we have a cycle in ${\bigcup_i \co_i\cup\so}$, pictured in Figure~\ref{comm_graph_proof:1b}, which is also a contradiction.

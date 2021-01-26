@@ -1,4 +1,4 @@
-%!TEX root = Thesis.tex
+%!TEX root = ../../Thesis.tex
 
 \section{Evaluation: OLTP Workloads}
 \label{sec:oltp}
@@ -58,6 +58,7 @@ workloads.
 %We first discuss our results on SmallBank, SEATS, Voter and Wikipedia, followed by TPC-C in detail.
 
 \begin{table}
+  \centering
   \footnotesize
 	\begin{tabular}{|l|c|c|c|c|}
     \hline
@@ -109,16 +110,17 @@ payment amount of that customer.
 
 \begin{figure*}[!ht]
     \centering
-    \begin{minipage}{0.47\textwidth}
+    \begin{minipage}{\textwidth}
         \centering
     	\includegraphics[scale=0.4]{Sources/sql/plots/random_strongest_tpcc.png}
-	    \caption{\small Assertion checking: {TPC-C}}
+	    \caption{Assertion checking: {TPC-C}}
         \label{fig:tpcc}
-    \end{minipage}\hfill
-    \begin{minipage}{0.47\textwidth}
+	\end{minipage}
+	
+    \begin{minipage}{\textwidth}
         \centering
-    \includegraphics[scale=0.4]{Sources/sql/plots/random_strongest_all.png}
-	    \caption{\small Assertion checking: SmallBank, Voter, and Wikipedia}
+		\includegraphics[scale=0.4]{Sources/sql/plots/random_strongest_all.png}
+	    \caption{Assertion checking: SmallBank, Voter, and Wikipedia}
     \label{fig:rest}
     \end{minipage}
 \end{figure*}
