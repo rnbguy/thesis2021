@@ -16,33 +16,36 @@
   \cmidrule(lr){3-3}
   \cmidrule(lr){4-4}
 
-  \ldelim\{{2}{4em}[Barrier 1]
-  & $\mathrm{Inc}(z)$      & $\mathrm{Inc}(z)$      & $\mathrm{Inc}(z)$ \\
-  & $\mathrm{Read}(z) = 3$ & $\mathrm{Read}(z) = 3$ & $\mathrm{Read}(z) = 3$ \\[1em]
+  \ldelim\{{3}{4em}[Barrier 1]
+  & $\mathrm{Inc}(y_0)$      & $\mathrm{Inc}(y_1)$      & $\mathrm{Inc}(y_2)$ \\
+  & $\mathrm{Read}(y_1) = 1$ & $\mathrm{Read}(y_2) = 1$ & $\mathrm{Read}(y_0) = 1$ \\
+  & $\mathrm{Read}(y_2) = 1$ & $\mathrm{Read}(y_0) = 1$ & $\mathrm{Read}(y_1) = 1$ \\[1em]
 
   \ldelim\{{5}{4em}[Round 1]
-  & $\mathrm{Read}(\alpha_1) = 1$   & $\mathrm{Read}(\alpha_1) = -1$  & $\mathrm{Read}(\alpha_1) = -1$  \\
-  & $\mathrm{Read}(\beta_1) = -1$   & $\mathrm{Read}(\beta_1) = 1$    & $\mathrm{Read}(\beta_1) = -1$   \\
-  & $\mathrm{Read}(\gamma_1) = -1$  & $\mathrm{Read}(\gamma_1) = -1$  & $\mathrm{Read}(\gamma_1) = 1$   \\
+  & $\mathrm{Read}(\alpha_1) = 1$   & $\mathrm{Read}(\beta_1) = 1$  & $\mathrm{Read}(\gamma_1) = 1$  \\
+  & $\mathrm{Read}(\beta_1) = -1$   & $\mathrm{Read}(\gamma_1) = -1$    & $\mathrm{Read}(\alpha_1) = -1$   \\
+  & $\mathrm{Read}(\gamma_1) = -1$  & $\mathrm{Read}(\alpha_1) = -1$  & $\mathrm{Read}(\beta_1) = -1$   \\
   & $\mathrm{Dec}(\alpha_1)$; $\mathrm{Dec}(\alpha_1)$ & $\mathrm{Dec}(\beta_1)$; $\mathrm{Dec}(\beta_1)$ & $\mathrm{Dec}(\gamma_1)$; $\mathrm{Dec}(\gamma_1)$ \\
   & $\mathrm{Inc}(\beta_1)$; $\mathrm{Inc}(\beta_1)$ & $\mathrm{Inc}(\gamma_1)$; $\mathrm{Inc}(\gamma_1)$ & $\mathrm{Inc}(\alpha_1)$; $\mathrm{Inc}(\alpha_1)$ \\[1em]
 
-  \ldelim\{{2}{4em}[Barrier 2]
-  & $\mathrm{Dec}(z)$     & $\mathrm{Dec}(z)$     & $\mathrm{Dec}(z)$      \\
-  & $\mathrm{Read}(z) = 0$ & $\mathrm{Read}(z) = 0$ & $\mathrm{Read}(z) = 0$ \\[1em]
+  \ldelim\{{3}{4em}[Barrier 2]
+  & $\mathrm{Dec}(y_0)$      & $\mathrm{Dec}(y_1)$      & $\mathrm{Dec}(y_2)$ \\
+  & $\mathrm{Read}(y_1) = 0$ & $\mathrm{Read}(y_2) = 0$ & $\mathrm{Read}(y_0) = 0$ \\
+  & $\mathrm{Read}(y_2) = 0$ & $\mathrm{Read}(y_0) = 0$ & $\mathrm{Read}(y_1) = 0$ \\[1em]
 
   & \ldots & \ldots & \ldots \\[1em]
 
   \ldelim\{{5}{4em}[Round $m$]
-  & $\mathrm{Read}(\alpha_m) = 1$   & $\mathrm{Read}(\alpha_m) = -1$  & $\mathrm{Read}(\alpha_m) = -1$  \\
-  & $\mathrm{Read}(\beta_m) = -1$   & $\mathrm{Read}(\beta_m) = 1$    & $\mathrm{Read}(\beta_m) = -1$   \\
-  & $\mathrm{Read}(\gamma_m) = -1$  & $\mathrm{Read}(\gamma_m) = -1$  & $\mathrm{Read}(\gamma_m) = 1$   \\
+  & $\mathrm{Read}(\alpha_m) = 1$   & $\mathrm{Read}(\beta_m) = 1$  & $\mathrm{Read}(\gamma_m) = 1$  \\
+  & $\mathrm{Read}(\beta_m) = -1$   & $\mathrm{Read}(\gamma_m) = -1$    & $\mathrm{Read}(\alpha_m) = -1$   \\
+  & $\mathrm{Read}(\gamma_m) = -1$  & $\mathrm{Read}(\alpha_m) = -1$  & $\mathrm{Read}(\beta_m) = -1$   \\
   & $\mathrm{Dec}(\alpha_m)$; $\mathrm{Dec}(\alpha_m)$ & $\mathrm{Dec}(\beta_m)$; $\mathrm{Dec}(\beta_m)$ & $\mathrm{Dec}(\gamma_m)$; $\mathrm{Dec}(\gamma_m)$ \\
   & $\mathrm{Inc}(\beta_m)$; $\mathrm{Inc}(\beta_m)$ & $\mathrm{Inc}(\gamma_m)$; $\mathrm{Inc}(\gamma_m)$ & $\mathrm{Inc}(\alpha_m)$; $\mathrm{Inc}(\alpha_m)$ \\[1em]
 
-  \ldelim\{{2}{6em}[Barrier $m\!+\!1$]
-  & $\mathrm{Inc}(z)$ or $\mathrm{Dec}(z)$  & $\mathrm{Inc}(z)$ or $\mathrm{Dec}(z)$     & $\mathrm{Inc}(z)$ or $\mathrm{Dec}(z)$      \\
-  & $\mathrm{Read}(z) = 3 \text{ or } 0$ & $\mathrm{Read}(z) = 3 \text{ or } 0$ & $\mathrm{Read}(z) = 3 \text{ or } 0$ \\[1em]
+  \ldelim\{{3}{6em}[Barrier $m\!+\!1$]
+  & $\mathrm{Inc}(y_0)$ or $\mathrm{Dec}(y_0)$  & $\mathrm{Inc}(y_1)$ or $\mathrm{Dec}(y_1)$     & $\mathrm{Inc}(y_2)$ or $\mathrm{Dec}(y_2)$      \\
+  & $\mathrm{Read}(y_1) = 1 \text{ or } 0$ & $\mathrm{Read}(y_2) = 1 \text{ or } 0$ & $\mathrm{Read}(y_0) = 1 \text{ or } 0$ \\
+  & $\mathrm{Read}(y_2) = 1 \text{ or } 0$ & $\mathrm{Read}(y_0) = 1 \text{ or } 0$ & $\mathrm{Read}(y_1) = 1 \text{ or } 0$ \\[1em]
 
   \ldelim\{{1}{5em}[Round $m\!+\!1$]
   & $\mathrm{Read}(y) = n$ \\
