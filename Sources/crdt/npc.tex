@@ -3,7 +3,7 @@
 \section{Intractability for Registers, Sets, Flags, and Counters}
 \label{sec:intractability}
 
-In this section we demonstrate that checking the consistency is intractable for many widely-used data types. While this is not completely unexpected, since some related consistency-checking problems like sequential consistency are also intractable~\cite{DBLP:journals/siamcomp/GibbonsK97}, this contrasts recent tractability results for checking strong consistency (i.e.,~linearizability) of common non-replicated data types like sets, maps, and queues~\cite{DBLP:journals/pacmpl/EmmiE19}. In fact, in many cases we show that intractability even holds if the number of replicas is fixed.
+In this section, we demonstrate that checking the consistency is intractable for many widely-used data types. While this is not completely unexpected, since some related consistency-checking problems like sequential consistency are also intractable~\cite{DBLP:journals/siamcomp/GibbonsK97}, this contrasts recent tractability results for checking strong consistency (i.e.,~linearizability) of common non-replicated data types like sets, maps, and queues~\cite{DBLP:journals/pacmpl/EmmiE19}. In fact, in many cases, we show that intractability even holds if the number of replicas is fixed.
 
 Our proofs of intractability follow the general structure of Gibbons and Korach’s proofs for the intractability of checking sequential consistency (SC) for atomic registers with read and write operations~\cite{DBLP:journals/siamcomp/GibbonsK97}. In particular, we reduce a specialized type of NP-hard propositional satisfiability (SAT) problem to checking whether histories are admitted by a given data type. While our construction borrows from Gibbons and Korach’s, the adaptation from SC to CRDT consistency requires a significant extension to handle the consistency relaxation represented by abstract executions: rather than a direct sequencing of threads’ operations, CRDT consistency requires the construction of three separate relations: read-from, happens-before, and linearization.
 
@@ -30,14 +30,14 @@ Technically, our reductions start from the 1-in-3 SAT problem~\cite{DBLP:books/f
   \vspace{-1.5mm}
   \begin{enumerate}
 
-    \item do not interleave operations from different rounds. Each consecutive rounds are separated by the barriers in happens-before relations; and
+    \item does not interleave operations from different rounds. Each consecutive rounds are separated by the barriers in happens-before relations; and
 
     \item at each round, only one replica, say replica $i$, can finish its \textrm{Read}s then finish its \textrm{Enable}s/\textrm{Disable}s, then $(i+1) \bmod 3$ replica can finish its \textrm{Read}s and so on. And these \textrm{Enable}s/\textrm{Disable}s from one round are totally ordered between replicas by the happens-before relation.
 
 \vspace{-1.5mm}
   \end{enumerate}
 
-  In other words, replicas appear to execute atomically per round, in a round-robin fashion. Furthermore, since all operations in a given round happen before the operations of subsequent rounds, the values of flag variables are consistent across rounds — i.e.,~as read by the first replica to execute in a given round — and determined in the initial round either by conflict resolution — i.e.,~enable- or disable-wins — or by happens-before, in case conflict resolution would have been inconsistent with subsequent reads.
+  In other words, replicas appear to execute atomically per round, in a round-robin fashion. Furthermore, since all operations in a given round happen before the operations of subsequent rounds, the values of flag variables are consistent across rounds — i.e.,~as read by the first replica to execute in a given round — and determined in the initial round either by conflict resolution — i.e.,~enable- or disable-wins — or by happens-before, in case of conflict resolution would have been inconsistent with subsequent reads.
 
   \begin{figure}[t]
     \centering
@@ -55,11 +55,11 @@ Technically, our reductions start from the 1-in-3 SAT problem~\cite{DBLP:books/f
 
     Now at barrier i, we add all the \textrm{Enable} happens-before all the \textrm{Read} in $\hb$. This also makes sure there is no cycle.
 
-    Now for each round i, if $\alpha_i$ is true in clause i, then we make the round i of replica 0 happen-before the round i of replica 1 in $\hb$, then the round i of replica 1 happens-before the round i of replica 2 in $\hb$. This makes the history admissible because, at first $\alpha_1$ is true and $\beta_1$ and $\gamma_1$ are false. So the reads of round i in replica 0 goes ahead. Then the updates of round i in replica 0 make $\alpha_1$ false and $\beta_1$ true. $\gamma_1$ stays false. So now, the reads of round i in replica 1 can go ahead. Similarly the happens before relation works between replica 1 and replica 2. So the sub-history till round i is admissible.
+    Now for each round i, if $\alpha_i$ is true in clause i, then we make the round i of replica 0 happen-before the round i of replica 1 in $\hb$, then the round i of replica 1 happens-before the round i of replica 2 in $\hb$. This makes the history admissible because at first $\alpha_1$ is true and $\beta_1$ and $\gamma_1$ are false. So the reads of round i in replica 0 go ahead. Then the updates of round i in replica 0 make $\alpha_1$ false and $\beta_1$ true. $\gamma_1$ stays false. So now, the reads of round i in replica 1 can go ahead. Similarly, the happens-before relation works between replica 1 and replica 2. So the sub-history till round i is admissible.
     
-    If $\beta_i$ is true then the happens-order between replicas are is 1, 2 then 0 and $\gamma_1$ is true, it is 2, 0 and then 1.
+    If $\beta_i$ is true then the happens-order between replicas are is 1, 2 then 0, and $\gamma_1$ is true, it is 2, 0, and then 1.
 
-    So we have a happens-before relation which admits each round and barrier, so the history is admissible.
+    So we have a happens-before relation that admits each round and barrier, so the history is admissible.
 
     Before we prove if-direction, we prove some lemmas for the properties of admissible history.
 
@@ -74,7 +74,7 @@ Technically, our reductions start from the 1-in-3 SAT problem~\cite{DBLP:books/f
     
     So we found a cycle in happens-before order. $\mathrm{Enable}(y_j)$ at barrier $\geq3$ and replica $j$ happens-before $\mathrm{Read}(y_j) = true$ at barrier 1 and replica $i$ because of read-from. Then $\mathrm{Read}(y_j) = true$ at barrier 1 and replica $i$ happens-before $\mathrm{Disable}(y_i)$ at barrier $\geq2$ and replica $i$. Then $\mathrm{Disable}(y_i)$ at barrier $\geq2$ and replica $i$ happens-before $\mathrm{Read}(y_i) = false$ at barrier 2 and replica $j$ because of read-form. Then$\mathrm{Read}(y_i) = false$ at barrier 2 and replica $j$ happens-before $\mathrm{Enable}(y_j)$ at barrier $\geq3$ and replica $j$.
     
-    Inductive step. By induction hypothesis, barrier $k$ always reads from barrier $k$ itself. Now at $\mathrm{Read}(y_j)$ of barrier $(k+1)$, the history is visible upto the write of $y_j$ from barrier $k$. Without loss of generality, let's assume, barrier $k$ writes $false$ value. Since barrier $k$ writes $true$, the $false$ reads of barrier $(k+1)$ must read from a barrier strictly greater than $k$. Using the same logic from base case, we can find a cycle in the happens-before relation. The argument stays the similar when barrier $k$ writes $true$ value.
+    Inductive step. By the induction hypothesis, barrier $k$ always reads from barrier $k$ itself. Now at $\mathrm{Read}(y_j)$ of barrier $(k+1)$, the history is visible up to the write of $y_j$ from barrier $k$. Without loss of generality, let's assume, barrier $k$ writes $false$ value. Since barrier $k$ writes $true$, the $false$ reads of barrier $(k+1)$ must read from a barrier strictly greater than $k$. Using the same logic from the base case, we can find a cycle in the happens-before relation. The argument stays similar when barrier $k$ writes $true$ value.
   \end{proof}
 
 Lemma \ref{crdt:flag:npc-proof:lemma1} ensures, all the operations from all replicas before barrier i are visible to each replica after barrier i.
@@ -87,13 +87,13 @@ Lemma \ref{crdt:flag:npc-proof:lemma1} ensures, all the operations from all repl
   \end{lemma}
 
   \begin{proof}
-    We prove by induction on the number of rounds. But there is no base case. We will just show that at the round $(k+1)$ the maximally first \textrm{Read}s sees the the same assignments as the maximally first \textrm{Read}s of round $k$.
+    We prove by induction on the number of rounds. But there is no base case. We will just show that at the round $(k+1)$ the maximally first \textrm{Read}s sees the same assignments as the maximally first \textrm{Read}s of round $k$.
 
-    We will show at each round, the operations from each replica happen in a total order, that too one replica after another. Explicitly, for some some replica $i$, its operations happen first, then the operations from replica $(i+1) \bmod 2$ happen, then the operations from replica $(i+2) \bmod 2$ happen. 
+    We will show at each round, the operations from each replica happen in total order, that too one replica after another. Explicitly, for some some replica $i$, its operations happen first, then the operations from replica $(i+1) \bmod 2$ happen, then the operations from replica $(i+2) \bmod 2$ happen. 
 
-    First of all, any the $\hb$-minimal \textrm{Read} of each round sees exactly the same resolved values of $x_i$ till last round because of lemma \ref{crdt:flag:npc-proof:lemma1}. Also, the \textrm{Read}s from each round are only reading from updates from the same round or any before round. Reading from any later round is not possible, because that will introduce a cycle between current round and that later round in $\hb$ because of lemma \ref{crdt:flag:npc-proof:lemma1}.
+    First of all, any the $\hb$-minimal \textrm{Read} of each round sees exactly the same resolved values of $x_i$ till last round because of lemma \ref{crdt:flag:npc-proof:lemma1}. Also, the \textrm{Read}s from each round are only reading from updates from the same round or any round from before. Reading from any later round is not possible, because that will introduce a cycle between the current round and that later round in $\hb$ because of lemma \ref{crdt:flag:npc-proof:lemma1}.
 
-    Also, in each round, there exist one replica which does not read from other replicas in the same round. If replica $p$ is reading from replica $q$, then replica $q$ again can not read from replica $p$, cause it will create a cycle in $\hb$ between replica $p$ and $q$ in the same round. So replica $q$ has to read from replica $r$. But then replica $r$ will have to read from replica $p$, which creates a cycle between replica $p$, $q$ and $r$ in the same round.
+    Also, in each round, there exist one replica which does not read from other replicas in the same round. If replica $p$ is reading from replica $q$, then replica $q$ again can not read from replica $p$, cause it will create a cycle in $\hb$ between replica $p$ and $q$ in the same round. So replica $q$ has to read from replica $r$. But then replica $r$ will have to read from replica $p$, which creates a cycle between replica $p$, $q$, and $r$ in the same round.
 
     So there exists one replica, which reads the resolved values till last round. Since the \textrm{Read}s of that are successful, it ensures only one of $\alpha_k, \beta_k, \gamma_k$ are true. Hence, the first true \textrm{Read}s at other replicas must read-from the updates at the same round. That totally orders the operations of one round. That is, if replica 0 was the first one to finish its reads, $\mathrm{Read}(\beta_k) = true$ read-from $\mathrm{Enable}(\beta_k)$ and $\mathrm{Read}(\gamma_k) = true$ read-from $\mathrm{Enable}(\gamma_k)$. Since the updates are totally ordered and they only flips the read values of $x_i$ twice, \ie if the first read on $x_i$ is $false$, then the resolved update on $x_i$ till round $(k-1)$ was \textrm{Disable} and at round $k$, after $\mathrm{Read}(x_i) = false$, $\mathrm{Enable}(x_i)$ and $\mathrm{Disable}(x_i)$ happen and they are ordered in $\hb$. The same argument holds when the first read on $x_i$ was $true$. 
 
@@ -102,10 +102,10 @@ Lemma \ref{crdt:flag:npc-proof:lemma1} ensures, all the operations from all repl
 
   Now we go back to our main lemma \ref{crdt:flag:npc-proof:lemma3}. We use the same assignment of $x_i$s at the first \textrm{Read}s of each round (they are the same by lemma \ref{crdt:flag:npc-proof:lemma2}) for the SAT formula.
 
-  Now we show that assignment satisfies the 1-in-3 SAT formula. Suppose, there is a clause $i$ which does not have exactly one positive literal. If we look at round $i$, there is a replica which happens-before the other replicas. The \textrm{Read}s of that replica sees the same $x_i$ assignment as the SAT assignment, yet they see exactly one true value. Which contradicts our assumption that the assignment makes clause $i$ unsatisfied.
+  Now we show that the assignment satisfies the 1-in-3 SAT formula. Suppose, there is a clause $i$ which does not have exactly one positive literal. If we look at round $i$, there is a replica that happens-before the other replicas. The \textrm{Read}s of that replica sees the same $x_i$ assignment as the SAT assignment, yet they see exactly one true value. Which contradicts our assumption that the assignment makes clause $i$ unsatisfied.
 \end{proof}
 
-We proved that this reduction from a NP-complete problem to our admissibility works. It is very easy to the size of the history is linear in the size of formula and can be computed in linear-time. Theorem \ref{thm:3sat-to-flags} is proved.
+We proved that this reduction from an NP-complete problem to our admissibility works. It is very easy to the size of the history is linear in the size of the formula and can be computed in linear time. The theoref{thm:3sat-to-flags} is proved.
 
 %   In the “if” direction, let $\vec{r} \in \set{0,1,2}^m$ be the positions of positively-assigned variables in each clause, e.g.,~$r_i = 0$ implies $\alpha_i = \mathit{true}$ and $\beta_i = \gamma_i = \mathit{false}$. We construct an abstract execution $e_{\vec{r}}$ in which the happens-before relation sequences the operations of replica~$r_i$ before those of $r_i + 1 \bmod 3$, and in turn before $r_i + 2 \bmod 3$. In other words, the replicas in round $i$ appear to execute in left-to-right order from starting with the replica~$r_i$, whose reads correspond to the satisfying assignment of $(\alpha_i \lor \beta_i \lor \gamma_i)$. The read-from relation of $e_{\vec{r}}$ relates each $\mathrm{Read}(x_j) = \mathit{true}$ operation to the most recent $\mathrm{Enable}(x_j)$ operation in happens-before order, which is unique since happens-before sequences the operations of all rounds; the case for $\mathrm{Read}(x_j) = \mathit{false}$ and $\mathrm{Disable}(x_j)$ is symmetric. It is then straightforward to verify that $e_{\vec{r}}$ satisfies the axioms of the enable- or disable-wins flag, and thus $h_p$ is admitted.
 
@@ -147,7 +147,7 @@ We demonstrate a reduction from the 1-in-3 SAT problem. For a given problem $p =
      \vspace{-4mm}
     \end{figure}
 
-     Besides the differences imposed due to the commutativity of counter increments and decrements, our reduction follows the same strategy as in the proof of Theorem~\ref{thm:3sat-to-flags}: the happens-before relation of $h_p$’s abstract executions order every pair of operations in distinct rounds (of Replicas 0–2), and every operation in a given (non-initial) round. As before, Replicas 0–2 appear to execute atomically per round, in a round-robin fashion, and counter variables are consistent across rounds. The key difference is that here abstract executions’ happens-before relations only relate the operations of either Replica~$2j\!+\!1$ or $2j\!+\!2$, for each $j = 1, \ldots, n$, to operations in subsequent rounds: the other’s operations are never observed by other replicas. Our encoding ensures that exactly one of each is observed by ensuring that the counter~$y$ is incremented exactly $n$ times — and relying on the fact that every variable appears in some clause, so that a read that observed neither or both would yield the value zero, which is inconsistent with $h_p$. Otherwise, our reasoning follows the proof of Theorem~\ref{thm:3sat-to-flags}, in which the read-from relation selects all increments and decrements of the same counter variable in happens-before order.
+     Besides the differences imposed due to the commutativity of counter increments and decrements, our reduction follows the same strategy as in the proof of Theorem~\ref{thm:3sat-to-flags}: the happens-before relation of $h_p$’s abstract executions order every pair of operations in distinct rounds (of Replicas 0–2), and every operation in a given (non-initial) round. As before, Replicas 0–2 appear to execute atomically per round, in a round-robin fashion, and counter variables are consistent across rounds. The key difference is that here abstract executions’ happens-before relations only relate the operations of either Replica~$2j\!+\!1$ or $2j\!+\!2$, for each $j = 1, \ldots, n$, to operations in subsequent rounds: the other’s operations are never observed by other replicas. Our encoding ensures that exactly one of each is observed by ensuring that the counter~$y$ is incremented exactly $n$ times — and relying on the fact that every variable appears in some clause so that a read that observed neither or both would yield the value zero, which is inconsistent with $h_p$. Otherwise, our reasoning follows the proof of Theorem~\ref{thm:3sat-to-flags}, in which the read-from relation selects all increments and decrements of the same counter variable in happens-before order.
 \vspace{-2mm}
 
 % \begin{lemma}

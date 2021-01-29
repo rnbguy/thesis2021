@@ -93,7 +93,7 @@ This application allows a user to add,
 remove and change quantity of items from different sessions. It also allows the
 user to view all items present in the shopping cart. The pseudo code and
 an unexpected behavior under weak isolation levels were discussed in
-\sectref{intro}, \figref{motiv}.
+\sectref{app:intro}, \figref{motiv}.
 
 \vspace{-2mm}	
 \paragraph{Courseware \cite{DBLP:conf/esop/NairP020}}
@@ -310,16 +310,12 @@ maximum within a few thousand attempts, implying that MonkeyDB's strategy of
 per-read randomness is effective for providing coverage to the application.
 
 
-\begin{figure*}[h]
-	
+\begin{figure}[!h]
 	\centering
-	
 	\includegraphics[width=1.0\textwidth]{Sources/sql/plots/random_avg.pdf}
-	
 	\caption{State coverage obtained with MonkeyDB for various microbenchmarks}
-	
 	\label{fig:micro_dfs}
-\end{figure*}
+\end{figure}
 
 %\begin{figure}[h]
 %

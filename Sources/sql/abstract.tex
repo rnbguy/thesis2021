@@ -2,7 +2,7 @@
 
 Modern applications, such as social networking systems and e-commerce platforms
 are centered around using large-scale storage systems for storing and retrieving
-data. In the presence of concurrent accesses, these storage systems trade off isolation
+data. In the presence of concurrent accesses, these storage systems trade-off isolation
 for performance. The weaker the isolation level, the more behaviors a storage
 system is allowed to exhibit and it is up to the developer to ensure that their
 application can tolerate those behaviors. However, these weak behaviors only
@@ -18,4 +18,4 @@ MonkeyDB then returns a value randomly from this set.
 We show that MonkeyDB provides 
 good coverage of weak behaviors, which is complete in the limit. We test a
 variety of applications for assertions that fail only under weak isolation.
-MonkeyDB is able to break each of those assertions in a small number of attempts. 
+MonkeyDB can break each of those assertions in a small number of attempts. 

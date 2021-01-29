@@ -305,7 +305,7 @@ tool like Jepsen~\cite{jepsen} to inject noise (bring down replicas or
 delay packets on the network). 
 This approach is unable to provide good coverage at the level of client operations
 \cite{DBLP:journals/pacmpl/RahmaniNDJ19} (\sectref{oltp}). Another line of work has focussed on finding
-anomalies by identifying non-serializable behavior (\sectref{related}). Anomalies, however, do not
+anomalies by identifying non-serializable behavior (\sectref{app:related}). Anomalies, however, do not
 always correspond to bugs \cite{DBLP:conf/pldi/BrutschyD0V18,DBLP:journals/pvldb/GanRRB020}; they may
 either not be important (e.g., gather statistics) or may already be handled in
 the application (e.g., checking and deleting duplicate items).

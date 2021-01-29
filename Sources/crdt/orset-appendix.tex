@@ -1,6 +1,6 @@
 %!TEX root = Thesis.tex
 
-\section{A Polynomial Time Algorithm for Sets and Flags}
+\section{A Polynomial-Time Algorithm for Sets and Flags}
 \label{sec:ptime:sets:appendix}
 
 To represent the maximal $\hb$-predecessors, we use a mapping $u$, called \emph{read-from map}, that associates a set of operations {\sf add}($x$) and {\sf remove}($x$) on different replicas to each replica $i$ and element $x$. Note that two operations on the same replica are necessarily related by $\hb$ and cannot be both maximal. A pair of prefix-map $m$ and read-from map $u$ defines a partial read-from relation that associates all the operations in $u(x,i)$ to the last operation of $i$, i.e., ${\sf last}_i(m)$, if this is a {\sf contains}($x$) operation. For a given read-from relation $\rf$, $\tup{m,u}\subseteq \rf$ denotes the fact that this partial read-from relation is included in $\rf$. A prefix $m(i)$ is called valid in the context of a read-from map $u$ if it is admitted by the Add-Wins Set with a read-from relation $\rf$ such that $\tup{m,u}\subseteq \rf$. A pair $\tup{m,u}$ is called valid if $m(i)$ is valid for each replica $i$.

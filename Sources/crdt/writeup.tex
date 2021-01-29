@@ -2,7 +2,7 @@
 
 \section{Old formalization}
 
-We are trying to verify conflict free data type or CRDT based operations.
+We are trying to verify conflict-free data type or CRDT based operations.
 
 Given a history of a CRDT, we want to verify if there is a valid execution of the CRDT replicas which generates the history.
 
@@ -25,7 +25,7 @@ $\RO$ is the replica orders. It totally orders the operations on a same replica.
  $\rf$ relates an update operation $\op_1$ to a corresponding read operation $\op_2$. It means there is no other $\op_3$ such that $\tup{\op_1, \op_3} \in \hb$ and $\tup{\op_3, \op_2} \in \hb$ such that $\op_3$ can affect the update performed by $\op_1$. Intuitively, $\rf$ relates the maximal concurrent updates to a read.
 \end{definition}
 
-$\hb$ must be acyclic \ie $\hb$ is a parital order.
+$\hb$ must be acyclic \ie $\hb$ is a partial order.
 
 $(\rf \cup \RO)^+ \subseteq \hb$
 
@@ -39,7 +39,7 @@ A history $\tup{\Op, \RO}$ is a causal consistent CRDT history if $\exists \rf, 
        Intuitively, $\op_1$ is not the latest update on $x$ to $\op_3$. Hence $\rf$ can not relate them.
 
  \item If $\{\op_1, \op_2, \cdots, \op_n\}$ are in 'write-conflict' with each other and $\op$ is in 'read-conflict' with each $\op_i$ for the same variable $x$.
-       Then the read at $\op$ happened according a 'resolution-rule' specific to a CRDT.
+       Then the read at $\op$ happened according to a 'resolution-rule' specific to a CRDT.
 
        Intuitively, $\op_i$ are all happened concurrently and are in write-conflict. So CRDT should somehow resolve the conflict.
 \end{itemize}
@@ -96,7 +96,7 @@ Counter:
 
 If $\op_0$: $Rd(x)$ and $\hb^{-1}(\op_0) = \{\op \mid \tup{\op, \op_0} \in \hb\}$, then $Rd(x) = $ number of increment of $x$ in $\hb^{-1}(\op_0)$ - number of decrement of $x$ in $\hb^{-1}(\op_0)$.
 
-This is because, decrement and increment are commutative operations. So it does not matter in which order the increment and decrement happened on a variable, just whether the operation is visible affects the read operation on that variable.
+This is because decrement and increment are commutative operations. So it does not matter in which order the increment and decrement happened on a variable, just whether the operation is visible affects the read operation on that variable.
 
 Replicated growing array:
 
@@ -210,7 +210,7 @@ Because of its unique updates and removes, RGA has axioms for $\rf$.
 We propose a general algorithm to verify a CRDT history.
 
 \begin{definition}
- A visible prefix of a replica over multiple replicas is union of prefix of each replica with the respective valid $\hb, \rf$(also, $\lin$ if required) restricted to that union.
+ A visible prefix of a replica over multiple replicas is the union of a prefix of each replica with the respective valid $\hb, \rf$(also, $\lin$ if required) restricted to that union.
 \end{definition}
 
 \begin{algorithm}[ht]
@@ -234,7 +234,7 @@ We propose a general algorithm to verify a CRDT history.
     check the read values are consistent to current prefix map of $R_1$\;
     // linearization may need to be updated\;
    }
-   \If{next operation is a Update}{
+   \If{next operation is an Update}{
     update the prefix map accordingly\;
    }
    // note, a operation can both be Read and Update\;
@@ -245,15 +245,15 @@ We propose a general algorithm to verify a CRDT history.
 \end{algorithm}
 
 \begin{proof}
- To prove the soundness of the algorithm we need to show the algorithm always extends a valid prefix map to an another valid prefix map.
+ To prove the soundness of the algorithm we need to show the algorithm always extends a valid prefix map to another valid prefix map.
 
  Note, a prefix map is invalid if it is an inconsistent Read.
 
- While merging two prefixes, the merged prefix does not add new Read operation. So it is always okay to do this.
+ While merging two prefixes, the merged prefix does not add a new Read operation. So it is always okay to do this.
 
- While advancing a replica, a only Update operation does not really make a valid. The algorithm only add a Read operation, while advancing a replica with a Read operation. The algorithm checks for inconsistencies before adding such Read operation.
+ While advancing a replica, only Update operation does not really make a valid. The algorithm only adds a Read operation, while advancing a replica with a Read operation. The algorithm checks for inconsistencies before adding such Read operation.
 
- So at every step, the algorithm advances with valid prefix map. If the algorithm is able to reach a successful run, that means, there is a valid CRDT execution of the history.
+ So at every step, the algorithm advances with a valid prefix map. If the algorithm is able to reach a successful run, that means, there is a valid CRDT execution of the history.
 
  To show the completeness of the algorithm, we have to show for every valid history the algorithm can have a successful run. If there is a successful run, that means, there is a valid happens-before $\hb$ relation and it induces a partial order over the replica operations. The algorithm can follow the topological extension of that $\hb$ and have a successful run.
 \end{proof}
@@ -262,11 +262,11 @@ We propose a general algorithm to verify a CRDT history.
 \section{Verification complexities}
 
 \begin{itemize}
- \item Unique value writes or given $\rf$ for last-writer-wins and multi-value register are in poly time. Because it induces unique $\rf$ relation.
+ \item Unique value writes or given $\rf$ for last-writer-wins and multi-value register are in polynomial time. Because it induces unique $\rf$ relation.
 
- \item Counter with bounded number of replica is in P.
+ \item Counter with a bounded number of replicas is in P.
 
-    In the general algorithm, it is easy to see, for counter, we don't need to store the actual $\hb$ relation of a prefix. Now there are only polynomial many prefix of a history of a bounded number of replica. So to determinize the algorithm, it will require to explore at most each replica with all possible prefix. Since there are bounder number of replica, total configuration of each replica with prefix becomes polynomial size. So the algorithm quits after polynomial many steps.
+    In the general algorithm, it is easy to see, for counter, we don't need to store the actual $\hb$ relation of a prefix. Now there are only polynomial many prefixes of a history of a bounded number of replicas. So to determinize the algorithm, it will require to explore at most each replica with all possible prefix. Since there is a bounded number of replicas, the total configuration of each replica with prefix becomes polynomial size. So the algorithm quits after polynomial many steps.
 
  \item Replicated growing array. We can figure out the $\rf$ deterministically because of unique add, remove and read in RGA. Then we can deterministically find out the $\hb$ and $\lin$ relations. If we found a valid $\lin$ then, the RGA history is valid.
 \end{itemize}

@@ -69,13 +69,13 @@ isolation level.
 
 CRDTs like counters, registers, flags, and sets provide high availability
 and partition tolerance. They utilize nontrivial mechanisms to resolve the effects of
-concurrent updates to replicated data. Naturally these objects weaken their 
+concurrent updates to replicated data. Naturally, these objects weaken their 
 consistency guarantees to achieve availability and partition-tolerance, and 
 various notions of \emph{weak consistency} capture those guarantees.
 
 Transactions simplify concurrent programming by enabling computations on shared data
 that are isolated from other concurrent computations and resilient to failures.
-Modern databases provide different consistency models or isolation level for transactions 
+Modern databases provide different consistency models or isolation levels for transactions 
 corresponding to different tradeoffs between consistency and availability.
 
 This thesis studies the tractability of CRDT-consistency checking and transactional 
@@ -84,7 +84,7 @@ and facilitate symbolic reasoning, we propose novel logical characterizations.
 By developing novel reductions from propositional satisfiability problems, and novel
 consistency-checking algorithms, we discover both positive and negative results. We also 
 demonstrate that tractability for hard cases can be redeemed if some parameter is bounded,
-usually the number of session or replicas in the network.
+usually the number of sessions or replicas in the network.
 
 Lastly, this thesis presents MonkeyDB. a mock storage system for testing storage-backed
 applications. MonkeyDB supports a Key-Value interface as well as SQL queries
@@ -94,4 +94,4 @@ MonkeyDB then returns a value randomly from this set.
 We show that MonkeyDB provides 
 good coverage of weak behaviors, which is complete in the limit. We test a
 variety of applications for assertions that fail only under weak isolation.
-MonkeyDB is able to break each of those assertions in a small number of attempts. 
+MonkeyDB can break each of those assertions in a small number of attempts. 

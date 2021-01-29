@@ -1,9 +1,9 @@
 %!TEX root = Thesis.tex
 
 \section{Introduction}
-\label{sec:intro}
+\label{sec:crdt:intro}
 
-Recent distributed systems have introduced variations of familiar abstract data types (ADTs) like counters, registers, flags, and sets, that provide high availability and partition tolerance. These \emph{conflict-free replicated data types} (CRDTs)~\cite{DBLP:conf/sss/ShapiroPBZ11} efficiently resolve the effects of concurrent updates to replicated data. Naturally they weaken consistency guarantees to achieve availability and partition-tolerance, and various notions of \emph{weak consistency} capture such guarantees~\cite{DBLP:conf/pdis/TerryDPSTW94, DBLP:conf/sosp/TerryTPDSH95, DBLP:conf/popl/MansonPA05, DBLP:journals/ftpl/Burckhardt14, DBLP:conf/popl/BurckhardtGYZ14}.
+Recent distributed systems have introduced variations of familiar abstract data types (ADTs) like counters, registers, flags, and sets, that provide high availability and partition tolerance. These \emph{conflict-free replicated data types} (CRDTs)~\cite{DBLP:conf/sss/ShapiroPBZ11} efficiently resolve the effects of concurrent updates to replicated data. Naturally, they weaken consistency guarantees to achieve availability and partition-tolerance, and various notions of \emph{weak consistency} capture such guarantees~\cite{DBLP:conf/pdis/TerryDPSTW94, DBLP:conf/sosp/TerryTPDSH95, DBLP:conf/popl/MansonPA05, DBLP:journals/ftpl/Burckhardt14, DBLP:conf/popl/BurckhardtGYZ14}.
 
 In this work we study the tractability of CRDT consistency checking; Figure~\ref{fig:results} summarizes our results. In particular, we consider \emph{runtime verification}: deciding whether a given execution of a CRDT is consistent with its ADT specification. This problem is particularly relevant as distributed-system testing tools like Jepsen~\cite{MISC:Jepsen} are appearing; without efficient, general consistency-checking algorithms, such tools could be limited to specialized classes of errors like node crashes.
 
@@ -34,4 +34,4 @@ The remainder of this article is organized around our three key contributions:
 
 \end{enumerate}
 % \vspace{-1.5mm}
-Section~\ref{sec:related} overviews related work, and Section~\ref{sec:conclusion} concludes.
+Section~\ref{sec:crdt:related} overviews related work, and Section~\ref{sec:conclusion} concludes.
