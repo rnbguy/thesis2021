@@ -32,7 +32,7 @@ Technically, our reductions start from the 1-in-3 SAT problem~\cite{DBLP:books/f
 
     \item do not interleave operations from different rounds. Each consecutive rounds are separated by the barriers in happens-before relations; and
 
-    \item at each round, only one replica, say replica $i$, can finish its \textrm{Read}s then finish its \textrm{Enable}s/\textrm{Disable}s, then $(i+1) mode 3$ replica can finish its \textrm{Read}s and so on. And these \textrm{Enable}s/\textrm{Disable}s from one round are totally ordered between replicas by the happens-before relation.
+    \item at each round, only one replica, say replica $i$, can finish its \textrm{Read}s then finish its \textrm{Enable}s/\textrm{Disable}s, then $(i+1) \bmod 3$ replica can finish its \textrm{Read}s and so on. And these \textrm{Enable}s/\textrm{Disable}s from one round are totally ordered between replicas by the happens-before relation.
 
 \vspace{-1.5mm}
   \end{enumerate}
@@ -79,26 +79,30 @@ Technically, our reductions start from the 1-in-3 SAT problem~\cite{DBLP:books/f
 
 Lemma \ref{crdt:flag:npc-proof:lemma1} ensures, all the operations from all replicas before barrier i are visible to each replica after barrier i.
 
+  Two \textrm{Read} operations \emph{see the same value of $x_i$} when one reads-from a resolved $\mathrm{Enable}(x_i)$(or $\mathrm{Disable}(x_i)$) if and only if the other one also reads-from a resolved $\mathrm{Enable}(x_i)$(or $\mathrm{Disable}(x_i)$). But these two \textrm{Enable}(or \textrm{Disable}) operations may not be the same.
+
   \begin{lemma}
     \label{crdt:flag:npc-proof:lemma2}
-    Maximally first \textrm{Read}s of each round $\leq1$ sees the same values of $x_i$.
+    $\hb$-minimal \textrm{Read}s of each round$_{\geq1}$ sees the same values of $x_i$.
   \end{lemma}
 
   \begin{proof}
-    We prove by induction on the number of rounds. But there is no base case. We will just show that at the round $(i+1)$ the maximally first \textrm{Read}s sees the the same assignments as the maximally first \textrm{Read}s of round $i$.
+    We prove by induction on the number of rounds. But there is no base case. We will just show that at the round $(k+1)$ the maximally first \textrm{Read}s sees the the same assignments as the maximally first \textrm{Read}s of round $k$.
 
-    We will show at each round, the operations from each replica happen in a total order, that too one replica after another. Explicitly, for some some replica $i$, its operations happen first, then replica $(i+1)mod2$'s operations happen, then replica $(i+2)mod 2$'s operations happen. 
+    We will show at each round, the operations from each replica happen in a total order, that too one replica after another. Explicitly, for some some replica $i$, its operations happen first, then the operations from replica $(i+1) \bmod 2$ happen, then the operations from replica $(i+2) \bmod 2$ happen. 
 
-    First of all, any the maximally first \textrm{Read} of each round sees exactly the same resolved values of $x_i$ till last round because of lemma \ref{crdt:flag:npc-proof:lemma1}. We show, those \textrm{Read}s are reading from updates from same round. Reading from any later round is not possible, because that will introduce a cycle between current round and that later round in $\hb$ because of lemma \ref{crdt:flag:npc-proof:lemma1}.
+    First of all, any the $\hb$-minimal \textrm{Read} of each round sees exactly the same resolved values of $x_i$ till last round because of lemma \ref{crdt:flag:npc-proof:lemma1}. Also, the \textrm{Read}s from each round are only reading from updates from the same round or any before round. Reading from any later round is not possible, because that will introduce a cycle between current round and that later round in $\hb$ because of lemma \ref{crdt:flag:npc-proof:lemma1}.
 
-    Also, there exist one replica which does not read from other replicas. If replica $p$ is reading from replica $q$, then replica $q$ again can not read from replica $p$, cause it will create a cycle in $\hb$ between replica $p$ and $q$. So replica $q$ has to read from replica $r$. But then replica $r$ will have to read from replica $p$, which creates a cycle between replica $p$, $q$ and $r$.
+    Also, in each round, there exist one replica which does not read from other replicas in the same round. If replica $p$ is reading from replica $q$, then replica $q$ again can not read from replica $p$, cause it will create a cycle in $\hb$ between replica $p$ and $q$ in the same round. So replica $q$ has to read from replica $r$. But then replica $r$ will have to read from replica $p$, which creates a cycle between replica $p$, $q$ and $r$ in the same round.
 
-    So there exists one replica, which reads the resolved values till last round. Since the \textrm{Read}s of that are successful, it ensures only one of $\alpha_k, \beta_k, \gamma_k$ are true. Hence, the first true \textrm{Read}s at other replicas must read-from the updates at the same round. That totally orders the round. That is, if replica 0 was the first one to finish its reads, $\mathrm{Read}(\beta_k) = true$ read-from $\mathrm{Enable}(\beta_k)$ and $\mathrm{Read}(\gamma_k) = true$ read-from $\mathrm{Enable}(\gamma_k)$. Since the updates are totally ordered and they only flips the boolean values of $x_i$ twice, at the end of last update of the round, we get back the same assignment as the round started with.
+    So there exists one replica, which reads the resolved values till last round. Since the \textrm{Read}s of that are successful, it ensures only one of $\alpha_k, \beta_k, \gamma_k$ are true. Hence, the first true \textrm{Read}s at other replicas must read-from the updates at the same round. That totally orders the operations of one round. That is, if replica 0 was the first one to finish its reads, $\mathrm{Read}(\beta_k) = true$ read-from $\mathrm{Enable}(\beta_k)$ and $\mathrm{Read}(\gamma_k) = true$ read-from $\mathrm{Enable}(\gamma_k)$. Since the updates are totally ordered and they only flips the read values of $x_i$ twice, \ie if the first read on $x_i$ is $false$, then the resolved update on $x_i$ till round $(k-1)$ was \textrm{Disable} and at round $k$, after $\mathrm{Read}(x_i) = false$, $\mathrm{Enable}(x_i)$ and $\mathrm{Disable}(x_i)$ happen and they are ordered in $\hb$. The same argument holds when the first read on $x_i$ was $true$. 
+
+    When round $(k+1)$ begins, because of lemma \ref{crdt:flag:npc-proof:lemma1}, it sees the resolved updates at the end of round $k$. So at $\hb$-minimal \textrm{Read}s of round $k$, if the resolved update on $x_i$ was \textrm{Enable}(or \textrm{Disable}), at $\hb$-minimal \textrm{Read}s of round $(k+1)$, the resolved update for $x_i$ stays \textrm{Enable}(or \textrm{Disable}) also.
   \end{proof}
 
-  Now we go back to our main lemma \ref{crdt:flag:npc-proof:lemma3}. We use the same assignment of $x_i$s at the first \textrm{Read}s of each round (they are the same by lemma \ref{crdt:counter:npc-proof:lemma2}) for the SAT formula.
+  Now we go back to our main lemma \ref{crdt:flag:npc-proof:lemma3}. We use the same assignment of $x_i$s at the first \textrm{Read}s of each round (they are the same by lemma \ref{crdt:flag:npc-proof:lemma2}) for the SAT formula.
 
-  Now we show that assignment satisfies the 1-in-3 SAT formula. Suppose, there is a clause $i$ which does not have exactly one positive literal. If we look at round $i$, there is a replica which happens-before the other replicas. The \textrm{Read}s of that replica sees the same $x_i$ assignment as the SAT assignment, yet they only see exactly one true value. Which contradicts our assumption that the assignment makes clause $i$ unsatisfied.
+  Now we show that assignment satisfies the 1-in-3 SAT formula. Suppose, there is a clause $i$ which does not have exactly one positive literal. If we look at round $i$, there is a replica which happens-before the other replicas. The \textrm{Read}s of that replica sees the same $x_i$ assignment as the SAT assignment, yet they see exactly one true value. Which contradicts our assumption that the assignment makes clause $i$ unsatisfied.
 \end{proof}
 
 We proved that this reduction from a NP-complete problem to our admissibility works. It is very easy to the size of the history is linear in the size of formula and can be computed in linear-time. Theorem \ref{thm:3sat-to-flags} is proved.
