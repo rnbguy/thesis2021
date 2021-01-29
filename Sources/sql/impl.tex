@@ -1,4 +1,4 @@
-%!TEX root = Thesis.tex
+%!TEX root = ../../Thesis.tex
 
 \section{Implementation}
 \label{sec:impl}
@@ -39,7 +39,7 @@ future with more engineering effort.
 MonkeyDB schedules transactions from different sessions
 one after the other using a single global lock.
 Internally, it maintains execution state as a history consisting of a set of transaction logs, 
-write-read relations and a partial session order (as discussed in \sectref{ax-kv}).
+write-read relations and a partial session order (as discussed in \sectref{def}).
 %The KV APIs {\tt read()} and {\tt write()} use the history to implement the
 %operational semantics of \sectref{op-kv}.
 %The function {\tt write()} simply records the operation in the transaction log of the history. 

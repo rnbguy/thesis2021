@@ -24,7 +24,7 @@ Programs interact with a Key-Value store by issuing transactions formed of $\tex
 where $\rd[\id]{\key}{\val}$ (resp., $\wrt[\id]{\key}{\val}$) corresponds to reading a value $\val$ from a key $\key$ (resp., writing $\val$ to $\key$). Each operation is associated with an identifier $\id$ from an arbitrary set $\OId$. We omit operation identifiers when they are not important.
 
 \begin{definition}
- A \emph{transaction log} $\tup{\tr,O, \po}$ is a transaction identifier $\tr$ and a finite set of operations $O$ along with a strict total order $\po$ on $O$, called \emph{program order}.
+ A \emph{transaction log} $\tup{\tr, O, \po}$ is a transaction identifier $\tr$ and a finite set of operations $O$ along with a strict total order $\po$ on $O$, called \emph{program order}.
 \end{definition}
 
 The program order $\po$ represents the order between instructions in the body of a transaction. We assume that each transaction log is well-formed in the sense that if a read of a key $k$ is preceded by a write to $\key$ in $\po$, then it should return the value written by the last write to $\key$ before the read (w.r.t. $\po$). This property is implicit in the definition of every isolation level that we are aware of. For simplicity, we may use the term \emph{transaction} instead of transaction log. The  set of all transaction logs is denoted by $\mathsf{Tlogs}$.
