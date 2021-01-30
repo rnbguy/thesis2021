@@ -1,6 +1,6 @@
 %!TEX root = Thesis.tex
 
-\section{Related Work}
+\section{Related Work}\label{sec:trans:related}
 
 \cite{DBLP:conf/concur/Cerone0G15} give the first formalization of the criteria we consider in this paper, using the specification methodology of \cite{DBLP:conf/popl/BurckhardtGYZ14}. This formalization uses two auxiliary relations, a \emph{visibility} relation which represents the fact that a transaction ``observes'' the effects of another transaction and a \emph{commit order}, also called arbitration order, like in our case. Executions are abstracted using a notion of history that includes only a session order and the adherence to some consistency criterion is defined as the existence of a visibility relation and a commit order satisfying certain axioms. Motivated by practical goals, our histories include a write-read relation, which enables more uniform and in our opinion, more intuitive, axioms to characterize consistency criteria. Our formalizations are however equivalent with those of~\cite{DBLP:conf/concur/Cerone0G15} (a formal proof of this equivalence is presented in the extended version of this paper~\cite{DBLP:journals/corr/abs-1908-04509}). Moreover, \cite{DBLP:conf/concur/Cerone0G15} do not investigate algorithmic issues as in our paper.
 
