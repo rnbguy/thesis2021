@@ -1,7 +1,7 @@
 \SetKwInOut{KwInput}{Input}
 \SetKwInOut{KwOutput}{Output}
 \KwIn{History $\hist = (\Op, \ro)$, prefix map $m$, and set $\mathit{seen}$ of invalid prefix maps}
-\KwOut{$\mathit{true}$ if{f} there exists read-from and happens-before relations $\rf$ and $\hb$ such that $m\subseteq \hb$, and $\tup{\hist,\rf,\hb}$ satisfies the counter axioms.}
+\KwOut{$\mathit{false}$ if there exists no read-from and happens-before relations $\rf$ and $\hb$ such that $m\subseteq \hb$, and $\tup{\hist,\rf,\hb}$ satisfies the counter axioms.}
 \BlankLine
 \lIf{$m$ is complete}{\Return{true}}
  \ForEach{replica $i$}{
