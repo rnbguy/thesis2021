@@ -2,7 +2,7 @@
 \subsection{Replicated Counters}
 \label{sec:counter}
 
-In this section, we show that checking consistency for the replicated counter datatype becomes polynomial-time assuming the number of replicas in the input history is fixed (i.e., the width of the replica order $\RO$ is fixed). We present an algorithm that constructs a valid happens-before order (note that the semantics of the replicated counter doesn't constrain the linearization order) incrementally, following the replica order. At any time, the happens-before order is uniquely determined by a \emph{prefix mapping} that associates to each replica a \emph{prefix} of the history, i.e., a set of operations which is downward-closed w.r.t. replica order (i.e., if it contains an operation it contains all of its $\RO$ predecessors). This models the fact that the replica order is included in the happens-before and therefore, if an operation $o_1$ happens-before another operation $o_2$, then all the $\RO$ predecessors of $o_1$ happen-before $o_2$. The happens-before order can be extended in two ways: (1) adding an operation issued on the replica $i$ to the prefix of replica $i$, or (2) ``merging'' the prefix of a replica $j$ to the prefix of a replica $i$ (this models the delivery of an operation issued on replica $j$ and all its happens-before predecessors to the replica $i$). Verifying that an extension of the happens-before is valid, i.e., that the return values of newly-added {\sf read} operations satisfy the \textsc{RetvalCounter} axiom, doesn't depend on the happens-before order between the operations in the prefix associated to some replica (it is enough to count the {\sf inc} and {\sf dec} operations in that prefix). Therefore, the algorithm can be seen as a search in the space of prefix mappings. If the number of replicas in the input history is fixed, then the number of possible prefix mappings is polynomial in the size of the history, which implies that the search can be done in polynomial time.
+In this section, we propose a sound polynomial time algorithm for replicated counter datatype assuming the number of replicas in the input history is fixed (\ie the width of the rpelica order $\RO$ is fixed). The algorithm constructs a valid happens-before order (note that the semantics of the replicated counter doesn't constrain the linearization order) incrementally, following the replica order. At any time, the happens-before order is uniquely determined by a \emph{prefix mapping} that associates to each replica a \emph{prefix} of the history, i.e., a set of operations which is downward-closed w.r.t. replica order (i.e., if it contains an operation it contains all of its $\RO$ predecessors). This models the fact that the replica order is included in the happens-before and therefore, if an operation $o_1$ happens-before another operation $o_2$, then all the $\RO$ predecessors of $o_1$ happen-before $o_2$. The happens-before order can be extended in two ways: (1) adding an operation issued on the replica $i$ to the prefix of replica $i$, or (2) ``merging'' the prefix of a replica $j$ to the prefix of a replica $i$ (this models the delivery of an operation issued on replica $j$ and all its happens-before predecessors to the replica $i$). Verifying that an extension of the happens-before is valid, i.e., that the return values of newly-added {\sf read} operations satisfy the \textsc{RetvalCounter} axiom, doesn't depend on the happens-before order between the operations in the prefix associated to some replica (it is enough to count the {\sf inc} and {\sf dec} operations in that prefix). Therefore, the algorithm can be seen as a search in the space of prefix mappings. If the number of replicas in the input history is fixed, then the number of possible prefix mappings is polynomial in the size of the history, which implies that the search can be done in polynomial time.
 
 %\setlength{\textfloatsep}{3pt}
 \begin{algorithm}[t]
@@ -29,20 +29,83 @@ Algorithm~\ref{countercrdtalgo:main} lists our algorithm for checking consistenc
 \vspace{-2mm}
 \begin{theorem}
 
-  $\mathsf{checkCounter}(\hist,\emptyset,\emptyset)$ returns $\mathit{true}$ if{f} the input history is consistent.
+$\mathsf{checkCounter}(\hist,\emptyset,\emptyset)$ returns $\mathit{false}$ if the input history is inconsistent.
 
 \vspace{-2mm}
 \end{theorem}
 
 When the number of replicas is fixed, the number of prefix maps becomes polynomial in the size of the history. This follows from the fact that prefixes are uniquely defined by their $\ro$-maximal operations, whose number is fixed.
 
-\vspace{-2mm}
-\begin{corollary}
+% \vspace{-2mm}
+% \begin{corollary}
 
-  The admissibility problem for replicated counters is polynomial-time when the number of replicas is fixed.
+%   The admissibility problem for replicated counters is polynomial-time when the number of replicas is fixed.
 
-\vspace{-2mm}
-\end{corollary}
+% \vspace{-2mm}
+% \end{corollary}
 
+Now we present a history of a replicated counter in figure \ref{correction:fig1}. This execution will not be explored by the algorithm \ref{countercrdtalgo:main}. This history has only one possible execution, presented in the figure. $[\mathrm{Inc}(a)]_{r_1}$ must be propagate after $[\mathrm{Read}(a) = 2]_{r_2}$ and before $[\mathrm{Read}(a) = 3]_{r_2}$. To simulate that, the algorithm must reach a prefix map which had $[\mathrm{Inc}(a)]_{r_1}$ and $[\mathrm{Read}(a) = 2]_{r_2}$ as the $\ro$-maximal operations from each replica. But the same argument holds when $[\mathrm{Inc}(a)]_{r_2}$ needs to propagate after $[\mathrm{Read}(a) = 2]_{r_1}$ and before $[\mathrm{Read}(a) = 3]_{r_1}$. So the algorithm must reach another prefix map which had $[\mathrm{Inc}(a)]_{r_2}$ and $[\mathrm{Read}(a) = 2]_{r_1}$ as the $\ro$-maximal operations from each replica. 
+
+
+\begin{figure}
+  \centering
+  \begin{minipage}{\textwidth}
+      \centering
+  \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,semithick, transform shape]
+  
+  \draw (0, 0) -- (5.5, 0);
+  \draw (0, 1.5) -- (5.5, 1.5);
+  
+  \node[label=left:{$r_2$}] at (0, 0) {};
+  \node[label=left:{$r_1$}] at (0, 1.5) {};
+  
+  \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Inc(a)}}](r21) at (.5, 0) {};
+  \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Inc(a)}}](r22) at (1.5, 0) {};
+  \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Read(a) = 2}}](r23) at (3, 0) {};
+  \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Read(a) = 3}}](r24) at (5, 0) {};
+  
+  \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Inc(a)}}](r11) at (.5, 1.5) {};
+  \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Inc(a)}}](r12) at (1.5, 1.5) {};
+  \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Read(a) = 2}}](r13) at (3, 1.5) {};
+  \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Read(a) = 3}}](r14) at (5, 1.5) {};
+  
+  \draw (r11) edge[out=-90,in=90] (4.8, 0);
+  \draw (r21) edge[out=90,in=-90] (4.8, 1.5);
+  
+  \end{tikzpicture}  
+  \caption{An admissible execution of replicated counter which will not be explored by algorithm \ref{countercrdtalgo:main}}
+  \label{correction:fig1}
+  \end{minipage}
+
+  \begin{minipage}{\textwidth}
+      \centering
+      \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,semithick, transform shape]
+  
+      \draw (0, 0) -- (5.5, 0);
+      \draw (0, 1.5) -- (5.5, 1.5);
+      
+      \node[label=left:{$r_2$}] at (0, 0) {};
+      \node[label=left:{$r_1$}] at (0, 1.5) {};
+      
+      \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Enable(a)}}](r21) at (.5, 0) {};
+      \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Read(b) = $\bot$}}](r23) at (2.5, 0) {};
+      \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Read(b) = $\top$}}](r24) at (5, 0) {};
+      
+      \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Enable(b)}}](r11) at (.5, 1.5) {};
+      \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Read(a) = $\bot$}}](r13) at (2.5, 1.5) {};
+      \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Read(a) = $\top$}}](r14) at (5, 1.5) {};
+      
+      \draw (r11) edge[out=-90,in=90] (4.8, 0);
+      \draw (r21) edge[out=90,in=-90] (4.8, 1.5);
+      
+      \end{tikzpicture}  
+      \caption{An admissible execution of replicated flags which will not be explored by algorithm proposed in subsection \ref{sec:ptime:sets}}
+      \label{correction:fig2}
+  \end{minipage}
+  \end{figure}
+
+Now the algorithm always extends the maintained prefix map \ie when successful, the valid extensions of the empty prefix map are related by inclusion. But these two prefix-maps are not \emph{related} by inclusion. So no valid extensions of prefix map will see both of them together, and the algorithm will return unsuccessfully because $\mathrm{Read}(a) = 3$ will be unsuccessful. This shows our presented algorithm is not complete.
+
+We realized, to construct $\hb$ incrementally, we need to propagate the partial $\hb$ at future operations arbitrarily at each replica. Naively, this requires maintaining a prefix map at each \textrm{Read} operation. Although the number of possible prefix map is polynomially bound for a bounded number of replicas, maintaining $n$ prefix maps at each \textrm{Read} where $n$ is in the order of the size of the history, creates exponentially many possible states to explore.
 
 % For instance, given the history in Figure~\ref{ser_algo_example:1}, the set of transactions $\{\op_0,\op_1,\op_2\}$ is a prefix with boundary $\{\op_1,\op_2\}$ (the latter is an antichain of the session order).
