@@ -1,256 +1,256 @@
 %!TEX root = ../../Thesis.tex
-\section{Introduction}
-\label{sec:app:intro}
+%\section{Introduction}
+%\label{sec:app:intro}
 
-Data storage is no longer about writing data to a single
-disk with a single point of access. Modern applications require not just data
-reliability, but also high-throughput concurrent accesses. 
-Applications concerning supply chains, banking, etc. use traditional relational databases
-for storing and processing data, whereas applications such as social networking
-software and e-commerce platforms 
-use cloud-based storage systems (such as Azure CosmosDb \cite{cosmosdb}, Amazon DynamoDb
-\cite{DBLP:conf/sosp/DeCandiaHJKLPSVV07}, Facebook TAO \cite{DBLP:conf/usenix/BronsonACCDDFGKLMPPSV13}, etc.). We use the term \textit{storage
-system} in this paper to refer to any such database system/service.
-
-
-%As applications have moved from a single-box environment to the cloud, the notion of
-%data persistence has also changed. It is no longer about storing data on a
-%single disk with a single point of access. Rather, modern applications such as
-%social networking software, e-commerce platforms, cloud micro-services, etc. are built using 
-%high-scale storage systems, such as Azure CosmosDb \cite{cosmosdb}, Amazon DynamoDb \cite{DBLP:conf/sigmod/Sivasubramanian12}, 
-%Facebook TAO \cite{DBLP:conf/usenix/BronsonACCDDFGKLMPPSV13}. Applications such as 
- 
-%These storage systems, commonly offered by most major cloud providers (such as
-%Azure CosmosDb \cite{cosmosdb}, Amazon DynamoDb \cite{DBLP:conf/sigmod/Sivasubramanian12}, 
-%Facebook TAO \cite{DBLP:conf/usenix/BronsonACCDDFGKLMPPSV13}, etc.)
-%create and manage multiple replicas of data. Having multiple replicas offers reliability and prevents
-%data loss, but it also offers availability and low-latency accesses by allowing
-%different clients to connect with different replicas. 
-
-Providing high-throughput processing, unfortunately, comes at an unavoidable cost of weakening 
-the guarantees offered to users.
-Concurrently-connected clients may end up observing different views of the same data. 
-These ``anomalies'' can be prevented by using a strong \textit{isolation level} 
-such as \textit{serializability}, which essentially offers a single view of the
-data. However, serializability requires expensive synchronization and incurs a high performance cost. As a
-consequence, most storage systems use weaker isolation levels, such as 
-{\it Causal Consistency}~\cite{DBLP:journals/cacm/Lamport78,DBLP:conf/sosp/LloydFKA11,antidote-white-paper},
-{\it Snapshot Isolation}~\cite{DBLP:conf/sigmod/BerensonBGMOO95}, {\it Read
-Committed}~\cite{DBLP:conf/sigmod/BerensonBGMOO95}, etc. for better performance.
-In a recent survey of
-database administrators \cite{DBLP:conf/sigmod/Pavlo17}, 86\% of the participants responded that
-most or all of the transactions in their databases execute at read committed isolation level.
-
-\begin{figure}
-  \centering
-	\begin{minipage}{4.2cm}
-		\begin{lstlisting}[basicstyle=\ttfamily\footnotesize,escapeinside={(*}{*)},language=MyLang]
-// Append item to cart
-AddItem(item i, userId) {
-  Begin()
-  key = "cart:" + userId
-  cart = read(key)
-  cart.append(i)
-  write(key, cart)
-  Commit()
-}
-		\end{lstlisting}
-	\end{minipage}
-	\hspace{-5mm}
-	\begin{minipage}{4.2cm}
-		\begin{lstlisting}[xleftmargin=4mm,basicstyle=\ttfamily\footnotesize,escapeinside={(*}{*)},language=MyLang]
-// Fetch cart and delete item
-DeleteItem(item i, userId) {
-  Begin()
-  key = "cart:" + userId
-  cart = read(key)
-  cart.remove(i)
-  write(key, cart)
-  Commit()
-}
-		\end{lstlisting}
-	\end{minipage}
-	
-\vspace{-6mm}	
-  \resizebox{8.5cm}{!}{
-   \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
-     semithick, transform shape]
-    \node (s11l) at (1.15, 2.1) {\textbf{Initial state}};
-    \node[draw, rounded corners=2mm] (t0) at (2.05, 1.5) {\begin{tabular}{l} $\wrt{\texttt{cart:}u}{\{..\, I\, ..\}}$ \end{tabular}};
-    \node[draw, rounded corners=2mm, minimum width=4cm, minimum height=1.3cm] (s1) at (0, -0.1) {};
-    \node[style={inner sep=0,outer sep=0}] (s11) at (0, 0.3) {\begin{tabular}{l} $\rd{\texttt{cart:}u}{\{..\, I\, ..\}}$\end{tabular}};
-    \node[style={inner sep=0,outer sep=0}] (s12) at (0, -0.5) {\begin{tabular}{l} $\wrt{\texttt{cart:}u}{\{..\, I,I\, ..\}}$ \end{tabular}};
-    \node (s11l) at (-1, 0.8) {\textbf{AddItem}};
-    \node[draw, rounded corners=2mm, minimum width=3.6cm, minimum height=1.3cm] (s2) at (4.1, -0.1) {};
-    \node[style={inner sep=0,outer sep=0}] (s21) at (4.1, 0.3) {\begin{tabular}{l} $\rd{\texttt{cart:}u}{\{..\, I\, ..\}}$ \end{tabular}};
-    \node[style={inner sep=0,outer sep=0}] (s22) at (4.1, -0.5) {\begin{tabular}{l} $\wrt{\texttt{cart:}u}{\{..\, ..\}}$ \end{tabular}};
-    \node (s11l) at (4.9, 0.8) {\textbf{DeleteItem}};
-    \node[draw, rounded corners=2mm] (r1) at (8.3, 0) {\begin{tabular}{l} $\rd{\texttt{cart:}u}{\{..\, ..\}}$ \end{tabular}};
-    \node[draw, rounded corners=2mm] (r2) at (8.3, -1.3) {\begin{tabular}{l} $\rd{\texttt{cart:}u}{\{..\, I, I\, .\}}$ \end{tabular}};
-    \path (s11) edge[left] node {$\po$} (s12);
-    \path (s21) edge[left] node {$\po$} (s22);
-    \path (t0) edge[left] node {$\wro$} (s1);
-    \path (t0) edge[right] node {$\wro$} (s2);
-    \path (r1) edge[left] node {$\so$} (r2);
-    \path (s2) edge[above] node {$\wro$} (r1);
-    \path (s1) edge[below,bend right=11] node {$\wro$} (r2);
-%    \path (t0) edge[red, right, bend left=20] node[pos=0.4,xshift=-1] {$\wro$} (s11);
-%    \path (t0) edge[red, left, bend right=20] node[pos=0.9,xshift=-1] {$\wro$} (s12);
-   \end{tikzpicture}  
-  }
-
-%  \begin{lstlisting}[xleftmargin=4mm,basicstyle=\ttfamily\footnotesize,escapeinside={(*}{*)},language=MyLang,morekeywords={Test,GetCart}]
-%Test: 
-%{ AddItem(I, u); GetCart(u); GetCart(u) } || DeleteItem(I, u)
-%		\end{lstlisting}
-\vspace{-2mm}
-	\caption{A simple shopping cart service.}
-	\label{fig:motiv}
-\vspace{-3mm}
-\end{figure}
-
-A weaker isolation level allows for more possible behaviors than stronger
-isolation levels. It is up to the developers then to ensure that their
-application can tolerate this larger set of behaviors. Unfortunately, weak
-isolation levels are hard to understand or reason about
-\cite{DBLP:conf/popl/BrutschyD0V17,adya-thesis} and resulting application bugs
-can cause loss of business \cite{DBLP:conf/sigmod/WarszawskiB17}.
-Consider a simple shopping cart application that stores a per-client shopping
-cart in a key-value store (\textit{key} is the client ID and \textit{value} is a
-multi-set of items). \figref{motiv} shows procedures for adding an item to the cart
-(\texttt{AddItem}) and deleting \textit{all} instances of an item from the cart
-(\texttt{DeleteItem}). Each procedure executes in a transaction, represented by
-the calls to \texttt{Begin} and \texttt{Commit}. Suppose that initially, a user $u$ has 
-a single instance of item $I$ in their cart.
-Then the user connects to the application via two different
-sessions (for instance, via two browser windows), adds $I$ in one session
-(\texttt{AddItem($I$, $u$)}) and deletes $I$ in the other session
-(\texttt{DeleteItem($I$, $u$)}). With serializability, the cart can either be
-left in the state $\{ I \}$ (delete happened first, followed by the add) or $\emptyset$ (delete
-happened second). However, with causal consistency (or read committed), it is possible that with two
-sequential reads of the shopping cart, the cart is empty in the first read
-(signaling that the delete has succeeded), but there are \textit{two} instances of $I$ 
-in the second read! Such anomalies, of deleted items reappearing, have been
-noted in previous work \cite{DBLP:conf/sosp/DeCandiaHJKLPSVV07}. 
-
-\paragraph{Testing storage-based applications}
-This paper addresses the problem of \textit{testing} code for correctness
-against weak behaviors: a developer should be able to write a test that runs
-their application and then asserts for correct behavior. 
-The main difficulty today is getting coverage of weak behaviors during
-the test. If one runs the test
-against the actual production storage system, it is very likely to only result in
-serializable behaviors because of their optimized implementation. For
-instance, only 0.0004\% of all reads performed on Facebook's TAO storage system 
-were not serializable \cite{DBLP:conf/sosp/LuVAHSTKL15}. 
-Emulators, offered by cloud providers for local development, on the other hand, do not support weaker
-isolation levels at all \cite{cosmosdb-local}. Another option, possible when
-the storage system is available open-source, is to set it up with a 
-tool like Jepsen~\cite{jepsen} to inject noise (bring down replicas or
-delay packets on the network). 
-This approach is unable to provide good coverage at the level of client operations
-\cite{DBLP:journals/pacmpl/RahmaniNDJ19} (\sectref{oltp}). Another line of work has focussed on finding
-anomalies by identifying non-serializable behavior (\sectref{app:related}). Anomalies, however, do not
-always correspond to bugs \cite{DBLP:conf/pldi/BrutschyD0V18,DBLP:journals/pvldb/GanRRB020}; they may
-either not be important (e.g., gather statistics) or may already be handled in
-the application (e.g., checking and deleting duplicate items).
-
-%Prior work on this problem has largely focussed on
-%formal verification techniques: to establish correctness of code against a specification 
-%of a particular isolation level \cite{DBLP:journals/pacmpl/RahmaniNDJ19,DBLP:journals/sigsoft/DabaghchianROMT17} (\akash{others?}). Verification requires
-%statically analyzing application code; with such an approach, in addition to
-%scalability problems, it is often difficult to support
-%various programming styles, libraries, frameworks and languages. 
-%For these reasons, testing is still the more widely adopted engineering practice. 
-%Our goal is support testing of any application, with little to no modifications.
-%We defer more details to the related work section.
-
-
+%Data storage is no longer about writing data to a single
+%disk with a single point of access. Modern applications require not just data
+%reliability, but also high-throughput concurrent accesses. 
+%Applications concerning supply chains, banking, etc. use traditional relational databases
+%for storing and processing data, whereas applications such as social networking
+%software and e-commerce platforms 
+%use cloud-based storage systems (such as Azure CosmosDb \cite{cosmosdb}, Amazon DynamoDb
+%\cite{DBLP:conf/sosp/DeCandiaHJKLPSVV07}, Facebook TAO \cite{DBLP:conf/usenix/BronsonACCDDFGKLMPPSV13}, etc.). We use the term \textit{storage
+%system} in this paper to refer to any such database system/service.
 %
-%There 
-%is informal documentation available \cite{cosmosdb-consistency} as well as
-%formal specifications \akash{cite CosmosDb-TLA}, but none of it is immediately 
-%actionable for a developer. 
-
-
-%Modern applications such as social networking, ecommerce, etc., use
-%highly-available low-latency geo-replicated storage systems~\cite{cosmosdb} to
-%achieve high performance and scalability.
-%These storage systems must replicate data for persistence, and then allow
-%clients to connect with different replicas for availability on failures and for
-%low latency.
-%The replicas communicate updates to each other in the background using message
-%passing.
-%However, unfortunately, maintaining strong consistency across these replicas
-%requires global synchronization which incurs high performance overheads.
-%Moreover, as stated by the Consistency, Availability, and Partition-tolerance
-%(CAP) theorem~\cite{DBLP:journals/sigact/GilbertL02},
-%it is not possible for such storage systems to remain available and
-%simultaneously guarantee consistency under network partitions (which are
-%unavoidable).
-%Hence, to provide high availability and low latency, many distributed data
-%stores provide only weak consistency guarantees, formally defined as different
-%consistency models: {\it Causal Consistency}~\cite{DBLP:conf/popl/BouajjaniEGH17,DBLP:journals/cacm/Lamport78},
-%{\it Snapshot Isolation}~\cite{DBLP:conf/sigmod/BerensonBGMOO95}, and {\it Read
-%Committed}~\cite{DBLP:conf/sigmod/BerensonBGMOO95}, etc.
-%This current scenario is also showcased in a recent Database Admin
-%Survey~\cite{DBLP:conf/sigmod/Pavlo17} where more than 73\% participants responded that all the
-%transactions in their databases execute at read committed consistency level.
-
-%THE NEXT PARAGRAPH SHOULD BE ONLY ABOUT: PROGRAMMING ON TOP OF WEAK ISOLATION IS HARD. 
-
-%The weak isolation semantics of these consistency models permit various
-%anomalies that violate data consistency; for example, lost updates,
-%non-repeatable reads etc. 
-%(DIRTY READS IS NOT AN ANOMALY ABOVE READ COMMITTED).
-%Such anomalies often lead to undesirable executions in client applications and manifest in the form of invariant violations (assertion violations).
-%For example, consider an online store with a shopping cart
-%service~\ref{fig:motiv}.
-%If a user is accessing the cart from multiple clients, and deletes an item from
-%one client. 
-%Under weak consistency, not only that delete operation can take some time to be
-%visible through another client, but even after viewing deletion, the item could
-%appear again in the cart \cite{DBLP:conf/sosp/DeCandiaHJKLPSVV07}.
-%%\textcolor{blue}{Shopping cart example showing assertion violation on weak consistency.}
-%To prevent them, developers should be aware of such anomalies and use explicit
-%synchronization at appropriate program points in their applications. 
-%(TODO: LOCKING IS TOO SPECIFIC, USE SYNCHRONIZATION INSTEAD).
-%This requirement makes application development extremely challenging, because
-%such weak isolation semantics are hard to understand and
-%reason~\cite{DBLP:conf/popl/BrutschyD0V17,adya-thesis}, compared to the simple case of
-%serializability where one can argue about one transaction at a time. Further,
-%often these consistency levels are informally explained with low-level
-%implementation details, leading to poor understanding.
-%For example, Cosmos DB~\cite{cosmosdb} defines five levels of consistency with
-%only rough guidelines on which one to pick~\cite{cosmosdb-consistency}.
-%(THE FLOW IS A LITTLE BIT AKWARD: WEAK ISOLATION IS HARD TO UNDERSTAND COMPARED TO SERIALIZABILITY; MENTION THE Cosmos DB STUFF AS SUPPORT => INSERTING THE RIGHT SYNCHRONIZATION IS HARD => APPLICATION DEVELOPMENT IS HARD. WHY IS TESTING HARD BECAUSE WEAK ISOLATION IS COMPLICATED ?) 
-
+%
+%%As applications have moved from a single-box environment to the cloud, the notion of
+%%data persistence has also changed. It is no longer about storing data on a
+%%single disk with a single point of access. Rather, modern applications such as
+%%social networking software, e-commerce platforms, cloud micro-services, etc. are built using 
+%%high-scale storage systems, such as Azure CosmosDb \cite{cosmosdb}, Amazon DynamoDb \cite{DBLP:conf/sigmod/Sivasubramanian12}, 
+%%Facebook TAO \cite{DBLP:conf/usenix/BronsonACCDDFGKLMPPSV13}. Applications such as 
+% 
+%%These storage systems, commonly offered by most major cloud providers (such as
+%%Azure CosmosDb \cite{cosmosdb}, Amazon DynamoDb \cite{DBLP:conf/sigmod/Sivasubramanian12}, 
+%%Facebook TAO \cite{DBLP:conf/usenix/BronsonACCDDFGKLMPPSV13}, etc.)
+%%create and manage multiple replicas of data. Having multiple replicas offers reliability and prevents
+%%data loss, but it also offers availability and low-latency accesses by allowing
+%%different clients to connect with different replicas. 
+%
+%Providing high-throughput processing, unfortunately, comes at an unavoidable cost of weakening 
+%the guarantees offered to users.
+%Concurrently-connected clients may end up observing different views of the same data. 
+%These ``anomalies'' can be prevented by using a strong \textit{isolation level} 
+%such as \textit{serializability}, which essentially offers a single view of the
+%data. However, serializability requires expensive synchronization and incurs a high performance cost. As a
+%consequence, most storage systems use weaker isolation levels, such as 
+%{\it Causal Consistency}~\cite{DBLP:journals/cacm/Lamport78,DBLP:conf/sosp/LloydFKA11,antidote-white-paper},
+%{\it Snapshot Isolation}~\cite{DBLP:conf/sigmod/BerensonBGMOO95}, {\it Read
+%Committed}~\cite{DBLP:conf/sigmod/BerensonBGMOO95}, etc. for better performance.
+%In a recent survey of
+%database administrators \cite{DBLP:conf/sigmod/Pavlo17}, 86\% of the participants responded that
+%most or all of the transactions in their databases execute at read committed isolation level.
+%
+%\begin{figure}
+%  \centering
+%	\begin{minipage}{4.2cm}
+%		\begin{lstlisting}[basicstyle=\ttfamily\footnotesize,escapeinside={(*}{*)},language=MyLang]
+%// Append item to cart
+%AddItem(item i, userId) {
+%  Begin()
+%  key = "cart:" + userId
+%  cart = read(key)
+%  cart.append(i)
+%  write(key, cart)
+%  Commit()
+%}
+%		\end{lstlisting}
+%	\end{minipage}
+%	\hspace{-5mm}
+%	\begin{minipage}{4.2cm}
+%		\begin{lstlisting}[xleftmargin=4mm,basicstyle=\ttfamily\footnotesize,escapeinside={(*}{*)},language=MyLang]
+%// Fetch cart and delete item
+%DeleteItem(item i, userId) {
+%  Begin()
+%  key = "cart:" + userId
+%  cart = read(key)
+%  cart.remove(i)
+%  write(key, cart)
+%  Commit()
+%}
+%		\end{lstlisting}
+%	\end{minipage}
+%	
+%\vspace{-6mm}	
+%  \resizebox{8.5cm}{!}{
+%   \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=4cm,
+%     semithick, transform shape]
+%    \node (s11l) at (1.15, 2.1) {\textbf{Initial state}};
+%    \node[draw, rounded corners=2mm] (t0) at (2.05, 1.5) {\begin{tabular}{l} $\wrt{\texttt{cart:}u}{\{..\, I\, ..\}}$ \end{tabular}};
+%    \node[draw, rounded corners=2mm, minimum width=4cm, minimum height=1.3cm] (s1) at (0, -0.1) {};
+%    \node[style={inner sep=0,outer sep=0}] (s11) at (0, 0.3) {\begin{tabular}{l} $\rd{\texttt{cart:}u}{\{..\, I\, ..\}}$\end{tabular}};
+%    \node[style={inner sep=0,outer sep=0}] (s12) at (0, -0.5) {\begin{tabular}{l} $\wrt{\texttt{cart:}u}{\{..\, I,I\, ..\}}$ \end{tabular}};
+%    \node (s11l) at (-1, 0.8) {\textbf{AddItem}};
+%    \node[draw, rounded corners=2mm, minimum width=3.6cm, minimum height=1.3cm] (s2) at (4.1, -0.1) {};
+%    \node[style={inner sep=0,outer sep=0}] (s21) at (4.1, 0.3) {\begin{tabular}{l} $\rd{\texttt{cart:}u}{\{..\, I\, ..\}}$ \end{tabular}};
+%    \node[style={inner sep=0,outer sep=0}] (s22) at (4.1, -0.5) {\begin{tabular}{l} $\wrt{\texttt{cart:}u}{\{..\, ..\}}$ \end{tabular}};
+%    \node (s11l) at (4.9, 0.8) {\textbf{DeleteItem}};
+%    \node[draw, rounded corners=2mm] (r1) at (8.3, 0) {\begin{tabular}{l} $\rd{\texttt{cart:}u}{\{..\, ..\}}$ \end{tabular}};
+%    \node[draw, rounded corners=2mm] (r2) at (8.3, -1.3) {\begin{tabular}{l} $\rd{\texttt{cart:}u}{\{..\, I, I\, .\}}$ \end{tabular}};
+%    \path (s11) edge[left] node {$\po$} (s12);
+%    \path (s21) edge[left] node {$\po$} (s22);
+%    \path (t0) edge[left] node {$\wro$} (s1);
+%    \path (t0) edge[right] node {$\wro$} (s2);
+%    \path (r1) edge[left] node {$\so$} (r2);
+%    \path (s2) edge[above] node {$\wro$} (r1);
+%    \path (s1) edge[below,bend right=11] node {$\wro$} (r2);
+%%    \path (t0) edge[red, right, bend left=20] node[pos=0.4,xshift=-1] {$\wro$} (s11);
+%%    \path (t0) edge[red, left, bend right=20] node[pos=0.9,xshift=-1] {$\wro$} (s12);
+%   \end{tikzpicture}  
+%  }
+%
+%%  \begin{lstlisting}[xleftmargin=4mm,basicstyle=\ttfamily\footnotesize,escapeinside={(*}{*)},language=MyLang,morekeywords={Test,GetCart}]
+%%Test: 
+%%{ AddItem(I, u); GetCart(u); GetCart(u) } || DeleteItem(I, u)
+%%		\end{lstlisting}
+%\vspace{-2mm}
+%	\caption{A simple shopping cart service.}
+%	\label{fig:motiv}
+%\vspace{-3mm}
+%\end{figure}
+%
+%A weaker isolation level allows for more possible behaviors than stronger
+%isolation levels. It is up to the developers then to ensure that their
+%application can tolerate this larger set of behaviors. Unfortunately, weak
+%isolation levels are hard to understand or reason about
+%\cite{DBLP:conf/popl/BrutschyD0V17,adya-thesis} and resulting application bugs
+%can cause loss of business \cite{DBLP:conf/sigmod/WarszawskiB17}.
+%Consider a simple shopping cart application that stores a per-client shopping
+%cart in a key-value store (\textit{key} is the client ID and \textit{value} is a
+%multi-set of items). \figref{motiv} shows procedures for adding an item to the cart
+%(\texttt{AddItem}) and deleting \textit{all} instances of an item from the cart
+%(\texttt{DeleteItem}). Each procedure executes in a transaction, represented by
+%the calls to \texttt{Begin} and \texttt{Commit}. Suppose that initially, a user $u$ has 
+%a single instance of item $I$ in their cart.
+%Then the user connects to the application via two different
+%sessions (for instance, via two browser windows), adds $I$ in one session
+%(\texttt{AddItem($I$, $u$)}) and deletes $I$ in the other session
+%(\texttt{DeleteItem($I$, $u$)}). With serializability, the cart can either be
+%left in the state $\{ I \}$ (delete happened first, followed by the add) or $\emptyset$ (delete
+%happened second). However, with causal consistency (or read committed), it is possible that with two
+%sequential reads of the shopping cart, the cart is empty in the first read
+%(signaling that the delete has succeeded), but there are \textit{two} instances of $I$ 
+%in the second read! Such anomalies, of deleted items reappearing, have been
+%noted in previous work \cite{DBLP:conf/sosp/DeCandiaHJKLPSVV07}. 
+%
+%\paragraph{Testing storage-based applications}
+%This paper addresses the problem of \textit{testing} code for correctness
+%against weak behaviors: a developer should be able to write a test that runs
+%their application and then asserts for correct behavior. 
+%The main difficulty today is getting coverage of weak behaviors during
+%the test. If one runs the test
+%against the actual production storage system, it is very likely to only result in
+%serializable behaviors because of their optimized implementation. For
+%instance, only 0.0004\% of all reads performed on Facebook's TAO storage system 
+%were not serializable \cite{DBLP:conf/sosp/LuVAHSTKL15}. 
+%Emulators, offered by cloud providers for local development, on the other hand, do not support weaker
+%isolation levels at all \cite{cosmosdb-local}. Another option, possible when
+%the storage system is available open-source, is to set it up with a 
+%tool like Jepsen~\cite{jepsen} to inject noise (bring down replicas or
+%delay packets on the network). 
+%This approach is unable to provide good coverage at the level of client operations
+%\cite{DBLP:journals/pacmpl/RahmaniNDJ19} (\sectref{oltp}). Another line of work has focussed on finding
+%anomalies by identifying non-serializable behavior (\sectref{app:related}). Anomalies, however, do not
+%always correspond to bugs \cite{DBLP:conf/pldi/BrutschyD0V18,DBLP:journals/pvldb/GanRRB020}; they may
+%either not be important (e.g., gather statistics) or may already be handled in
+%the application (e.g., checking and deleting duplicate items).
+%
+%%Prior work on this problem has largely focussed on
+%%formal verification techniques: to establish correctness of code against a specification 
+%%of a particular isolation level \cite{DBLP:journals/pacmpl/RahmaniNDJ19,DBLP:journals/sigsoft/DabaghchianROMT17} (\akash{others?}). Verification requires
+%%statically analyzing application code; with such an approach, in addition to
+%%scalability problems, it is often difficult to support
+%%various programming styles, libraries, frameworks and languages. 
+%%For these reasons, testing is still the more widely adopted engineering practice. 
+%%Our goal is support testing of any application, with little to no modifications.
+%%We defer more details to the related work section.
+%
+%
+%%
+%%There 
+%%is informal documentation available \cite{cosmosdb-consistency} as well as
+%%formal specifications \akash{cite CosmosDb-TLA}, but none of it is immediately 
+%%actionable for a developer. 
+%
+%
+%%Modern applications such as social networking, ecommerce, etc., use
+%%highly-available low-latency geo-replicated storage systems~\cite{cosmosdb} to
+%%achieve high performance and scalability.
+%%These storage systems must replicate data for persistence, and then allow
+%%clients to connect with different replicas for availability on failures and for
+%%low latency.
+%%The replicas communicate updates to each other in the background using message
+%%passing.
+%%However, unfortunately, maintaining strong consistency across these replicas
+%%requires global synchronization which incurs high performance overheads.
+%%Moreover, as stated by the Consistency, Availability, and Partition-tolerance
+%%(CAP) theorem~\cite{DBLP:journals/sigact/GilbertL02},
+%%it is not possible for such storage systems to remain available and
+%%simultaneously guarantee consistency under network partitions (which are
+%%unavoidable).
+%%Hence, to provide high availability and low latency, many distributed data
+%%stores provide only weak consistency guarantees, formally defined as different
+%%consistency models: {\it Causal Consistency}~\cite{DBLP:conf/popl/BouajjaniEGH17,DBLP:journals/cacm/Lamport78},
+%%{\it Snapshot Isolation}~\cite{DBLP:conf/sigmod/BerensonBGMOO95}, and {\it Read
+%%Committed}~\cite{DBLP:conf/sigmod/BerensonBGMOO95}, etc.
+%%This current scenario is also showcased in a recent Database Admin
+%%Survey~\cite{DBLP:conf/sigmod/Pavlo17} where more than 73\% participants responded that all the
+%%transactions in their databases execute at read committed consistency level.
+%
+%%THE NEXT PARAGRAPH SHOULD BE ONLY ABOUT: PROGRAMMING ON TOP OF WEAK ISOLATION IS HARD. 
+%
+%%The weak isolation semantics of these consistency models permit various
+%%anomalies that violate data consistency; for example, lost updates,
+%%non-repeatable reads etc. 
+%%(DIRTY READS IS NOT AN ANOMALY ABOVE READ COMMITTED).
+%%Such anomalies often lead to undesirable executions in client applications and manifest in the form of invariant violations (assertion violations).
+%%For example, consider an online store with a shopping cart
+%%service~\ref{fig:motiv}.
+%%If a user is accessing the cart from multiple clients, and deletes an item from
+%%one client. 
+%%Under weak consistency, not only that delete operation can take some time to be
+%%visible through another client, but even after viewing deletion, the item could
+%%appear again in the cart \cite{DBLP:conf/sosp/DeCandiaHJKLPSVV07}.
+%%%\textcolor{blue}{Shopping cart example showing assertion violation on weak consistency.}
+%%To prevent them, developers should be aware of such anomalies and use explicit
+%%synchronization at appropriate program points in their applications. 
+%%(TODO: LOCKING IS TOO SPECIFIC, USE SYNCHRONIZATION INSTEAD).
+%%This requirement makes application development extremely challenging, because
+%%such weak isolation semantics are hard to understand and
+%%reason~\cite{DBLP:conf/popl/BrutschyD0V17,adya-thesis}, compared to the simple case of
+%%serializability where one can argue about one transaction at a time. Further,
+%%often these consistency levels are informally explained with low-level
+%%implementation details, leading to poor understanding.
+%%For example, Cosmos DB~\cite{cosmosdb} defines five levels of consistency with
+%%only rough guidelines on which one to pick~\cite{cosmosdb-consistency}.
+%%(THE FLOW IS A LITTLE BIT AKWARD: WEAK ISOLATION IS HARD TO UNDERSTAND COMPARED TO SERIALIZABILITY; MENTION THE Cosmos DB STUFF AS SUPPORT => INSERTING THE RIGHT SYNCHRONIZATION IS HARD => APPLICATION DEVELOPMENT IS HARD. WHY IS TESTING HARD BECAUSE WEAK ISOLATION IS COMPLICATED ?) 
+%
 We present MonkeyDB, a mock in-memory storage system meant for testing
 correctness of storage-backed applications. 
 MonkeyDB supports 
 common APIs for accessing data (key-value updates, as well as SQL queries),
 making it an easy substitute for an actual storage system. MonkeyDB
-can be configured with one of several isolation levels. 
+can be configured with one of several transaction isolation (consistency) levels. 
 %Currently,
 %MonkeyDB supports Serializability, Causal Consistency as well as Read
 %Committed. (Addition of other isolation levels is easy.)
-On a read operation, MonkeyDB computes the set of all possible return values
-allowed under the chosen isolation level, and randomly returns one of them. The
-developer can then simply execute their test multiple times to get coverage of
-possible weak behaviors. For the program in \figref{motiv}, if we write a test
-asserting that two sequential reads cannot return empty-cart followed by $\{I,
-I\}$, then it takes only 20 runs of the test (on average) to fail the
-assert. In contrast, the test does not fail when using MySQL with read committed, 
-even after 100k runs. 
-%MonkeyDB can work with any application with little to no modifications:
-%a developer simply needs to link their tests to MonkeyDB, instead of the
-%production storage system.
+%On a read operation, MonkeyDB computes the set of all possible return values
+%allowed under the chosen isolation level, and randomly returns one of them. The
+%developer can then simply execute their test multiple times to get coverage of
+%possible weak behaviors. For the program in \figref{motiv}, if we write a test
+%asserting that two sequential reads cannot return empty-cart followed by $\{I,
+%I\}$, then it takes only 20 runs of the test (on average) to fail the
+%assert. In contrast, the test does not fail when using MySQL with read committed, 
+%even after 100k runs. 
+%%MonkeyDB can work with any application with little to no modifications:
+%%a developer simply needs to link their tests to MonkeyDB, instead of the
+%%production storage system.
 
-\paragraph{Design of MonkeyDB}
-MonkeyDB does not rely on stress generation, fault
-injection, or data replication. 
-Rather, it works directly with a formalization of
-the given isolation level in order to compute allowed return values. 
+%\paragraph{Design of MonkeyDB}
+%MonkeyDB does not rely on stress generation, fault
+%injection, or data replication. 
+%Rather, it works directly with a formalization of
+%the given isolation level in order to compute allowed return values. 
 
 
 %MonkeyDB makes it straightforward
@@ -285,27 +285,9 @@ the given isolation level in order to compute allowed return values.
 %  LEVELS IN KEY-VALUE STORES, OPERATIONAL SEMANTICS (STRESS THE SERIAL
 %EXECUTION), COMPILING SQL TO KEY-VALUE STORE API. }
 
-The theory behind MonkeyDB builds on the axiomatic definitions of isolation
-levels introduced by Biswas et al. \cite{DBLP:journals/pacmpl/BiswasE19}. These
-definitions use logical constraints (called \emph{axioms}) to characterize the
-set of executions of a key-value store that conform to a particular isolation
-level (we discuss SQL queries later). These constraints refer to a specific set of
-relations between events/transactions in an execution that describe control-flow
-or data-flow dependencies: a program order $\po$ between events in the same
-transaction, a session order $\so$ between transactions in the same session\footnote{A
-session is a sequential interface to the storage system. It corresponds to what
-is also called a connection.}, and a write-read $\wro$ (read-from) relation that
-associates each read event with a transaction that writes the value returned by
-the read. These relations along with the events (also called, operations) in an
-execution are called a \emph{history}. The history corresponding to the 
-shopping cart anomaly explained above is given on the bottom of Figure~\ref{fig:motiv}.
-Read operations include the read value, and boxes group events from the same transaction.
-%The initial value of the key is supposed to be written in a fictitious transaction. 
-A history describes only the
-interaction with the key-value store, omitting application side events (e.g., computing
-the value to be written to a key). 
-
-MonkeyDB implements a \emph{centralized} operational semantics for key-value stores, which is based on these axiomatic definitions. Transactions are executed \emph{serially}, one after another, the concurrency being simulated during the handling of read events.  
+MonkeyDB implements a \emph{centralized} operational semantics for key-value stores, 
+which is based on the axiomatic definitions presented in Section~\ref{sec:def}. 
+Transactions are executed \emph{serially}, one after another, the concurrency being simulated during the handling of read events.  
 This semantics maintains a history that contains all the past events (from all
 transactions/sessions), and write events are simply added to the history. The
 value returned by a read event is established based on a non-deterministic
@@ -314,13 +296,7 @@ the axioms of the considered isolation level.
 %(MonkeyDB resolves any non-determinism in a random fashion). 
 Depending on the weakness of the isolation
 level, this makes it possible to return values written in arbitrarily ``old''
-transactions, and simulate any concurrent behavior. For instance, the history in Figure~\ref{fig:motiv}
-can be obtained by executing \texttt{AddItem}, \texttt{DeleteItem}, and then the two reads (serially).
-The read in \texttt{DeleteItem} can take its value from the initial state and ``ignore'' the
-previously executed \texttt{AddItem}, because the obtained history validates the axioms of 
-causal consistency (or read committed). The same happens for the two later reads in the same
-session, the first one being able to read from \texttt{DeleteItem} and the second one
-from \texttt{AddItem}.
+transactions, and simulate any concurrent behavior. 
 
 We formally prove that this semantics does indeed simulate any concurrent behavior, by 
 showing that it is equivalent to a semantics where transactions are allowed to interleave.
@@ -331,8 +307,9 @@ the order in which entire transactions are submitted, and the choice of write-re
 events. This enable better coverage of possible behaviors, the penalty in performance not
 being an issue in safety testing workloads which are usually small (see our evaluation). 
 
-
-We also extend our semantics to cover SQL queries as well, by compiling SQL queries down to transactions with multiple key-value reads/writes. A table in a relational database is represented using a set of primary key values (identifying uniquely the set of rows) and a set of keys, one for each cell in the table. The set of primary key values is represented using a set of Boolean key-value pairs that simulate its characteristic function (adding or removing an element corresponds to updating one of these keys to $\btrue$ or $\bfalse$). Then, SQL queries are compiled to read or write accesses to the keys representing a table. For instance, a $\mathtt{SELECT}$ query that retrieves the set of rows in a table that satisfy a $\mathtt{WHERE}$ condition is compiled to (1) reading Boolean keys to identify the primary key values of the rows contained in the table, (2) reading keys that represent columns used in the $\mathtt{WHERE}$ condition, and (3) reading all the keys that represent cells in a row satisfying the $\mathtt{WHERE}$ condition. This rewriting contains the minimal set of accesses to the cells of a table that are needed to ensure the conventional specification of SQL.
+We also extend our semantics to cover SQL queries as well, by compiling SQL queries down to transactions 
+with multiple key-value reads/writes. A table in a relational database is represented using a set of primary key values 
+(identifying uniquely the set of rows) and a set of keys, one for each cell in the table. The set of primary key values is represented using a set of Boolean key-value pairs that simulate its characteristic function (adding or removing an element corresponds to updating one of these keys to $\btrue$ or $\bfalse$). Then, SQL queries are compiled to read or write accesses to the keys representing a table. For instance, a $\mathtt{SELECT}$ query that retrieves the set of rows in a table that satisfy a $\mathtt{WHERE}$ condition is compiled to (1) reading Boolean keys to identify the primary key values of the rows contained in the table, (2) reading keys that represent columns used in the $\mathtt{WHERE}$ condition, and (3) reading all the keys that represent cells in a row satisfying the $\mathtt{WHERE}$ condition. This rewriting contains the minimal set of accesses to the cells of a table that are needed to ensure the conventional specification of SQL.
 It makes it possible to ``export'' formalizations of key-value store isolation levels to SQL transactions.
 
 %This paper first presents an axiomatic semantics for various isolation levels 
@@ -348,32 +325,21 @@ It makes it possible to ``export'' formalizations of key-value store isolation l
 %We also extend our semantics to cover SQL queries as well, by compiling SQL
 %queries down to transactions with multiple key-value updates.
 
-\paragraph{Contributions}
-%We implemented MonkeyDB to support an interface consistent with key-value
-%stores and databases, which allows us to directly run real applications unmodified. 
-%We evaluated MonkeyDB on a series of micro-benchmarks, inspired from real
-%applications, as well as the well-known OLTPBench \cite{DBLP:journals/pvldb/DifallahPCC13}
-%that is used for evaluating
-%databases on OLTP workloads. 
-
-This paper makes the following contributions:
+The remainder of this chapter is organized as follows:
+% \vspace{-3.5mm}
 \begin{itemize}
-\item We define an operational semantics for key-value stores under various
+\item Section~\ref{sec:app:prog_lang} presents a programming language to represent storage-backed applications,
+\item Section~\ref{sec:op-kv} defines an operational semantics for key-value stores under various
   isolation levels, which simulates all concurrent behaviors with executions
-  where transactions execute serially (\sectref{op-kv}) and which is based 
-  on the axiomatic definitions in~\cite{DBLP:journals/pacmpl/BiswasE19} (and outlined in \S\ref{sec:def}),
-\item We broaden the scope of the key-value store semantics to SQL transactions
-  using a compiler that rewrites SQL queries to key-value accesses (\sectref{SQL-to-KV}),
-\item The operational semantics and the SQL compiler are implemented in a tool
-  called MonkeyDB (\sectref{impl}). It randomly resolves possible choices to provide coverage
-  of weak behaviors. It supports both a key-value interface as well as SQL,
-  making it readily compatible with any storage-backed application.
-\item We present an evaluation of MonkeyDB on several applications, showcasing
-its superior coverage of weak behaviors as well as bug-finding abilities
-(\sectref{micro}, \sectref{oltp}).\footnote{Source code of our benchmarks is available
-as supplementary material.}
+  where transactions execute serially and which is based 
+  on the axiomatic definitions in Section~\ref{sec:def},
+\item Section~\ref{sec:SQL-to-KV} broadens the scope of the key-value store semantics to SQL transactions
+  using a compiler that rewrites SQL queries to key-value accesses,
+\item Section~\ref{sec:impl} describes the implementation of MonkeyDB,
+\item Section~\ref{sec:micro} and Section~\ref{sec:oltp} present an evaluation of MonkeyDB on several applications, showcasing
+its superior coverage of weak behaviors as well as bug-finding abilities.
 \end{itemize}
-
+Section~\ref{sec:app:related} overviews related work, and Section~\ref{sec:app:conc} concludes.
 
 
  

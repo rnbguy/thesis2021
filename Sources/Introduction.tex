@@ -129,7 +129,7 @@ TODO REPLACE READ WITH TWO CONTAINS
 \end{figure}
 
 %\emph{Conflict-free replicated data types} (CRDTs)~\cite{DBLP:conf/sss/ShapiroPBZ11} efficiently resolve the effects of concurrent updates to replicated data. In 
-For instance, Figure~\ref{fig:crdt:intro} pictures an execution of a CRDT called \emph{OR-Set}~\cite{DBLP:conf/sss/ShapiroPBZ11}, a set data type with standard \texttt{add(\_)}, \texttt{remove(\_)}, \texttt{contains(\_)} operations. \texttt{add(\_)} and \texttt{remove(\_)} are the only update operations. Two updates are in conflict if they are trying to insert or remove the same element, and possible conflicts are resolved by assuming that an \texttt{add(\_)} operation will always ``win'' among multiple conflicting concurrent updates, i.e., it will overwrite their effect. In Figure~\ref{fig:crdt:intro}, each replica executes the first two \texttt{add} operations in isolation (without being aware of operations on the other replica), receives the first \texttt{add} update from the other replica, and executes a \texttt{remove} operation before receiving the second \texttt{add} update from the other replica. As mentioned above, updates are propagated to other replicas asynchronously. The element $b$, resp., $a$, is again a member of the set on the top replica, resp., bottom replica, after receiving the last \texttt{add} update because the latter is concurrent (not causally related) to the \texttt{remove} on the receiving replica and the conflict is resolved by assuming that the \texttt{add} wins. This is witnessed by the last two \texttt{contains} operations on each replica that both return \texttt{true}. Note that this execution is an instance of \emph{weak consistency} since the return values of the \texttt{contains} operations cannot be explained using an interleaving of these operations (consistent with the order between operations on the same replica) as in classic variations of strong consistency, e.g., sequential consistency~\cite{DBLP:journals/tc/Lamport79} or linearizability\cite{DBLP:journals/toplas/HerlihyW90}.
+For instance, Figure~\ref{fig:crdt:intro} pictures an execution of a CRDT called \emph{OR-Set}~\cite{DBLP:conf/sss/ShapiroPBZ11}, a set data type with standard \texttt{add(\_)}, \texttt{remove(\_)}, \texttt{contains(\_)} operations. \texttt{add(\_)} and \texttt{remove(\_)} are the only update operations. Two updates are in conflict if they are trying to insert or remove the same element, and possible conflicts are resolved by assuming that an \texttt{add(\_)} operation will always ``win'' among multiple conflicting concurrent updates, i.e., it will overwrite their effect. In Figure~\ref{fig:crdt:intro}, each replica executes the first two \texttt{add} operations in isolation (without being aware of operations on the other replica), receives the first \texttt{add} update from the other replica, and executes a \texttt{remove} operation before receiving the second \texttt{add} update from the other replica (as mentioned above, updates are propagated to other replicas asynchronously). The element $b$, resp., $a$, is again a member of the set on the top replica, resp., bottom replica, after receiving the last \texttt{add} update because the latter is concurrent (not causally related) to the \texttt{remove} on the receiving replica and the conflict is resolved by assuming that the \texttt{add} wins. This is witnessed by the last two \texttt{contains} operations on each replica that both return \texttt{true}. Note that this execution is an instance of \emph{weak consistency} since the return values of the \texttt{contains} operations cannot be explained using an interleaving of these operations (consistent with the order between operations on the same replica) as in classic variations of strong consistency, e.g., sequential consistency~\cite{DBLP:journals/tc/Lamport79} or linearizability\cite{DBLP:journals/toplas/HerlihyW90}.
 %In figure \ref{fig:crdt:intro}, \texttt{read()} can seen as performing \texttt{contain(\_)} on $a$ and $b$. 
 
 %In each replica $r_i$, everything seems fine when only \texttt{add(\_)} is happening. In $r_1$, after adding $a$ and $b$ and getting the update from $r_2$, the internal set contains both $a$ and $b$. After performing \texttt{remove(b)}, $b$ gets remove from the set. Now, the update of \texttt{add(b)} from $r_2$ reaches $r_1$. Since last \texttt{remove(b)} on $r_1$ and \texttt{add(b)} from $r_2$ are concurrent, meaning they are not causally related, they are in conflict. The OR-Set resolves them to the \texttt{add(b)}, so $b$ gets added in the set. Then the \texttt{remove(a)} from $r_2$ reaches to $r_1$. Like before, the \texttt{add(a)} on $r_1$ and \texttt{remove(a)} from $r_2$ are in conflict. The OR-Set resolves them to the \texttt{add(a)} and ignores the \texttt{remove(b)} from $r_2$. So $a$ and $b$ both persists in the set. The same can be explained for $r_2$'s observation. It can be shown, this behavior is not linearizable. This behavior is not possible when strong guarantees are promised.
@@ -179,7 +179,7 @@ Second, we demonstrate the intractability of several CRDTs by reduction from pro
 % Transaction
 %%%%%%%%%%
 
-\section{Transactional Systems}
+\section{Transactional Systems}\label{sec:intro:trans}
 
 
 % \texttt{Payment(k)} \\
@@ -273,7 +273,23 @@ We consider several consistency models that are the most prevalent in practice. 
 
 %Based on our formalization of these criteria, 
 We establish that checking whether an execution satisfies RC, RA, or CC is polynomial time, while the same problem is NP-complete for PC and SI. Moreover, in the case of the NP-complete consistency models (PC, SI, SER), we show that their verification problem becomes polynomial time provided that, roughly speaking, the number of sessions in the input executions is considered to be fixed (i.e., not counted for in the input size). In more detail, we establish that checking SER reduces to a search problem in a space that has polynomial size when the number of sessions is fixed. (This algorithm applies to arbitrary executions, but its complexity would be exponential in the number of sessions in general.) Then, we show that checking PC or SI can be reduced in polynomial time to checking SER using a transformation of executions that, roughly speaking, splits each transaction in two parts: one part containing all the reads, and one part containing all the writes (SI further requires adding some additional variables in order to deal with transactions writing on a common variable).
-We extend these results even further by relying on an abstraction of executions called \emph{communication graphs}~\cite{DBLP:journals/pacmpl/ChalupaCPSV18}. Roughly speaking, the vertices of a communication graph correspond to sessions, and the edges represent the fact that two sessions access (read or write) the same variable. We show that all these criteria are polynomial-time checkable provided that the \emph{biconnected} components of the communication graph are of fixed size. These results rely on a novel specification framework for such criteria which is of independent interest.
+We extend these results even further by relying on an abstraction of executions called \emph{communication graphs}~\cite{DBLP:journals/pacmpl/ChalupaCPSV18}. Roughly speaking, the vertices of a communication graph correspond to sessions, and the edges represent the fact that two sessions access (read or write) the same variable. We show that all these criteria are polynomial-time checkable provided that the \emph{biconnected} components of the communication graph are of fixed size. 
+
+These results rely on a novel specification framework for such criteria which is of independent interest. 
+This framework uses logical constraints, called \emph{axioms}, to characterize the
+set of executions that conform to a particular consistency level. An execution is modeled using a specific set of
+relations between events/transactions that describe control-flow
+or data-flow dependencies: a program order $\po$ between events in the same
+transaction, a session order $\so$ between transactions in the same session, 
+and a write-read $\wro$ (read-from) relation that
+associates each read event with a transaction that writes the value returned by
+the read. These relations along with the events (also called, operations) in an
+execution are called a \emph{history}. 
+%The initial value of the key is supposed to be written in a fictitious transaction. 
+A given history is said to satisfy a consistency model if it admits a \emph{total commit order} between its transactions
+satisfying a specific set of axioms, which intuitively, 
+define lower bounds on the set of transactions $\tr_1$ that \emph{must} precede in commit 
+order a transaction $\tr_2$ that is read in the execution. 
 
 We provide an experimental evaluation of our algorithms on executions of several production databases, that makes it possible to uncover new bugs or contradictions to their documentation. 
 In particular, we show that, although the asymptotic complexity of our algorithms is exponential in general (w.r.t. the number of sessions), the worst-case behavior is not exercised in practice.
@@ -346,8 +362,8 @@ the guarantees offered to users.
 Concurrently-connected clients may end up observing different views of the same data. 
 These ``anomalies'' can be prevented by using a strong \textit{isolation (consistency) level}  
 such as \textit{serializability}, which essentially offers a single view of the
-data. However, serializability requires expensive synchronization and incurs a high performance cost. 
-As a consequence, most storage systems use weaker isolation levels, such as RC, CC, or SI. 
+data. However, since serializability requires expensive synchronization and incurs a high performance cost, 
+most storage systems use weaker isolation levels, such as RC, CC, or SI. 
 %{\it Causal Consistency}~\cite{DBLP:journals/cacm/Lamport78,DBLP:conf/sosp/LloydFKA11,antidote-white-paper},
 %{\it Snapshot Isolation}~\cite{DBLP:conf/sigmod/BerensonBGMOO95}, {\it Read
 %Committed}~\cite{DBLP:conf/sigmod/BerensonBGMOO95}, etc. for better performance.
@@ -444,10 +460,14 @@ left in the state $\{ I \}$ (delete happened first, followed by the add) or $\em
 happened second). However, with causal consistency (or read committed), it is possible that with two
 sequential reads of the shopping cart, the cart is empty in the first read
 (signaling that the delete has succeeded), but there are \textit{two} instances of $I$ 
-in the second read! Such anomalies, of deleted items reappearing, have been
+in the second read! The history corresponding to this behavior 
+is given on the bottom of Figure~\ref{fig:motiv} 
+(read operations include the read value, and boxes group events from the same transaction).
+Such anomalies, of deleted items reappearing, have been
 noted in previous work \cite{DBLP:conf/sosp/DeCandiaHJKLPSVV07}. 
 
-\paragraph{Testing storage-based applications}
+
+%\paragraph{Testing storage-based applications}
 In this thesis, we address the problem of \textit{testing} code for correctness
 against weak behaviors: a developer should be able to write a test that runs
 their application and then asserts for correct behavior. 
@@ -496,27 +516,11 @@ injection, or data replication.
 Rather, it works directly with a formalization of
 the given isolation level in order to compute allowed return values. 
 
-The theory behind MonkeyDB builds on the axiomatic definitions of isolation
-levels introduced by Biswas et al. \cite{DBLP:journals/pacmpl/BiswasE19}. These
-definitions use logical constraints (called \emph{axioms}) to characterize the
-set of executions of a key-value store that conform to a particular isolation
-level (we discuss SQL queries later). These constraints refer to a specific set of
-relations between events/transactions in an execution that describe control-flow
-or data-flow dependencies: a program order $\po$ between events in the same
-transaction, a session order $\so$ between transactions in the same session\footnote{A
-session is a sequential interface to the storage system. It corresponds to what
-is also called a connection.}, and a write-read $\wro$ (read-from) relation that
-associates each read event with a transaction that writes the value returned by
-the read. These relations along with the events (also called, operations) in an
-execution are called a \emph{history}. The history corresponding to the 
-shopping cart anomaly explained above is given on the bottom of Figure~\ref{fig:motiv}.
-Read operations include the read value, and boxes group events from the same transaction.
-%The initial value of the key is supposed to be written in a fictitious transaction. 
-A history describes only the
-interaction with the key-value store, omitting application side events (e.g., computing
-the value to be written to a key). 
-
-MonkeyDB implements a \emph{centralized} operational semantics for key-value stores, which is based on these axiomatic definitions. Transactions are executed \emph{serially}, one after another, the concurrency being simulated during the handling of read events.  
+MonkeyDB implements a \emph{centralized} operational semantics for key-value stores, 
+which is based on the axiomatic definitions of isolation (consistency)
+levels that we introduced while investigating the algorithmic questions described in Section~\ref{sec:intro:trans}. 
+Transactions are executed \emph{serially}, 
+one after another, the concurrency being simulated during the handling of read events.  
 This semantics maintains a history that contains all the past events (from all
 transactions/sessions), and write events are simply added to the history. The
 value returned by a read event is established based on a non-deterministic
@@ -545,6 +549,8 @@ being an issue in safety testing workloads which are usually small (see our eval
 
 We also extend our semantics to cover SQL queries as well, by compiling SQL queries down to transactions with multiple key-value reads/writes. A table in a relational database is represented using a set of primary key values (identifying uniquely the set of rows) and a set of keys, one for each cell in the table. The set of primary key values is represented using a set of Boolean key-value pairs that simulate its characteristic function (adding or removing an element corresponds to updating one of these keys to $\btrue$ or $\bfalse$). Then, SQL queries are compiled to read or write accesses to the keys representing a table. For instance, a $\mathtt{SELECT}$ query that retrieves the set of rows in a table that satisfy a $\mathtt{WHERE}$ condition is compiled to (1) reading Boolean keys to identify the primary key values of the rows contained in the table, (2) reading keys that represent columns used in the $\mathtt{WHERE}$ condition, and (3) reading all the keys that represent cells in a row satisfying the $\mathtt{WHERE}$ condition. This rewriting contains the minimal set of accesses to the cells of a table that are needed to ensure the conventional specification of SQL.
 It makes it possible to ``export'' formalizations of key-value store isolation levels to SQL transactions.
+
+We present an evaluation of MonkeyDB on several applications, showcasing its superior coverage of weak behaviors as well as bug-finding abilities.
 
 %Modern applications require not just data
 %reliability, but also high-throughput concurrent accesses. 
@@ -810,3 +816,8 @@ It makes it possible to ``export'' formalizations of key-value store isolation l
 %% (\sectref{micro}, \sectref{oltp}).\footnote{Source code of our benchmarks is available
 %% as supplementary material.}
 %% \end{itemize}
+
+\section{Thesis Outline}
+
+TODO
+

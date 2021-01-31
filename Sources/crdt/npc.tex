@@ -7,7 +7,18 @@ In this section, we demonstrate that checking the consistency is intractable for
 
 Our proofs of intractability follow the general structure of Gibbons and Korach’s proofs for the intractability of checking sequential consistency (SC) for atomic registers with read and write operations~\cite{DBLP:journals/siamcomp/GibbonsK97}. In particular, we reduce a specialized type of NP-hard propositional satisfiability (SAT) problem to checking whether histories are admitted by a given data type. While our construction borrows from Gibbons and Korach’s, the adaptation from SC to CRDT consistency requires a significant extension to handle the consistency relaxation represented by abstract executions: rather than a direct sequencing of threads’ operations, CRDT consistency requires the construction of three separate relations: read-from, happens-before, and linearization.
 
-Technically, our reductions start from the 1-in-3 SAT problem~\cite{DBLP:books/fm/GareyJ79}: given a propositional formula $\bigwedge_{i=1}^{m} (\alpha_i \lor \beta_i \lor \gamma_i)$ over variables $x_1, \ldots, x_n$ with only positive literals, i.e.,~$\alpha_i, \beta_i, \gamma_i \in \set{ x_1, \ldots, x_n }$, does there exist an assignment to the variables such that exactly one of $\alpha_i, \beta_i, \gamma_i$ per clause is assigned $\mathit{true}$? The proofs of Theorems~\ref{thm:3sat-to-flags} and~\ref{thm:3sat-to-counter} reduce 1-in-3 SAT to CRDT consistency checking.
+Technically, our reductions start from the 1-in-3 SAT problem~\cite{DBLP:books/fm/GareyJ79}: given a propositional formula $\bigwedge_{i=1}^{m} (\alpha_i \lor \beta_i \lor \gamma_i)$ over variables $x_1, \ldots, x_n$ with only positive literals, i.e.,~$\alpha_i, \beta_i, \gamma_i \in \set{ x_1, \ldots, x_n }$, does there exist an assignment to the variables such that exactly one of $\alpha_i, \beta_i, \gamma_i$ per clause is assigned $\mathit{true}$? 
+The proofs of Theorems~\ref{thm:3sat-to-flags} and~\ref{thm:3sat-to-counter} reduce 1-in-3 SAT to CRDT consistency checking.
+
+  \begin{figure}[t]
+    \centering
+    {\scriptsize\input{Sources/crdt/figures/3sat-to-flags}}
+         \vspace{-1mm}
+    \caption{The encoding of a 1-in-3 SAT problem $\bigwedge_{i=1}^{m} (\alpha_i \lor \beta_i \lor \gamma_i)$ over variables $x_1, \ldots, x_n$ as a 3-replica history of a flag data type. Besides the flag variable $x_j$ for each propositional variable $x_j$, the encoding adds per-replica variables $y_j$ for synchronization barriers.}
+    \label{fig:3sat-to-flags}
+    \vspace{-4mm}
+  \end{figure}
+
 
 \vspace{-1mm}
 \begin{theorem}
@@ -19,14 +30,9 @@ Technically, our reductions start from the 1-in-3 SAT problem~\cite{DBLP:books/f
 
 \begin{proof}
 
-  We demonstrate a reduction from the 1-in-3 SAT problem. For a given problem $p = \bigwedge_{i=1}^{m} (\alpha_i \lor \beta_i \lor \gamma_i)$ over variables $x_1, \ldots, x_n$, we construct a 3-replica history $h_p$ of the flag data type — either enable- or disable-wins — as illustrated in Figure~\ref{fig:3sat-to-flags}. The encoding includes a flag variable~$x_j$ for each propositional variable $x_j$, along with a per-replica flag variable $y_j$ used to implement synchronization barriers. Intuitively, executions of $h_p$ proceed in $m+1$ rounds: the first round corresponds to the assignment of a truth valuation, while subsequent rounds check the validity of each clause given the assignment. The reductions to sets and registers are slight variations on this proof, in which the \textrm{Read}, \textrm{Enable}, and \textrm{Disable} operations are replaced with \textrm{Contains}, \textrm{Add}, and \textrm{Remove}, respectively, and \textrm{Read} and \textrm{Writes} of values 1 and 0, respectively. Now it suffices to show that the constructed history $h_p$ is admitted if and only if the given problem $p$ is satisfiable.
+  We demonstrate a reduction from the 1-in-3 SAT problem. For a given problem $p = \bigwedge_{i=1}^{m} (\alpha_i \lor \beta_i \lor \gamma_i)$ over variables $x_1, \ldots, x_n$, we construct a 3-replica history $h_p$ of the flag data type — either enable- or disable-wins — as illustrated in Figure~\ref{fig:3sat-to-flags}. The encoding includes a flag variable~$x_j$ for each propositional variable $x_j$, along with a per-replica flag variable $y_j$ used to implement synchronization barriers. Intuitively, executions of $h_p$ proceed in $m+1$ rounds: the first round corresponds to the assignment of a truth valuation, while subsequent rounds check the validity of each clause given the assignment. The reductions to sets and registers are slight variations on this proof, in which the \textrm{Read}, \textrm{Enable}, and \textrm{Disable} operations are replaced with \textrm{Contains}, \textrm{Add}, and \textrm{Remove}, respectively, and \textrm{Read} and \textrm{Writes} of values 1 and 0, respectively. 
   
-  \begin{lemma}
-    \label{crdt:flag:npc-proof:lemma3}
-    $p = \bigwedge_{i=1}^{m} (\alpha_i \lor \beta_i \lor \gamma_i)$ is satisfied if and only if $h_p$ is admissible
-  \end{lemma}
-  
-  Since the flag data type does not constrain the linearization relation of its abstract executions, we regard only the read-from and happens-before components. The construction of $h_p$ ensures the happens-before relations of its abstract executions:
+It suffices to show that the constructed history $h_p$ is admitted if and only if the given problem $p$ is satisfiable (it is easy to see that the size of $h_p$ is linear in the size of $p$, and that $h_p$ can be computed in linear time). Since the flag data type does not constrain the linearization relation of its abstract executions, we regard only the read-from and happens-before components. The construction of $h_p$ ensures the happens-before relations of its abstract executions:
   \vspace{-1.5mm}
   \begin{enumerate}
 
@@ -39,76 +45,69 @@ Technically, our reductions start from the 1-in-3 SAT problem~\cite{DBLP:books/f
 
   In other words, replicas appear to execute atomically per round, in a round-robin fashion. Furthermore, since all operations in a given round happen before the operations of subsequent rounds, the values of flag variables are consistent across rounds — i.e.,~as read by the first replica to execute in a given round — and determined in the initial round either by conflict resolution — i.e.,~enable- or disable-wins — or by happens-before, in case of conflict resolution would have been inconsistent with subsequent reads.
 
-  \begin{figure}[t]
-    \centering
-    {\scriptsize\input{Sources/crdt/figures/3sat-to-flags}}
-         \vspace{-1mm}
-    \caption{The encoding of a 1-in-3 SAT problem $\bigwedge_{i=1}^{m} (\alpha_i \lor \beta_i \lor \gamma_i)$ over variables $x_1, \ldots, x_n$ as a 3-replica history of a flag data type. Besides the flag variable $x_j$ for each propositional variable $x_j$, the encoding adds per-replica variables $y_j$ for synchronization barriers.}
-    \label{fig:3sat-to-flags}
-    \vspace{-4mm}
-  \end{figure}
-
-
+The correctness of the construction is stated in the following lemma:
+  
+  \begin{lemma}
+    \label{crdt:flag:npc-proof:lemma3}
+    $p = \bigwedge_{i=1}^{m} (\alpha_i \lor \beta_i \lor \gamma_i)$ is satisfiable if and only if $h_p$ is admissible
+  \end{lemma}
+  
   \begin{proof}
-    Only-if direction.
-    When $\bigwedge_{i=1}^{1} (\alpha_i \lor \beta_i \lor \gamma_i)$ is satisfied, that means, there exists an assignment for which all the first clause have exactly one literal set to true. First for all, to assign the corresponding values to $x_i$, we construct the $\hb$ such way that if $x_i = false$ in the SAT formula, then we make $Enable(x_i)$ in Replica 0 visible to $Disable(x_i)$ in Replica 1, \ie $(Enable(x_i), Disable(x_i)) \in \hb$. This is make sure value of $x_i$ is $false$ after Barrier 1. Similarly we $(Disable(x_i), Enable(x_i)) \in \hb$ if $x_i = true$ in SAT formula. Note this does not introduce any cycle in $\hb$ because $x_i$s are \textrm{Enable}d and \textrm{Disable}d in same order in Replica 0 and Replica 1.
-
-    Now at barrier i, we add all the \textrm{Enable} happens-before all the \textrm{Read} in $\hb$. This also makes sure there is no cycle.
-
-    Now for each round i, if $\alpha_i$ is true in clause i, then we make the round i of replica 0 happen-before the round i of replica 1 in $\hb$, then the round i of replica 1 happens-before the round i of replica 2 in $\hb$. This makes the history admissible because at first $\alpha_1$ is true and $\beta_1$ and $\gamma_1$ are false. So the reads of round i in replica 0 go ahead. Then the updates of round i in replica 0 make $\alpha_1$ false and $\beta_1$ true. $\gamma_1$ stays false. So now, the reads of round i in replica 1 can go ahead. Similarly, the happens-before relation works between replica 1 and replica 2. So the sub-history till round i is admissible.
+    (Only-if direction). 
+    Assume that $\bigwedge_{i=1}^{1} (\alpha_i \lor \beta_i \lor \gamma_i)$ is satisfiable, i.e., there exists a variable assignment $\gamma$ for which each clause has exactly one literal interpreted as true. 
     
-    If $\beta_i$ is true then the happens-order between replicas are is 1, 2 then 0, and $\gamma_1$ is true, it is 2, 0, and then 1.
+    We construct a happens-before relation $\hb$ such that: (1) if $\gamma(x_i) = false$, then $Enable(x_i)$ in Replica 0 is visible to $Disable(x_i)$ in Replica 1, \ie $(Enable(x_i), Disable(x_i)) \in \hb$ (this ensures that the value of $x_i$ is $false$ after Barrier 1), and similarly, (2) if $\gamma(x_i) = true$, then $(Disable(x_i), Enable(x_i)) \in \hb$. Note this does not introduce any cycle in $\hb$ because $x_i$s are \textrm{Enable}d and \textrm{Disable}d in the same order in Replica 0 and Replica 1.
 
-    So we have a happens-before relation that admits each round and barrier, so the history is admissible.
-
-    Before we prove if-direction, we prove some lemmas for the properties of admissible history.
+    Then, for each barrier $i$, all the \textrm{Enable} operations happen-before all the \textrm{Read} operations. Also, for each round $i$, if $\alpha_i$ is true in clause $i$ (w.r.t. $\gamma$), then we make all the operations of the round $i$ at replica 0 happen-before operations of the round $i$ at replica 1, and all the operations of the round $i$ at replica 1 happen-before operations of the round $i$ at replica 2. This makes the history admissible because if $\alpha_1$ is true, then $\beta_1$ and $\gamma_1$ are false. So the reads of round $i$ at replica 0 are correct. Then the updates of round $i$ at replica 0 make $\alpha_1$ false and $\beta_1$ true ($\gamma_1$ remains false). So now, the reads of round $i$ at replica 1 are also correct. The same reasoning can be applied for the reads at replica 2. The cases $\beta_i$ true or $\gamma_i$ true lead to a similar definition of happens-before, ordering replicas in the order 1, 2, 0 if $\beta_i$ is true, and 2, 0, 1, if $\gamma_1$ is true. A straightforward proof by induction allows to prove that the history is admissible w.r.t. a happens-before relation defined in this manner.
+    
+    (If direction). Assume that $h_p$ is admissible. We give a series of lemmas that characterize the happens-before (read-from) relation of $h_p$.
 
   \begin{lemma}
     \label{crdt:flag:npc-proof:lemma1}
-    The \textrm{Read}s of each barrier reads from the \textrm{Enable}s or \textrm{Disable}s of the same barrier. 
+    The \textrm{Read}s of each barrier read from the \textrm{Enable}s or \textrm{Disable}s of the same barrier. 
   \end{lemma}
 
   \begin{proof}
-    We prove by induction on the number of each barrier.
-    Base case. $k = 1$. Note that only replica $i$ \textrm{Enable}s or \textrm{Disable}s $y_i$. At barrier 1, if the $\mathrm{Read}(y_j) = true$ at replica $i$ is read from a barrier other than 1, then it must have read from barrier 3 at least. Because $y_j$ is set to true at odd numbered barriers. Now at barrier 2 and replica j, $\mathrm{Read}(y_i) = false$ reads from a \textrm{Disable} because replica j has $\mathrm{Read}(y_i) = true$ at barrier 1. So at barrier 2 and replica j, $\mathrm{Read}(y_i) = false$ can read from a \textrm{Disable} which is at even numbered barriers, atleast from barrier 2.
+    We give a proof by induction on the number of the barrier.
     
-    So we found a cycle in happens-before order. $\mathrm{Enable}(y_j)$ at barrier $\geq3$ and replica $j$ happens-before $\mathrm{Read}(y_j) = true$ at barrier 1 and replica $i$ because of read-from. Then $\mathrm{Read}(y_j) = true$ at barrier 1 and replica $i$ happens-before $\mathrm{Disable}(y_i)$ at barrier $\geq2$ and replica $i$. Then $\mathrm{Disable}(y_i)$ at barrier $\geq2$ and replica $i$ happens-before $\mathrm{Read}(y_i) = false$ at barrier 2 and replica $j$ because of read-form. Then$\mathrm{Read}(y_i) = false$ at barrier 2 and replica $j$ happens-before $\mathrm{Enable}(y_j)$ at barrier $\geq3$ and replica $j$.
+    \noindent
+    (Base case). Note that only replica $i$ \textrm{Enable}s or \textrm{Disable}s $y_i$. Assume by contradiction that at barrier 1, $\mathrm{Read}(y_j) = true$ at replica $i$ reads from an operation in a barrier other than 1. Then, it must read from an operation of barrier 3 at least ($y_j$ is set to true at odd numbered barriers). Now at barrier 2 and replica j, $\mathrm{Read}(y_i) = false$ reads from a \textrm{Disable} because replica j has $\mathrm{Read}(y_i) = true$ at barrier 1. So at barrier 2 and replica j, $\mathrm{Read}(y_i) = false$ can read from a \textrm{Disable} which is at even numbered barriers, at least from barrier 2. This defines a cycle in the happens-before order, which contradicts the admissibility of $h_p$: 
+    \begin{itemize}
+    	\item $\mathrm{Enable}(y_j)$ at barrier $\geq3$ and replica $j$ happens-before $\mathrm{Read}(y_j) = true$ at barrier 1 and replica $i$ because of read-from, 
+	\item $\mathrm{Read}(y_j) = true$ at barrier 1 and replica $i$ happens-before $\mathrm{Disable}(y_i)$ at barrier $\geq2$ and replica $i$,
+	\item $\mathrm{Disable}(y_i)$ at barrier $\geq2$ and replica $i$ happens-before $\mathrm{Read}(y_i) = false$ at barrier 2 and replica $j$ because of read-form, and 
+	\item $\mathrm{Read}(y_i) = false$ at barrier 2 and replica $j$ happens-before $\mathrm{Enable}(y_j)$ at barrier $\geq3$ and replica $j$.
+   \end{itemize}
     
-    Inductive step. By the induction hypothesis, barrier $k$ always reads from barrier $k$ itself. Now at $\mathrm{Read}(y_j)$ of barrier $(k+1)$, the history is visible up to the write of $y_j$ from barrier $k$. Without loss of generality, let's assume, barrier $k$ writes $false$ value. Since barrier $k$ writes $true$, the $false$ reads of barrier $(k+1)$ must read from a barrier strictly greater than $k$. Using the same logic from the base case, we can find a cycle in the happens-before relation. The argument stays similar when barrier $k$ writes $true$ value.
+    \noindent
+    (Induction step). By the induction hypothesis, barrier $k$ always reads from barrier $k$ itself. Therefore, $\mathrm{Read}(y_j)$ of barrier $(k+1)$ happens after the update of $y_j$ from barrier $k$. Without loss of generality, let us assume that barrier $k$ contains \textrm{Enable} operations. Since barrier $k$ contains  \textrm{Enable} operations, the $false$ reads in barrier $(k+1)$ must read from a barrier strictly greater than $k$. Using the same logic from the base case, this would imply a cycle in the happens-before relation. 
   \end{proof}
 
-Lemma \ref{crdt:flag:npc-proof:lemma1} ensures, all the operations from all replicas before barrier i are visible to each replica after barrier i.
+Lemma \ref{crdt:flag:npc-proof:lemma1} ensures that all the operations from all replicas before barrier $i$ happen before every operation (from any replica) after barrier $i$.
 
-  Two \textrm{Read} operations \emph{see the same value of $x_i$} when one \textrm{Read} reads-from a $\mathrm{Enable}(x_i)$ if and only if the other \textrm{Read} also reads-from a $\mathrm{Enable}(x_i)$. But these two \textrm{Enable} operations may not be the same.
+We say that two \textrm{Read} operations \emph{see the same value of $x_i$} when one \textrm{Read} reads-from an $\mathrm{Enable}(x_i)$ if and only if the other \textrm{Read} also reads-from an $\mathrm{Enable}(x_i)$ (these \textrm{Enable} operations may not be the same). Also, a read in a round $k$ is called \emph{initial} if it does not happen before an \textrm{Enable} or \textrm{Disable} from the same round.
 
   \begin{lemma}
     \label{crdt:flag:npc-proof:lemma2}
-    $\hb$-minimal \textrm{Read}s of two consecutive rounds see the same values of $x_i$.
+    Initial \textrm{Read}s of two consecutive rounds see the same value of $x_i$, for each $i$.
   \end{lemma}
 
   \begin{proof}
-    We will show at each round$_{\geq 1}$, the operations from each replica happen in total order, that too one replica after another. Explicitly, for some some replica $i$, its operations happen first, then the operations from replica $(i+1) \bmod 2$ happen, then the operations from replica $(i+2) \bmod 2$ happen. 
+  Note that the \textrm{Read}s from each round read only from updates from the same round or from preceding rounds. Reading from any later round is not possible, because, by Lemma~\ref{crdt:flag:npc-proof:lemma1},  that will introduce a happen-before cycle between the current round and that later round. Also, in each round, there exist one replica which does not read-from other replicas in the same round. If replica $p$ is reading from replica $q$, then replica $q$ again can not read from replica $p$, because it will create a cycle in $\hb$ between replica $p$ and $q$ in the same round. So replica $q$ has to read from replica $r$. But then replica $r$ will have to read from replica $p$, which creates a cycle between replica $p$, $q$, and $r$ in the same round.
 
-    First of all, any $\hb$-minimal \textrm{Read} of each round sees exactly the same values of $x_i$ till last round because of lemma \ref{crdt:flag:npc-proof:lemma1}. Also, the \textrm{Read}s from each round read only from updates from the same round or the rounds from before. Reading from any later round is not possible, because that will introduce a cycle between the current round and that later round in $\hb$ because of lemma \ref{crdt:flag:npc-proof:lemma1}.
+    So there exists one replica, which reads-from updates till last round. Since the \textrm{Read}s of that replica are successful, it ensures only one of $\alpha_k, \beta_k, \gamma_k$ are true \ie only one of those \textrm{Read}s reads-from an \textrm{Enable}. Hence, the first true \textrm{Read}s at other replicas must read-from the updates in the same round. Therefore, all the operations from a round $k \geq 1$ are totally ordered w.r.t. the happens-before, all operations in one replica before all operations in another.  That is, if replica 0 was the first one to finish its reads, $\mathrm{Read}(\beta_k) = true$ reads-from $\mathrm{Enable}(\beta_k)$ and $\mathrm{Read}(\gamma_k) = true$ reads-from $\mathrm{Enable}(\gamma_k)$. Since the updates are totally ordered and they only flip the read values of $x_i$ twice, \ie if the first read on $x_i$ is $false$, then it does not read-from any \textrm{Enable} till round $(k-1)$ and at round $k$, after $\mathrm{Read}(x_i) = false$, $\mathrm{Enable}(x_i)$ and $\mathrm{Disable}(x_i)$ are ordered by $\hb$. So the $\hb$-maximal update on $x_i$ on round $k$ stays $\mathrm{Disable}(x_i)$. Similarly we can show, the $\hb$-maximal update on $x_i$ on round $k$ stays $\mathrm{Enable}(x_i)$ when the first $\mathrm{Read}(x_i)$ was true.
 
-    Also, in each round, there exist one replica which does not read-from other replicas in the same round. If replica $p$ is reading from replica $q$, then replica $q$ again can not read from replica $p$, cause it will create a cycle in $\hb$ between replica $p$ and $q$ in the same round. So replica $q$ has to read from replica $r$. But then replica $r$ will have to read from replica $p$, which creates a cycle between replica $p$, $q$, and $r$ in the same round.
-
-    So there exists one replica, which reads-from the updates till last round. Since the \textrm{Read}s of that are successful, it ensures only one of $\alpha_k, \beta_k, \gamma_k$ are true \ie only one of those \textrm{Read}s reads-from a \textrm{Enable}. Hence, the first true \textrm{Read}s at other replicas must read-from the updates at the same round. That totally orders the operations of one round. That is, if replica 0 was the first one to finish its reads, $\mathrm{Read}(\beta_k) = true$ read-from $\mathrm{Enable}(\beta_k)$ and $\mathrm{Read}(\gamma_k) = true$ read-from $\mathrm{Enable}(\gamma_k)$. Since the updates are totally ordered and they only flips the read values of $x_i$ twice, \ie if the first read on $x_i$ is $false$, then it does not read-from any \textrm{Enable} till round $(k-1)$ and at round $k$, after $\mathrm{Read}(x_i) = false$, $\mathrm{Enable}(x_i)$ and $\mathrm{Disable}(x_i)$ happen in $\hb$. So the $\hb$-maximal update on $x_i$ on round $k$ stays $\mathrm{Disable}(x_i)$. Similarly we can show, the $\hb$-maximal update on $x_i$ on round $k$ stays $\mathrm{Enable}(x_i)$ when the first $\mathrm{Read}(x_i)$ was true.
-
-    When round $(k+1)$ begins, because of lemma \ref{crdt:flag:npc-proof:lemma1}, it sees all the updates at the end of round $k$, which includes the updates from earlier rounds.
-    
+    When round $(k+1)$ begins, because of Lemma~\ref{crdt:flag:npc-proof:lemma1}, it ``sees'' all the updates at the end of round $k$, which includes the updates from earlier rounds.
     \begin{itemize}
       \item If $x_i$ is not modified in round $k$, then round $(k+1)$ will read-from from the same update for $x_i$ as round $k$.
       \item If $x_i$ is modified in round $k$, any $\hb$-maximal $\mathrm{Read}(x_i)$ at round $(k+1)$ will read-form $\hb$-maximal updates at round $k$ by lemma \ref{crdt:flag:npc-proof:lemma1}. And, the $\hb$-maximal update on $x_i$ at the end of round $k$ stays the same as the update which round $k$ read-form at the beginning. 
     \end{itemize}
   \end{proof}
 
-  Now we go back to our main lemma \ref{crdt:flag:npc-proof:lemma3}. We use the same assignment of $x_i$s at the first \textrm{Read}s of each round (they are the same by lemma \ref{crdt:flag:npc-proof:lemma2}) for the SAT formula.
-
-  Now we show that the assignment satisfies the 1-in-3 SAT formula. Suppose, there is a clause $i$ which does not have exactly one positive literal. If we look at round $i$, there is a replica that happens-before the other replicas. The \textrm{Read}s of that replica sees the same $x_i$ assignment as the SAT assignment, yet they see exactly one true value. Which contradicts our assumption that the assignment makes clause $i$ unsatisfied.
+  Going back to the proof of Lemma \ref{crdt:flag:npc-proof:lemma3}, $p$ is satisfiable using an assignment defined by the initial \textrm{Read}s of each round (which see the same values by Lemma~\ref{crdt:flag:npc-proof:lemma2}). This assignment satisfies the 1-in-3 SAT formula $p$ because at each round, there is a replica that happens-before operations in the same round at the other replicas, and the \textrm{Read}s of that replica see exactly one flag as true.
 \end{proof}
 
-We proved that this reduction from an NP-complete problem to our admissibility works. It is very easy to the size of the history is linear in the size of the formula and can be computed in linear time. The theorem \ref{thm:3sat-to-flags} is proved.
+%We proved that this reduction from an NP-complete problem to our admissibility works. It is very easy to the size of the history is linear in the size of the formula and can be computed in linear time. The theorem \ref{thm:3sat-to-flags} is proved.
 
 %   In the “if” direction, let $\vec{r} \in \set{0,1,2}^m$ be the positions of positively-assigned variables in each clause, e.g.,~$r_i = 0$ implies $\alpha_i = \mathit{true}$ and $\beta_i = \gamma_i = \mathit{false}$. We construct an abstract execution $e_{\vec{r}}$ in which the happens-before relation sequences the operations of replica~$r_i$ before those of $r_i + 1 \bmod 3$, and in turn before $r_i + 2 \bmod 3$. In other words, the replicas in round $i$ appear to execute in left-to-right order from starting with the replica~$r_i$, whose reads correspond to the satisfying assignment of $(\alpha_i \lor \beta_i \lor \gamma_i)$. The read-from relation of $e_{\vec{r}}$ relates each $\mathrm{Read}(x_j) = \mathit{true}$ operation to the most recent $\mathrm{Enable}(x_j)$ operation in happens-before order, which is unique since happens-before sequences the operations of all rounds; the case for $\mathrm{Read}(x_j) = \mathit{false}$ and $\mathrm{Disable}(x_j)$ is symmetric. It is then straightforward to verify that $e_{\vec{r}}$ satisfies the axioms of the enable- or disable-wins flag, and thus $h_p$ is admitted.
 
@@ -128,7 +127,7 @@ We proved that this reduction from an NP-complete problem to our admissibility w
 
 Theorem~\ref{thm:3sat-to-flags} establishes intractability of consistency for the aforementioned sets, flags, and registers, independently from the number of replicas. In contrast, our proof of Theorem~\ref{thm:3sat-to-counter} for counter data types depends on the number of replicas, since our encoding requires two replicas per propositional variable. Intuitively, since counter increments and decrements are commutative, the initial round in the previous encoding would have fixed all counter values to zero. Instead, the next encoding isolates initial increments and decrements to independent replicas.
 % Todo:
-The weaker result is indeed tight since checking counter consistency with a fixed number of replicas is polynomial time, as Section~\ref{sec:counter} demonstrates.
+%The weaker result is indeed tight since checking counter consistency with a fixed number of replicas is polynomial time, as Section~\ref{sec:counter} demonstrates.
 
 \vspace{-1mm}
 \begin{theorem}
