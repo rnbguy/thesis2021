@@ -79,25 +79,28 @@ Technically, our reductions start from the 1-in-3 SAT problem~\cite{DBLP:books/f
 
 Lemma \ref{crdt:flag:npc-proof:lemma1} ensures, all the operations from all replicas before barrier i are visible to each replica after barrier i.
 
-  Two \textrm{Read} operations \emph{see the same value of $x_i$} when one reads-from a resolved $\mathrm{Enable}(x_i)$(or $\mathrm{Disable}(x_i)$) if and only if the other one also reads-from a resolved $\mathrm{Enable}(x_i)$(or $\mathrm{Disable}(x_i)$). But these two \textrm{Enable}(or \textrm{Disable}) operations may not be the same.
+  Two \textrm{Read} operations \emph{see the same value of $x_i$} when one \textrm{Read} reads-from a $\mathrm{Enable}(x_i)$ if and only if the other \textrm{Read} also reads-from a $\mathrm{Enable}(x_i)$. But these two \textrm{Enable} operations may not be the same.
 
   \begin{lemma}
     \label{crdt:flag:npc-proof:lemma2}
-    $\hb$-minimal \textrm{Read}s of each round$_{\geq1}$ sees the same values of $x_i$.
+    $\hb$-minimal \textrm{Read}s of two consecutive rounds see the same values of $x_i$.
   \end{lemma}
 
   \begin{proof}
-    We prove by induction on the number of rounds. But there is no base case. We will just show that at the round $(k+1)$ the maximally first \textrm{Read}s sees the same assignments as the maximally first \textrm{Read}s of round $k$.
+    We will show at each round$_{\geq 1}$, the operations from each replica happen in total order, that too one replica after another. Explicitly, for some some replica $i$, its operations happen first, then the operations from replica $(i+1) \bmod 2$ happen, then the operations from replica $(i+2) \bmod 2$ happen. 
 
-    We will show at each round, the operations from each replica happen in total order, that too one replica after another. Explicitly, for some some replica $i$, its operations happen first, then the operations from replica $(i+1) \bmod 2$ happen, then the operations from replica $(i+2) \bmod 2$ happen. 
+    First of all, any $\hb$-minimal \textrm{Read} of each round sees exactly the same values of $x_i$ till last round because of lemma \ref{crdt:flag:npc-proof:lemma1}. Also, the \textrm{Read}s from each round read only from updates from the same round or the rounds from before. Reading from any later round is not possible, because that will introduce a cycle between the current round and that later round in $\hb$ because of lemma \ref{crdt:flag:npc-proof:lemma1}.
 
-    First of all, any the $\hb$-minimal \textrm{Read} of each round sees exactly the same resolved values of $x_i$ till last round because of lemma \ref{crdt:flag:npc-proof:lemma1}. Also, the \textrm{Read}s from each round are only reading from updates from the same round or any round from before. Reading from any later round is not possible, because that will introduce a cycle between the current round and that later round in $\hb$ because of lemma \ref{crdt:flag:npc-proof:lemma1}.
+    Also, in each round, there exist one replica which does not read-from other replicas in the same round. If replica $p$ is reading from replica $q$, then replica $q$ again can not read from replica $p$, cause it will create a cycle in $\hb$ between replica $p$ and $q$ in the same round. So replica $q$ has to read from replica $r$. But then replica $r$ will have to read from replica $p$, which creates a cycle between replica $p$, $q$, and $r$ in the same round.
 
-    Also, in each round, there exist one replica which does not read from other replicas in the same round. If replica $p$ is reading from replica $q$, then replica $q$ again can not read from replica $p$, cause it will create a cycle in $\hb$ between replica $p$ and $q$ in the same round. So replica $q$ has to read from replica $r$. But then replica $r$ will have to read from replica $p$, which creates a cycle between replica $p$, $q$, and $r$ in the same round.
+    So there exists one replica, which reads-from the updates till last round. Since the \textrm{Read}s of that are successful, it ensures only one of $\alpha_k, \beta_k, \gamma_k$ are true \ie only one of those \textrm{Read}s reads-from a \textrm{Enable}. Hence, the first true \textrm{Read}s at other replicas must read-from the updates at the same round. That totally orders the operations of one round. That is, if replica 0 was the first one to finish its reads, $\mathrm{Read}(\beta_k) = true$ read-from $\mathrm{Enable}(\beta_k)$ and $\mathrm{Read}(\gamma_k) = true$ read-from $\mathrm{Enable}(\gamma_k)$. Since the updates are totally ordered and they only flips the read values of $x_i$ twice, \ie if the first read on $x_i$ is $false$, then it does not read-from any \textrm{Enable} till round $(k-1)$ and at round $k$, after $\mathrm{Read}(x_i) = false$, $\mathrm{Enable}(x_i)$ and $\mathrm{Disable}(x_i)$ happen in $\hb$. So the $\hb$-maximal update on $x_i$ on round $k$ stays $\mathrm{Disable}(x_i)$. Similarly we can show, the $\hb$-maximal update on $x_i$ on round $k$ stays $\mathrm{Enable}(x_i)$ when the first $\mathrm{Read}(x_i)$ was true.
 
-    So there exists one replica, which reads the resolved values till last round. Since the \textrm{Read}s of that are successful, it ensures only one of $\alpha_k, \beta_k, \gamma_k$ are true. Hence, the first true \textrm{Read}s at other replicas must read-from the updates at the same round. That totally orders the operations of one round. That is, if replica 0 was the first one to finish its reads, $\mathrm{Read}(\beta_k) = true$ read-from $\mathrm{Enable}(\beta_k)$ and $\mathrm{Read}(\gamma_k) = true$ read-from $\mathrm{Enable}(\gamma_k)$. Since the updates are totally ordered and they only flips the read values of $x_i$ twice, \ie if the first read on $x_i$ is $false$, then the resolved update on $x_i$ till round $(k-1)$ was \textrm{Disable} and at round $k$, after $\mathrm{Read}(x_i) = false$, $\mathrm{Enable}(x_i)$ and $\mathrm{Disable}(x_i)$ happen and they are ordered in $\hb$. The same argument holds when the first read on $x_i$ was $true$. 
-
-    When round $(k+1)$ begins, because of lemma \ref{crdt:flag:npc-proof:lemma1}, it sees the resolved updates at the end of round $k$. So at $\hb$-minimal \textrm{Read}s of round $k$, if the resolved update on $x_i$ was \textrm{Enable}(or \textrm{Disable}), at $\hb$-minimal \textrm{Read}s of round $(k+1)$, the resolved update for $x_i$ stays \textrm{Enable}(or \textrm{Disable}) also.
+    When round $(k+1)$ begins, because of lemma \ref{crdt:flag:npc-proof:lemma1}, it sees all the updates at the end of round $k$, which includes the updates from earlier rounds.
+    
+    \begin{itemize}
+      \item If $x_i$ is not modified in round $k$, then round $(k+1)$ will read-from from the same update for $x_i$ as round $k$.
+      \item If $x_i$ is modified in round $k$, any $\hb$-maximal $\mathrm{Read}(x_i)$ at round $(k+1)$ will read-form $\hb$-maximal updates at round $k$ by lemma \ref{crdt:flag:npc-proof:lemma1}. And, the $\hb$-maximal update on $x_i$ at the end of round $k$ stays the same as the update which round $k$ read-form at the beginning. 
+    \end{itemize}
   \end{proof}
 
   Now we go back to our main lemma \ref{crdt:flag:npc-proof:lemma3}. We use the same assignment of $x_i$s at the first \textrm{Read}s of each round (they are the same by lemma \ref{crdt:flag:npc-proof:lemma2}) for the SAT formula.

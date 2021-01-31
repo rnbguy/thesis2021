@@ -1,0 +1,24 @@
+%!TEX root = ../../Thesis.tex
+
+
+Even though we describe the Serializability checking algorithm theoretically in subsection \ref{ssec:ser_checking} and showed the reductions for Prefix Consistency in subsection \label{ssec:pc} and Snapshot Isolation in subsection \label{ssec:si}, we should discuss about our actual implementations before discussing our experimental results.
+
+After processing the history, we maintain $\so$, $\wro_{x}$ as relations in hashmaps for faster access. For relation set related operations, we implemented optimized algorithms for this hashmaps such as computing transitivity on the fly, checking inclusion, finding cycles. 
+
+\subsection{Implementation for Serializability}\label{ssec:imp-ser}
+We follow our algorithm \ref{seralgo:2} to implement this. The main difference to the pseudo-code is to reduce the storage complexity while doing the DFS search (demonstrated in figure \ref{ser_algo_example:3}), we maintain a state of the search in an optimized data structure. This data structure includes the sequence of choices till that point and the active variables $x$ which has a active $\wro_{x}$ between a \textsf{Write} inside of current serializable prefix and a \textsf{Read} outside of the prefix.
+
+TODO: example
+
+When we add a new transaction in the serializable prefix, we add it to the sequence of choices and update the active variable set.
+
+When we backtrack, we read our history and remove the last choice of transaction and read the history and restore the previous active variable set.
+
+
+\subsection{Implementation for Prefix Consistency}\label{ssec:imp-pc}
+
+Even though we have a reduction for Prefix Consistency to Serializability, we implement a direct algorithm for it. We perform the reduction on the fly. We implement our serializable algorithm on a \emph{virtual} history where the a splited transaction $T$ is denoted by $(T, Read)$ and $(T, Write)$. 
+
+\subsection{Implementation for Snapshot Isolation}\label{ssec:imp-si}
+
+The algorithm for Snapshot Isolation is implemented similarly as Prefix Consistency. A splited transaction $T$ is denoted by $(T, Read)$ and $(T, Write)$. But two transactions those write on same variable, their split transactions can not interleave. So $\vartriangleright$ also checks if a $(T, Read)$ is includes, there is no $T'$ in the serializable prefix such that $T$ and $T'$ do not write on same variable.
