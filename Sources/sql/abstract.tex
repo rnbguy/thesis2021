@@ -10,7 +10,7 @@ occur rarely in practice, that too outside the control of the application,
 making it difficult for developers to test the robustness of their 
 code against weak isolation levels. 
 
-This paper presents MonkeyDB, a mock storage system for testing storage-backed
+This work presents MonkeyDB, a mock storage system for testing storage-backed
 applications. MonkeyDB supports a Key-Value interface as well as SQL queries
 under multiple isolation levels. It uses a logical specification of the isolation
 level to compute, on a read operation, the set of all possible return values.

@@ -361,7 +361,7 @@ is NP-complete.
 
 \section{Checking Consistency of Bounded-Width Histories}\label{sec:bounded_width}
 
-% Given a history it takes polynomial time to check for \textsc{Int} and \textsf{Ext}. Transactions, in a read atomic consistent history, can be assumed to read and write each variable at max once - just take the first read and last write of each variable. So for the rest of the paper, we will assume this.
+% Given a history it takes polynomial time to check for \textsc{Int} and \textsf{Ext}. Transactions, in a read atomic consistent history, can be assumed to read and write each variable at max once - just take the first read and last write of each variable. So for the rest of the work, we will assume this.
 
 In this section, we show that checking prefix consistency, snapshot isolation, and serializability becomes polynomial time under the assumption that the \emph{width} of the given history, i.e., the maximum number of mutually-unordered transactions w.r.t. the session order, is bounded by a fixed constant. If we consider the standard case where the session order is a union of transaction sequences (modulo the fictitious transaction writing the initial values), i.e., a set of sessions, then the width of the history is the number of sessions. We start by presenting an algorithm for checking serializability that is polynomial time when the width is bounded by a fixed constant. In general, the asymptotic complexity of this algorithm is exponential in the width of the history, but this worst-case behavior is not exercised in practice as shown in Section~\ref{sec:exp}. Then, we prove that checking prefix consistency and snapshot isolation can be reduced in polynomial time to the problem of checking serializability. 
 
@@ -809,7 +809,7 @@ Given a graph $\mathsf{G}(\hist,\co)$ and a relation~$r$ on its vertices, a term
 %%& \Gamma(\CO^+) = \CO^+ & \Gamma((\wro \cup \so)^+) = (\wro \cup \so)^+ \\
 %%& \Gamma(\CO^*;(\wro\cup\so))=\CO^*;(\wro\cup\so) & \Gamma(\CO^*;\CO_{\mathit{wc}})=\CO^*;(\CO_{\mathit{wc}} \cup \so)
 %\end{align*}
-%where $\CO_{\mathit{wc}}$ denotes the restriction of $\CO$ to pairs of transactions writing to a common variable. Note that $\Gamma$ contains the terms used in Figure~\ref{consistency_defs} to define the consistency criteria we consider in this paper.
+%where $\CO_{\mathit{wc}}$ denotes the restriction of $\CO$ to pairs of transactions writing to a common variable. Note that $\Gamma$ contains the terms used in Figure~\ref{consistency_defs} to define the consistency criteria we consider in this thesis.
 %($\Gamma$ is the identity except for the case on the bottom-right). 
 
 %To prove any violation for whole history for PC, SI and SER implies a violation contained in a biconnected component, first we show any path from a set $P_l$ between $\tr_2$ and $\tr_3$ from table~\ref{consistency_defs} can be mapped to a shorter path from a set $P_s$ which is contained in one single biconnected component. We present the mapping in table~\ref{path_map}. For convenience, we define write conflict relation $\CO_{wc} = \{\tup{\tr_1, \tr_2} \in \CO | \tr_1, \tr_2 \text{ write on same variable} \}$.

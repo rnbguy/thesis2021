@@ -1,4 +1,4 @@
-%!TEX root = Thesis.tex
+%!TEX root = ../../Thesis.tex
 
 \section{A Logical Characterization of Replicated Data Types}
 \label{sec:consistency}
@@ -35,7 +35,7 @@ To characterize the set of histories $\hist=\tup{\Op, \RO}$ admitted by a certai
   \item a strict total \emph{linearization} order $\lin$, which includes $\hb$, used to model conflict resolution policies based on timestamps.
 \end{itemize}
 \vspace{-1mm}
-In this work, we consider replicated data types which satisfy \emph{causal consistency}~\cite{DBLP:journals/cacm/Lamport78}, i.e., updates which are related by cause and effect relations are observed by all replicas in the same order. This follows from the fact that the happens-before order is constrained to be a partial order, and thus transitive (other forms of weak consistency don't pose this constraint). Some of the replicated data types we consider in this paper do \emph{not} consider resolution policies based on timestamps and in those cases, the linearization order can be ignored.
+In this work, we consider replicated data types which satisfy \emph{causal consistency}~\cite{DBLP:journals/cacm/Lamport78}, i.e., updates which are related by cause and effect relations are observed by all replicas in the same order. This follows from the fact that the happens-before order is constrained to be a partial order, and thus transitive (other forms of weak consistency don't pose this constraint). Some of the replicated data types we consider in this work do \emph{not} consider resolution policies based on timestamps and in those cases, the linearization order can be ignored.
 
 A \emph{replicated data type} is defined by a set of first-order axioms $\Phi$ characterizing the relations in an abstract execution. 
 A history $\hist$ is \emph{admitted} by a data type when there exists an abstract execution $\exec$ such that $\tup{\hist,\exec}\models\Phi$. The satisfaction relation $\models$ is defined as usual in first order logic. The \emph{admissibility problem} is the problem of checking whether a history $\hist$ is admitted by a given data type.
