@@ -77,15 +77,13 @@ A client, i.e. a program issuing calls to a data type instance, connects to any 
 
 %When network delays are big and network partition is an issue, \emph{eventual consistency} promises better performance and availability. An update gets executed at some replica but it may be sent to other replicas later as a delayed synchronization. Although updates eventually reaches to all replicas, these updates may be seen concurrently, even in different orders, by different replicas. If these concurrent updates are \emph{conflicting}, they need to be resolved. This is not trivial because the resolved outcome need to be the \emph{same} in all replicas such that the replicas do not diverge.
 
-TODO REPLACE READ WITH TWO CONTAINS
-
 \begin{figure}
 % \resizebox{\textwidth}{!}{
 \centering
 \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,semithick, transform shape]
 
-\draw (0, 0) -- (10, 0);
-\draw (0, 2.5) -- (10, 2.5);
+\draw (0, 0) -- (11, 0);
+\draw (0, 2.5) -- (11, 2.5);
 
 \node[label=left:{$r_2$}] at (0, 0) {};
 \node[label=left:{$r_1$}] at (0, 2.5) {};
@@ -93,12 +91,14 @@ TODO REPLACE READ WITH TWO CONTAINS
 \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{add(a)}}](r21) at (.5, 0) {};
 \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{add(b)}}](r22) at (2, 0) {};
 \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{remove(a)}}](r23) at (5, 0) {};
-\node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{read()=\{a,b\}}}] at (9, 0) {};
+\node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{contain(a)=true}}] at (9, 0) {};
+\node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{contain(b)=true}}] at (10.5, 0) {};
 
 \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{add(b)}}](r11) at (.5, 2.5) {};
 \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{add(a)}}](r12) at (2, 2.5) {};
 \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{remove(b)}}](r13) at (5, 2.5) {};
-\node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{read()=\{a,b\}}}] at (9, 2.5) {};
+\node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{contain(b)=true}}] at (9, 2.5) {};
+\node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{contain(a)=true}}] at (10.5, 2.5) {};
 
 \node[label=above:{\texttt{\{a\}}}] at (1, 0) {};
 \node[label=above:{\texttt{\{a,b\}}}] at (2.5, 0) {};
@@ -819,5 +819,12 @@ We present an evaluation of MonkeyDB on several applications, showcasing its sup
 
 \section{Thesis Outline}
 
-TODO
+The main essence of this thesis is \emph{weak consistency} of distributed systems. We studied the unexplored problems about \emph{consistency} from three general domains - Conflict-Free Replicated Data Types, Transactional Systems and Applications implemented on top of transactional datastores.
 
+\begin{itemize}
+  \item First we explore various Conflict-Free Replicated Data Types (CRDTs) and their formal characterizations. Then we study the asymptotic complexities of checking a given history for these CRDTs. Although in general the problems remains in NP-complete, we are able to give polynomial time algorithms for practical real world constraints, such as bounded number of replicas, using different values at each writes.
+  \item Then, we explore the transactional systems. We study various isolation levels for these systems offering difference level of weak guarantees and their formal characterizations. We study the asymptotic complexities of checking conformance of a given transactional history to an isolation level. We prove, for weaker isolation levels, such as Causal Consistency, these complexities are polynomial time. But for stronger isolation levels, such as Snapshot Isolation, they are NP-complete. But we provide polynomial time algorithm when these histories has bounded number of sessions.
+  \item Next we look at the testing coverage problem of distributed applications built with transactional datastores. We implement \tool{} based on our previous work for transactional system. \tool{} transforms the high level database queries or calls to low level transactional key-value store operations. Then, using the characterizations for transactional systems for a given isolation level, it simulates possible cases probabilistically and give a better test coverages than current state of the art testing setups(such as Jepsen) to find any existing bugs in few runs. We run tests on some popular benchmarks including OLTPBench to show it outperforms other existing tools.
+\end{itemize}
+
+We continue with each topic in next chapters.

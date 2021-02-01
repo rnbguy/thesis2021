@@ -2,30 +2,19 @@
 
 This dissertation introduces some previously unexplored open problems in the distributed domains. In general, many of the weak consistencies and data types are not formally characterized. The state of the art testing frameworks are still using ad-hoc setup and network manipulation without giving proper testing coverage. We provide formal characterizations for these systems and come up with algorithms which are able to provide sound and complete testing and provide better coverage.
 
-\section{Conflict-Free Replicated Data types}
-
 At first, we provide formal characterizations for conflict free replicated data types. The characterizations enable us to reason about the admissibility of the histories of these data types corresponding to their weaker consistencies. We further explore the asymptotic complexities of the checking admissibility of these histories. We prove intractability and tractability results for these data types.
+
+Then, we move on to transactional systems with reads and writes. We explore different levels of weak consistencies for transactional systems. We propose novel characterizations for these weak consistencies over transactional systems. Using these characterizations we study the asymptotic complexities of checking these consistencies for transactional histories. We prove intractability and tractability results for these weak consistencies. But at the end, we show these intractable cases are tractable if we bound the number of sessions in the histories. We further extend this idea on a graph replicas where the bi-connected components are bounded.
+
+Having these two previous results, we explore if we can use our characterizations to test distributed applications built on top of some distributed systems. Usually these tests are done on real databases relying on artificial network manipulation. Since these systems are optimized for corner cases, it is very very hard to find the bugs due to corner cases. So these unit tests do not give good coverage. We presented \tool{}, which models different weak consistency levels using our characterizations. \tool{} simulates a consistency keeping track of a global history and making uniform choices which satisfies the characterization axioms. This drastically improves the test coverage, and we imperically show \tool{} were very quick to violate invariants in popular OLTP benchmarks.
 
 \subsection{Future Work}
 
 The general problem of checking admissible problems for Flags, Set still remains open. We provide a sound algorithm which runs in polynomial-time.
 
-
-\section{Transactional Systems}
-
-Then, we move on to transactional systems with reads and writes. We explore different levels of weak consistencies for transactional systems. We propose novel characterizations for these weak consistencies over transactional systems. Using these characterizations we study the asymptotic complexities of checking these consistencies for transactional histories. We prove intractability and tractability results for these weak consistencies. But at the end, we show these intractable cases are tractable if we bound the number of sessions in the histories. We further extend this idea on a graph replicas where the bi-connected components are bounded.
-
-\subsection{Future Work}
-
 We provide a complete framework to test transactional systems. The possible next work would be find root causes for inconsistent history. Sometimes, the bugs are not visible in small number of sessions. Our tests on AntidoteDB exposed a bug when the number of sessions is 42. When the number of history is too big, it is natural to ask the smallest sub-history which violates the consistency. Although it is straightforward to see how one would give a solution to this problem, but for a efficient and online algorithm we keep this problem for future.
 
 Next we can try to extend our algorithm to an online one. For now, we run the algorithm offline \ie we run the system and log the history at first, then run our algorithm. This is enough for unit tests, but in production, someone would want to run an auditor like tool to make sure the consistency of these systems are maintained all the time. Also, when an inconsistency is detected how to detect the root cause of the inconsistency bug and recover from it. 
-
-\section{Applications Using Transactional Systems}
-
-Having these two previous results, we explore if we can use our characterizations to test distributed applications built on top of some distributed systems. Usually these tests are done on real databases relying on artificial network manipulation. Since these systems are optimized for corner cases, it is very very hard to find the bugs due to corner cases. So these unit tests do not give good coverage. We presented \tool{}, which models different weak consistency levels using our characterizations. \tool{} simulates a consistency keeping track of a global history and making uniform choices which satisfies the characterization axioms. This drastically improves the test coverage, and we imperically show \tool{} were very quick to violate invariants in popular OLTP benchmarks.
-
-\subsection{Future Work}
 
 One of the problem that developers come across often is to write good sets of invariants for unit tests. We provide a formal characterizations for weak consistencies.
 
