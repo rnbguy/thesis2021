@@ -1,5 +1,5 @@
-%!TEX root = Thesis.tex
+%!TEX root = ../../Thesis.tex
 \section{Conclusion}
 \label{sec:crdt:conclusion}
 
-By developing novel logical characterizations of replicated data types, reductions from propositional satisfiability checking, and tractable algorithms, we have established a frontier of tractability for checking consistency of replicated data types. As far as we are aware, our results are the first to characterize the asymptotic complexity consistency checking for CRDTs.
+In this chapter, we studied various CRDTs, namely Counter, Set, Flag, Registers, Growing Array. We provide novel formal characterizations of these replicated date types. This enables us to reason about the checking conformance of the histories of these replicated data types to their corresponding consistency model. We study the asymptotic complexities of the problem for the CRDTs that we consider. We provide polynomial time algorithms for Growing Array and Registers (when the read-from relation is known). For other data types, we prove NP-completeness result showing a polynomial time reduction from a NP-complete problem. Later we provide sound polynomial time algorithms for Counters, Set, Flag when the number of replicas and/or elements are bounded by fixed constant. Since the provided algorithms are not complete, the actual asymptotic complexities of these cases remain unknown.
