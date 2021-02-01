@@ -43,7 +43,7 @@ When the number of replicas is fixed, the number of prefix maps becomes polynomi
 % \end{corollary}
 
 \paragraph{Incompleteness.}
-As a correction of our previous work~\cite{DBLP:conf/cav/BiswasEE19}, we show that Algorithm~\ref{countercrdtalgo:main} is actually \emph{incomplete}, i.e., it may return false while the history is admissible. The history of a replicated counter in Figure~\ref{correction:fig1} is a counterexample to completeness. This history admits a single read-from relation as witness of admissibility, which is given by the edges in the figure. $[\mathrm{Inc}(a)]_{r_1}$ must propagate after $[\mathrm{Read}(a) = 2]_{r_2}$ and before $[\mathrm{Read}(a) = 3]_{r_2}$. To simulate this propagation, the algorithm must reach a prefix map which had $[\mathrm{Inc}(a)]_{r_1}$ and $[\mathrm{Read}(a) = 2]_{r_2}$ as the $\ro$-maximal operations from each replica. Symmetrically, the same argument holds when $[\mathrm{Inc}(a)]_{r_2}$ needs to propagate after $[\mathrm{Read}(a) = 2]_{r_1}$ and before $[\mathrm{Read}(a) = 3]_{r_1}$. So the algorithm must reach another prefix map which had $[\mathrm{Inc}(a)]_{r_2}$ and $[\mathrm{Read}(a) = 2]_{r_1}$ as the $\ro$-maximal operations from each replica. 
+As a correction of our previous work~\cite{DBLP:conf/cav/BiswasEE19}, we show that Algorithm~\ref{countercrdtalgo:main} is actually \emph{incomplete}, i.e., it may return false while the history is admissible. The history of a replicated counter in Figure~\ref{correction:fig1} is a counterexample to completeness. This history admits a single read-from relation as witness of admissibility, which is given by the edges in the figure. $[\mathrm{inc}(a)]_{r_1}$ must propagate after $[\mathrm{read}(a) = 2]_{r_2}$ and before $[\mathrm{read}(a) = 3]_{r_2}$. To simulate this propagation, the algorithm must reach a prefix map which had $[\mathrm{inc}(a)]_{r_1}$ and $[\mathrm{read}(a) = 2]_{r_2}$ as the $\ro$-maximal operations from each replica. Symmetrically, the same argument holds when $[\mathrm{inc}(a)]_{r_2}$ needs to propagate after $[\mathrm{read}(a) = 2]_{r_1}$ and before $[\mathrm{read}(a) = 3]_{r_1}$. So the algorithm must reach another prefix map which had $[\mathrm{inc}(a)]_{r_2}$ and $[\mathrm{read}(a) = 2]_{r_1}$ as the $\ro$-maximal operations from each replica. 
 
 
 \begin{figure}
@@ -58,15 +58,15 @@ As a correction of our previous work~\cite{DBLP:conf/cav/BiswasEE19}, we show th
   \node[label=left:{$r_2$}] at (0, 0) {};
   \node[label=left:{$r_1$}] at (0, 1.5) {};
   
-  \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Inc(a)}}](r21) at (.5, 0) {};
-  \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Inc(a)}}](r22) at (1.5, 0) {};
-  \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Read(a) = 2}}](r23) at (3, 0) {};
-  \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Read(a) = 3}}](r24) at (5, 0) {};
+  \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{inc(a)}}](r21) at (.5, 0) {};
+  \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{inc(a)}}](r22) at (1.5, 0) {};
+  \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{read(a) = 2}}](r23) at (3, 0) {};
+  \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{read(a) = 3}}](r24) at (5, 0) {};
   
-  \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Inc(a)}}](r11) at (.5, 1.5) {};
-  \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Inc(a)}}](r12) at (1.5, 1.5) {};
-  \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Read(a) = 2}}](r13) at (3, 1.5) {};
-  \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Read(a) = 3}}](r14) at (5, 1.5) {};
+  \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{inc(a)}}](r11) at (.5, 1.5) {};
+  \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{inc(a)}}](r12) at (1.5, 1.5) {};
+  \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{read(a) = 2}}](r13) at (3, 1.5) {};
+  \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{read(a) = 3}}](r14) at (5, 1.5) {};
   
   \draw (r11) edge[out=-90,in=90] (4.8, 0);
   \draw (r21) edge[out=90,in=-90] (4.8, 1.5);
@@ -86,25 +86,25 @@ As a correction of our previous work~\cite{DBLP:conf/cav/BiswasEE19}, we show th
       \node[label=left:{$r_2$}] at (0, 0) {};
       \node[label=left:{$r_1$}] at (0, 1.5) {};
       
-      \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Add(a)}}](r21) at (.5, 0) {};
-      \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Contain(b) = $\bot$}}](r23) at (2.5, 0) {};
-      \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Contain(b) = $\top$}}](r24) at (5, 0) {};
+      \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{add(a)}}](r21) at (.5, 0) {};
+      \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{contains(b) = false}}](r23) at (2.5, 0) {};
+      \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{contains(b) = true}}](r24) at (5, 0) {};
       
-      \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Add(b)}}](r11) at (.5, 1.5) {};
-      \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Contain(a) = $\bot$}}](r13) at (2.5, 1.5) {};
-      \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Contain(a) = $\top$}}](r14) at (5, 1.5) {};
+      \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{add(b)}}](r11) at (.5, 1.5) {};
+      \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{contains(a) = false}}](r13) at (2.5, 1.5) {};
+      \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{contains(a) = true}}](r14) at (5, 1.5) {};
       
       \draw (r11) edge[out=-90,in=90] (4.8, 0);
       \draw (r21) edge[out=90,in=-90] (4.8, 1.5);
       
       \end{tikzpicture}  
-      \caption{An admissible execution of replicated Add-Wins set which will not be explored by algorithm proposed in subsection \ref{sec:ptime:sets}}
+    \caption{An admissible execution of replicated Add-Wins set for which Algorithm \ref{orsetcrdtalgo:main} returns false.}
       \label{correction:fig2}
   \end{minipage}
   \end{figure}
 
-Since the algorithm always extends the maintained prefix map \ie when successful, the sequence of valid extensions from the empty prefix map are always related by inclusion. But these two prefix-maps are  \emph{not} related by inclusion. So no sequence of extensions of empty prefix map will see both of them together, and the algorithm will return $\mathit{false}$ because at least one of the $\mathrm{Read}(a) = 3$ from one replica will be unsuccessful. 
+Since the algorithm always extends the maintained prefix map \ie when successful, the sequence of valid extensions from the empty prefix map are always related by inclusion. But these two prefix-maps are  \emph{not} related by inclusion. So no sequence of extensions of empty prefix map will see both of them together, and the algorithm will return $\mathit{false}$ because at least one of the $\mathrm{read}(a) = 3$ from one replica will be unsuccessful. 
 
-To construct $\hb$ incrementally, we would need to propagate a partial $\hb$ at arbitrary future operations at each replica. Naively, this requires maintaining a prefix map at each \textrm{Read} operation which is not included in current prefix map. Although the number of possible prefix maps is polynomially bounded for a given history with a bounded number of replicas, maintaining $n$ prefix maps at each \textrm{Read} where $n$ is linear in the size of the history, creates exponentially many possible states to explore. The asymptotic complexity of checking admissibility for a Counter history with a bounded number of replicas remains an open question.
+To construct $\hb$ incrementally, we would need to propagate a partial $\hb$ at arbitrary future operations at each replica. Naively, this requires maintaining a prefix map at each \textrm{read} operation which is not included in current prefix map. Although the number of possible prefix maps is polynomially bounded for a given history with a bounded number of replicas, maintaining $n$ prefix maps at each \textrm{read} where $n$ is linear in the size of the history, creates exponentially many possible states to explore. The asymptotic complexity of checking admissibility for a Counter history with a bounded number of replicas remains an open question.
 
 % For instance, given the history in Figure~\ref{ser_algo_example:1}, the set of transactions $\{\op_0,\op_1,\op_2\}$ is a prefix with boundary $\{\op_1,\op_2\}$ (the latter is an antichain of the session order).
