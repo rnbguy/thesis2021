@@ -46,7 +46,7 @@ write-read relations and a partial session order (as discussed in \sectref{def})
 On a {\tt read()}, MonkeyDB first collects a set of possible writes present in transaction log 
 that can potentially form write-read (read-from) relationships, and then 
 invokes the consistency checker (Figure~\ref{fig:block_dia}) to confirm
-validity under the chosen isolation level.
+validity under the chosen consistency model.
 Finally, it randomly returns one of the values associated with valid writes.
 A user can optionally instruct MonkeyDB to only select
 from the set of \textit{latest} valid write per session. This option helps limit weak behaviors

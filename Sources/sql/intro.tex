@@ -292,7 +292,7 @@ This semantics maintains a history that contains all the past events (from all
 transactions/sessions), and write events are simply added to the history. The
 value returned by a read event is established based on a non-deterministic
 choice of a write-read dependency (concerning this read event) that satisfies
-the axioms of the considered isolation level.
+the axioms of the considered consistency models.
 %(MonkeyDB resolves any non-determinism in a random fashion). 
 Depending on the weakness of the isolation
 level, this makes it possible to return values written in arbitrarily ``old''
@@ -301,7 +301,7 @@ transactions, and simulate any concurrent behavior.
 We formally prove that this semantics does indeed simulate any concurrent behavior, by 
 showing that it is equivalent to a semantics where transactions are allowed to interleave.
 In comparison with concrete implementations, this semantics makes it possible to handle 
-a wide range of isolation levels in a uniform way. It only has two sources of
+a wide range of consistency models in a uniform way. It only has two sources of
 non-determinism: 
 the order in which entire transactions are submitted, and the choice of write-read dependencies in read 
 events. This enable better coverage of possible behaviors, the penalty in performance not
@@ -310,7 +310,7 @@ being an issue in safety testing workloads which are usually small (see our eval
 We also extend our semantics to cover SQL queries as well, by compiling SQL queries down to transactions 
 with multiple key-value reads/writes. A table in a relational database is represented using a set of primary key values 
 (identifying uniquely the set of rows) and a set of keys, one for each cell in the table. The set of primary key values is represented using a set of Boolean key-value pairs that simulate its characteristic function (adding or removing an element corresponds to updating one of these keys to $\btrue$ or $\bfalse$). Then, SQL queries are compiled to read or write accesses to the keys representing a table. For instance, a $\mathtt{SELECT}$ query that retrieves the set of rows in a table that satisfy a $\mathtt{WHERE}$ condition is compiled to (1) reading Boolean keys to identify the primary key values of the rows contained in the table, (2) reading keys that represent columns used in the $\mathtt{WHERE}$ condition, and (3) reading all the keys that represent cells in a row satisfying the $\mathtt{WHERE}$ condition. This rewriting contains the minimal set of accesses to the cells of a table that are needed to ensure the conventional specification of SQL.
-It makes it possible to ``export'' formalizations of key-value store isolation levels to SQL transactions.
+It makes it possible to ``export'' formalizations of key-value store consistency models to SQL transactions.
 
 %This paper first presents an axiomatic semantics for various isolation levels 
 %in Key-Value stores that allows one to reason about the set of valid behaviors
@@ -330,7 +330,7 @@ The remainder of this chapter is organized as follows:
 \begin{itemize}
 \item Section~\ref{sec:app:prog_lang} presents a programming language to represent storage-backed applications,
 \item Section~\ref{sec:op-kv} defines an operational semantics for key-value stores under various
-  isolation levels, which simulates all concurrent behaviors with executions
+  consistency models, which simulates all concurrent behaviors with executions
   where transactions execute serially and which is based 
   on the axiomatic definitions in Section~\ref{sec:def},
 \item Section~\ref{sec:SQL-to-KV} broadens the scope of the key-value store semantics to SQL transactions

@@ -1,4 +1,4 @@
-%!TEX root = Thesis.tex
+%!TEX root = ../Thesis.tex
 
 \begin{center}
   \textsc{Abstract}
@@ -63,35 +63,12 @@
 % variety of applications for assertions that fail only under weak isolation.
 % MonkeyDB is able to break each of those assertions in a small number of attempts. 
 
-Recent distributed systems have introduced various abstract concepts like 
-\emph{conflict-free replicated data types} (CRDTs), transaction, weak consistency and
-isolation level.
+Recent distributed systems have introduced various abstract concepts like \emph{conflict-free replicated data types} (CRDTs), transaction, weak consistency models or isolation level.
 
-CRDTs like counters, registers, flags, and sets provide high availability
-and partition tolerance. They utilize nontrivial mechanisms to resolve the effects of
-concurrent updates to replicated data. Naturally, these objects weaken their 
-consistency guarantees to achieve availability and partition-tolerance, and 
-various notions of \emph{weak consistency} capture those guarantees.
+CRDTs like counters, registers, flags, and sets provide high availability and partition tolerance. They utilize nontrivial mechanisms to resolve the effects of concurrent updates to replicated data. Naturally, these objects weaken their consistency guarantees to achieve availability and partition-tolerance, and various notions of \emph{weak consistency} capture those guarantees.
 
-Transactions simplify concurrent programming by enabling computations on shared data
-that are isolated from other concurrent computations and resilient to failures.
-Modern databases provide different consistency models or isolation levels for transactions 
-corresponding to different tradeoffs between consistency and availability.
+Transactions simplify concurrent programming by enabling computations on shared data that are isolated from other concurrent computations and resilient to failures. Modern databases provide different consistency models or isolation levels for transactions corresponding to different tradeoffs between consistency and availability.
 
-This thesis studies the tractability of CRDT-consistency checking and transactional 
-database checking for an insolation level. In both cases, to capture guarantees precisely,
-and facilitate symbolic reasoning, we propose novel logical characterizations.
-By developing novel reductions from propositional satisfiability problems, and novel
-consistency-checking algorithms, we discover both positive and negative results. We also 
-demonstrate that tractability for hard cases can be redeemed if some parameter is bounded,
-usually the number of sessions or replicas in the network.
+This thesis studies the tractability of checking conformance of CRDT and transactional systems for various consistency models. In both cases, to capture guarantees precisely, and facilitate symbolic reasoning, we propose novel logical characterizations. By developing novel reductions from propositional satisfiability problems, and novel consistency-checking algorithms, we discover both positive and negative results. We also demonstrate that tractability for hard cases can be redeemed if some parameter is bounded, usually the number of sessions or replicas in the network.
 
-Lastly, this thesis presents MonkeyDB. a mock storage system for testing storage-backed
-applications. MonkeyDB supports a Key-Value interface as well as SQL queries
-under multiple isolation levels. It uses a logical specification of the isolation
-level to compute, on a read operation, the set of all possible return values.
-MonkeyDB then returns a value randomly from this set. 
-We show that MonkeyDB provides 
-good coverage of weak behaviors, which is complete in the limit. We test a
-variety of applications for assertions that fail only under weak isolation.
-MonkeyDB can break each of those assertions in a small number of attempts. 
+Lastly, we present \tool{}, an in-memory mock storage system for testing applications based on distributed datastores. It uses a logical specification of that to compute, on a read operation, the set of all possible return values. \tool{} then returns a value randomly from this set. \tool{} supports a Key-Value interface as well as SQL queries under multiple consistency model. We show that \tool{} provides good coverage of weak behaviors, which is complete in the limit. We test a variety of applications for assertions that fail only under weak isolation. \tool{} can break each of those assertions in a small number of attempts. 

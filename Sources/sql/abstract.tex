@@ -3,16 +3,16 @@
 Modern applications, such as social networking systems and e-commerce platforms
 are centered around using large-scale storage systems for storing and retrieving
 data. In the presence of concurrent accesses, these storage systems trade-off isolation
-for performance. The weaker the isolation level, the more behaviors a storage
+for performance. The weaker the consistency model, the more behaviors a storage
 system is allowed to exhibit and it is up to the developer to ensure that their
 application can tolerate those behaviors. However, these weak behaviors only
 occur rarely in practice, that too outside the control of the application, 
 making it difficult for developers to test the robustness of their 
-code against weak isolation levels. 
+code against weak consistency models. 
 
 This work presents MonkeyDB, a mock storage system for testing storage-backed
 applications. MonkeyDB supports a Key-Value interface as well as SQL queries
-under multiple isolation levels. It uses a logical specification of the isolation
+under multiple consistency models. It uses a logical specification of the isolation
 level to compute, on a read operation, the set of all possible return values.
 MonkeyDB then returns a value randomly from this set. 
 We show that MonkeyDB provides 

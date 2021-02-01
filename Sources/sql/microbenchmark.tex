@@ -38,14 +38,14 @@ and the timeline of any particular user.
 %always returned sorted to the user, by time.
 
 A user can access twitter from multiple clients (sessions), which could lead to
-unexpected behavior under weak isolation levels. 
+unexpected behavior under weak consistency models. 
 Consider the following scenario with two users, $A$ and $B$ where user $A$ is accessing twitter from two
 different sessions, $S_1$ and $S_2$. User $A$ views the timeline of user $B$
 from one session (\texttt{$S_1$:Timeline($B$)}) and decides to follow $B$
 through another session (\texttt{$S_2$:Follow($A$, $B$)}). Now when user $A$
 visits their timeline or newsfeed (\texttt{$S_2$:NewsFeed($A$)}), they expect to
 see all the tweets of $B$ that were visible via \texttt{Timeline} in session $S_1$. But
-under weak isolation levels, this does not always hold true and there could
+under weak consistency models, this does not always hold true and there could
 be missing tweets. 
 
 \begin{figure}
@@ -92,7 +92,7 @@ NewsFeed(user u) {
 This application allows a user to add,
 remove and change quantity of items from different sessions. It also allows the
 user to view all items present in the shopping cart. The pseudo code and
-an unexpected behavior under weak isolation levels were discussed in
+an unexpected behavior under weak consistency models were discussed in
 \sectref{app:intro}, \figref{motiv}.
 
 \vspace{-2mm}	
@@ -283,7 +283,7 @@ Note that any program that concurrently executes operations against a store has
 two main sources of non-determinism: the first is the interleaving of operations
 (i.e., the order in which operations are submitted to the store) and second is
 the choice of read-from (i.e., the value returned by the store under its
-configured isolation level). MonkeyDB only controls the latter; it is up to the
+configured consistency model). MonkeyDB only controls the latter; it is up to the
 application to control the former. There are many tools that systematically enumerate
 interleavings (such as \textsc{Chess} \cite{DBLP:conf/pldi/MusuvathiQ08},
 \textsc{Coyote} \cite{coyote-web}), but we use a simple trick
@@ -297,7 +297,7 @@ to enumerate all sources of non-determinism, interleavings as well as
 read-from, in order to explore the entire state space of a
 test. We use this to compute the total number of states. \figref{micro_dfs}
 shows the number of distinct 
-states observed under different isolation levels, averaged across multiple ($50$) test
+states observed under different consistency models, averaged across multiple ($50$) test
 harnesses. For each of serializability and causal consistency, we show the max
 (as computed by \textsc{Coyote}) and versions with and without the delay option
 in MonkeyDB. 

@@ -37,7 +37,7 @@ behavior is due to a bug in OLTPBench that we have reported to the authors (link
 ommitted).} 
 %We use \tool{} to test their
 %validity under causal consistency and read committed isolation levels. 
-When using weaker isolation, we configured MonkeyDB to use latest reads only
+When using weaker isolation, we configured \tool{} to use latest reads only
 (\sectref{impl}) for the assertion-checking transactions 
 in order to isolate the weak behavior to only the application. 
 
@@ -129,7 +129,7 @@ Figure~\ref{fig:tpcc} %and Figure~\ref{fig:tpcc-rc}
 shows the percentage of test runs in which an assertion failed. 
 %Figure~\ref{fig:tpcc-rc} 
 It shows that all the twelve assertions are violated under
-Read~Committed isolation level. In fact, $9$ out of the $12$ 
+Read~Committed consistency model. In fact, $9$ out of the $12$ 
 assertions are violated in more than 60\% of the test runs.
 In case of causal, %(Figure~\ref{fig:tpcc}), 
 all assertions are violated
@@ -185,7 +185,7 @@ transactions in the same time limit, yet is unable to violate most assertions.
 Prior work \cite{DBLP:journals/pacmpl/RahmaniNDJ19} attempted a more sophisticated test
 setup where TPC-C was executed on a Cassandra cluster, while running 
 Jepsen~\cite{jepsen} for fault injection. This setup also was unable to violate 
-all assertions, even when running without transactions, and on a weaker isolation level than read committed. 
+all assertions, even when running without transactions, and on a weaker consistency model than read committed. 
 Only six assertions were violated with 10 sessions, 
 eight assertions with 50 sessions, and ten assertions with 100 sessions.
 With \tool{}, there is no need to set up a cluster, use fault injection or
@@ -230,7 +230,7 @@ are consistent (A15-A17).
 As before, we consider small work loads: (1) five customers for SmallBank, (2) one user for Voter, and (3) two pages and two users for Wikipedia.  
 
 Figure~\ref{fig:rest} shows the results. 
-\tool{} detected that all the assertions are invalid under the chosen isolation levels.
+\tool{} detected that all the assertions are invalid under the chosen consistency models.
 Under causal, \tool{} could break an assertion in 26.7\% (geo-mean) runs given 2 sessions and in 37.2\% (geo-mean) runs given 3 sessions.
 Under read committed, the corresponding numbers are 56.1\% and 65.4\% for 2 and
 3 sessions, respectively.

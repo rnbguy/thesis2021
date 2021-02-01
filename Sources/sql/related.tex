@@ -7,9 +7,9 @@
 
 There have been several directions of work addressing the correctness of database-backed applications. 
 We directly build upon one line of work concerned with the logical formalization
-of isolation levels 
+of consistency models or isolation levels 
 \cite{ansi,DBLP:conf/icde/AdyaLO00,DBLP:conf/sigmod/BerensonBGMOO95,DBLP:conf/concur/Cerone0G15,DBLP:journals/pacmpl/BiswasE19}.
-Our work relies on the axiomatic definitions of isolation levels, as given
+Our work relies on the axiomatic definitions of consistency models or isolation levels, as given
 in~\cite{DBLP:journals/pacmpl/BiswasE19}, which also investigated
 the problem of checking whether a given history satisfies a certain isolation
 level. Our kv-store implementation relies on these algorithms 
@@ -22,7 +22,7 @@ behaviors that are not possible under serializability. This is typically done
 via a static analysis of the application code that builds a static dependency graph that
 over-approximates the data dependencies in all possible
 executions of the application~\cite{DBLP:journals/jacm/CeroneG18,DBLP:journals/jacm/CeroneG18,DBLP:conf/concur/0002G16,DBLP:journals/tods/FeketeLOOS05,DBLP:conf/vldb/JorwekarFRS07,DBLP:conf/sigmod/WarszawskiB17,DBLP:journals/pvldb/GanRRB020}.
-Anomalies with respect to a given isolation level then corresponds to a
+Anomalies with respect to a given consistency model then corresponds to a
 particular class of cycles in this graph. Static dependency graphs turn out to
 be highly imprecise in representing feasible executions, leading to false
 positives. Another source of false positives is that an anomaly might not be a
@@ -34,7 +34,7 @@ e.g.~\cite{DBLP:conf/popl/BrutschyD0V17,DBLP:conf/pldi/BrutschyD0V18} or
 by using user-guided heuristics~\cite{DBLP:journals/pvldb/GanRRB020}. 
 
 Another approach consists of modeling the application
-logic and the isolation level in first-order logic and relying on SMT solvers to
+logic and the consistency model in first-order logic and relying on SMT solvers to
 search for anomalies~\cite{DBLP:journals/pacmpl/KakiESJ18,DBLP:conf/concur/NagarJ18,burcu-netys},
 or defining specialized reductions to assertion
 checking~\cite{DBLP:conf/concur/BeillahiBE19,DBLP:conf/cav/BeillahiBE19}.
