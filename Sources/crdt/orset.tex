@@ -3,9 +3,9 @@
 \subsection{Sets and Flags}
 \label{sec:ptime:sets}
 
-While Theorem~\ref{thm:3sat-to-flags} shows that the admissibility problem is NP-complete for replicated sets and flags even if the number of replicas is fixed, we propose a sound algorithm like replicated counter which runs in polynomial time when additionally, the number of values added to the set, or the number of flags, is also fixed. Note that this doesn't limit the number of operations in the input history which can still be arbitrarily large. In the following, we focus on the Add-Wins Set, the other cases being very similar.
+While Theorem~\ref{thm:3sat-to-flags} shows that the admissibility problem is NP-complete for replicated sets and flags even if the number of replicas is fixed, we propose a sound algorithm which runs in polynomial time when additionally, the number of values added to the set, or the number of flags, is also fixed. Note that this doesn't limit the number of operations in the input history which can still be arbitrarily large. In the following, we focus on the Add-Wins Set, the other cases being very similar.
 
-The algorithm for checking consistency which is actually an extension of the one presented in Section~\ref{sec:counter} for replicated counters.
+The algorithm for checking consistency is actually an extension of the one presented in Section~\ref{sec:counter} for replicated counters.
 %In this section, we show that checking consistency for the replicated OR-Set datatype becomes polynomial time assuming the number of replicas and number of values added in the set in the input history is fixed (i.e. the width of the replica order $\RO$ is fixed and total number of values added in the set is fixed). We present a similar algorithm to replicated Counter where we constructs a happens-before order incrementally by progressing a replica or merging a replica to another.
 The additional complexity in checking consistency for the Add-Wins Set comes from the validity of {\sf contains}($x$) return values which requires identifying the maximal predecessors in the happens-before relation that add or remove $x$ (which are not necessarily the maximal $\hb$-predecessors all-together). In the case of counters, it was enough just to count happens-before predecessors.
 %We use the similar notations from Counter CRDT. But the extra work here is, while verifying that an extension of the happens-before is valid, i.e., the return values of newly-added {\sf read} operations satisfy the {\sc RetvalSet} axiom, it depends on the maximal {\sf add} and {\sf remove} operations in that prefix.
@@ -24,7 +24,7 @@ Algorithm~\ref{orsetcrdtalgo:main} lists our algorithm for checking consistency 
   \SetKwInOut{KwInput}{Input}
   \SetKwInOut{KwOutput}{Output}
   \KwIn{A history $\hist = (\Op, \ro)$, a prefix map $m$, a read-from map $u$, and a set $\mathit{seen}$ of invalid prefix map and read-from map pairs.}
-  \KwOut{$\mathit{true}$ iff there exists a read-from relation $\rf$ and a happens-before order $\hb$ such that $m\subseteq \hb$, $\tup{m,u}\subseteq \rf$, and $\tup{\hist,\rf,\hb}$ satisfies the replicated Add-Wins Set axioms.}
+  \KwOut{$\mathit{false}$ if there exists no read-from relation $\rf$ and happens-before order $\hb$ such that $m\subseteq \hb$, $\tup{m,u}\subseteq \rf$, and $\tup{\hist,\rf,\hb}$ satisfies the replicated Add-Wins Set axioms.}
   \BlankLine
   \If{$m$ is complete}{
    \Return{true}\;
@@ -76,8 +76,8 @@ The following theorem states the correctness of the algorithm.
 When the number of replicas and elements are fixed, the number of read-from maps is polynomial in the size of the history — recall that the number of operations associated by a read-from map to a replica and set element is bounded by the number of replicas. Since the possible number of prefix-map and read-from map is polynomial when the number of replicas and elements are fixed, the algorithm \ref{orsetcrdtalgo:main} terminates after exploring polynomially many states. Since the each step of the recursion happens in polynomial time, the algorithm always run in polynomial time in the size of the history when the number of replicas and elements are fixed. 
 
 % Theorem~\ref{thm:ptime:sets} in Section~\ref{sec:ptime:sets} follows from this result, so long as the number of replicas and set/flag elements are fixed.
-
-To show incompleteness of the algorithm \ref{orsetcrdtalgo:main}, we present a history of a replicated Add-Wins Set in figure \ref{correction:fig2} which will not be explored by this algorithm. The argument is very similar as the one for replicated counter (figure \ref{correction:fig1}).
+\paragraph{Incompleteness.} This algorithm can be shown to be incomplete in a way similar to the Counter case. This corrects a statement we have made in our previous work~\cite{DBLP:conf/cav/BiswasEE19}. The history of Add-Wins Set in Figure \ref{correction:fig2} is admissible while Algorithm~\ref{orsetcrdtalgo:main} returns $\mathit{false}$. The explanations are similar to the Counter example in Figure~\ref{correction:fig1}.
+%To show incompleteness of the algorithm \ref{orsetcrdtalgo:main}, we present a history of a replicated Add-Wins Set in figure \ref{correction:fig2} which will not be explored by this algorithm. The argument is very similar as the one for replicated counter (figure \ref{correction:fig1}).
 
 % \vspace{-.5mm}
 % \begin{theorem}

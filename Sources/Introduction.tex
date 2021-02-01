@@ -91,14 +91,14 @@ A client, i.e. a program issuing calls to a data type instance, connects to any 
 \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{add(a)}}](r21) at (.5, 0) {};
 \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{add(b)}}](r22) at (2, 0) {};
 \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{remove(a)}}](r23) at (5, 0) {};
-\node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{contain(a)=true}}] at (9, 0) {};
-\node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{contain(b)=true}}] at (10.5, 0) {};
+\node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{contains(a)=true}}] at (9, 0) {};
+\node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{contains(b)=true}}] at (10.5, 0) {};
 
 \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{add(b)}}](r11) at (.5, 2.5) {};
 \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{add(a)}}](r12) at (2, 2.5) {};
 \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{remove(b)}}](r13) at (5, 2.5) {};
-\node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{contain(b)=true}}] at (9, 2.5) {};
-\node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{contain(a)=true}}] at (10.5, 2.5) {};
+\node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{contains(b)=true}}] at (9, 2.5) {};
+\node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{contains(a)=true}}] at (10.5, 2.5) {};
 
 \node[label=above:{\texttt{\{a\}}}] at (1, 0) {};
 \node[label=above:{\texttt{\{a,b\}}}] at (2.5, 0) {};
@@ -361,7 +361,7 @@ system} to refer to any such database system/service.
 Providing high-throughput processing, unfortunately, comes at an unavoidable cost of weakening 
 the guarantees offered to users.
 Concurrently-connected clients may end up observing different views of the same data. 
-These ``anomalies'' can be prevented by using a strong \textit{isolation (consistency) level}  
+These ``anomalies'' can be prevented by using a strong \textit{consistency model}  
 such as \textit{serializability}, which essentially offers a single view of the
 data. However, since serializability requires expensive synchronization and incurs a high performance cost, 
 most storage systems use weaker consistency models, such as RC, CC, or SI. 
@@ -518,8 +518,8 @@ Rather, it works directly with a formalization of
 the given consistency model in order to compute allowed return values. 
 
 MonkeyDB implements a \emph{centralized} operational semantics for key-value stores, 
-which is based on the axiomatic definitions of isolation (consistency)
-levels that we introduced while investigating the algorithmic questions described in Section~\ref{sec:intro:trans}. 
+which is based on the axiomatic definitions of consistency
+models that we introduced while investigating the algorithmic questions described in Section~\ref{sec:intro:trans}. 
 Transactions are executed \emph{serially}, 
 one after another, the concurrency being simulated during the handling of read events.  
 This semantics maintains a history that contains all the past events (from all
@@ -528,8 +528,7 @@ value returned by a read event is established based on a non-deterministic
 choice of a write-read dependency (concerning this read event) that satisfies
 the axioms of the considered consistency model.
 %(MonkeyDB resolves any non-determinism in a random fashion). 
-Depending on the weakness of the isolation
-level, this makes it possible to return values written in arbitrarily ``old''
+Depending on the weakness of the consistency model, this makes it possible to return values written in arbitrarily ``old''
 transactions, and simulate any concurrent behavior. For instance, the history in Figure~\ref{fig:motiv}
 can be obtained by executing \texttt{AddItem}, \texttt{DeleteItem}, and then the two reads (serially).
 The read in \texttt{DeleteItem} can take its value from the initial state and ``ignore'' the
@@ -820,12 +819,20 @@ We present an evaluation of MonkeyDB on several applications, showcasing its sup
 
 \section{Thesis Outline}
 
-\emph{Weak consistency} concerning distributed datastores and applications remains the central topic of this dissertation. As discussed before, we studied the unexplored problems concerning \emph{weak consistency} from three domains - Conflict-Free Replicated Data Types, Transactional Systems and Applications implemented on top of transactional datastores. The remaining of this dissertation goes as following,
+%\emph{Weak consistency} concerning distributed datastores and applications remains the central topic of this dissertation. As discussed before, we studied the unexplored problems concerning \emph{weak consistency} from three domains - Conflict-Free Replicated Data Types, Transactional Systems and Applications implemented on top of transactional datastores. The remaining of this dissertation goes as following,
 
+The rest of this dissertation is organized as follows:
 \begin{itemize}
-  \item First in chapter \ref{chap:crdt}, we explore various Conflict-Free Replicated Data Types (CRDTs) and establish their formal characterizations. Then we study the asymptotic complexities of checking a given history for these CRDTs. Although the general problems (except Growing-Array) remains in NP-complete, we are able to give polynomial time algorithms for practical constraints, such as bounded number of replicas, using different values at each writes.
-  \item Then in chapter \ref{chap:txn}, we explore the similar problems in the context of transactional systems. We study various levels of weak consistency for these systems and establish their formal characterizations. We study the asymptotic complexities of checking conformance of a given transactional history to a weak consistency criteria. We prove, for weaker consistency criteria, such as Causal Consistency, the complexities of this checking problem are polynomial time. But for stronger consistency models, such as Snapshot Isolation, they are NP-complete. But we provide polynomial time algorithm for the history whose the communication graphs have bounded size of biconnected components. We provide some performance analysis on some production databases doing comparisons against SAT solvers using SAT encodings of NP-complete problems.
-  \item Next in chapter \ref{chap:dist-app} we look at the testing coverage problem of distributed applications built with transactional datastores. We implement \tool{} based on our previous work for transactional system. \tool{} transforms the high level database queries or calls to low level transactional key-value store operations. Then, using the characterizations for transactional systems for a given consistency model, it simulates possible cases probabilistically and give a better test coverages than current state of the art benchmark setups to find bugs within few attempts. We run tests on some popular benchmarks including OLTPBench to show it outperforms other existing tools.
+  \item Chapter~\ref{chap:crdt} investigates the problem of testing implementations of CRDTs. It presents formal specifications for such datatypes and studies the asymptotic complexity of checking whether a given execution satisfies a CRDT formal specification. 
+  %Although the general problems (except Growing-Array) remains in NP-complete, we are able to give polynomial time algorithms for practical constraints, such as bounded number of replicas, using different values at each writes.
+  \item Chapter~\ref{chap:txn} defines axiomatic specifications of several transactional consistency models and establishes complexity results concerning the problem of checking conformance to such specifications for a given execution. It shows that consistency models weaker than Causal Consistency can be checked in polynomial time, while the problem becomes NP-complete for  stronger models. In the latter case, it identifies a parameter of executions which enables polynomial-time algorithms when fixed. 
+%  
+%  In case the problem is NP-complete, it establishes bounds under which 
+%  
+%   the asymptotic complexities of checking conformance of a given transactional history to a weak consistency criteria. We prove, for weaker consistency criteria, such as Causal Consistency, the complexities of this checking problem are polynomial time. But for stronger consistency models, such as Snapshot Isolation, they are NP-complete. But we provide polynomial time algorithm for the history whose the communication graphs have bounded size of biconnected components. We provide some performance analysis on some production databases doing comparisons against SAT solvers using SAT encodings of NP-complete problems.
+  \item Chapter~\ref{chap:dist-app} investigates the testing coverage problem for distributed applications built on top of transactional datastores. It presents the mock in-memory storage system \tool{}, which simulates transactional datastores according to their formal specifications. The experimental evaluation of \tool{} shows that it provides better test coverage than state of the art  setups.
+%      based on our previous work for transactional system. \tool{} transforms the high level database queries or calls to low level transactional key-value store operations. Then, using the characterizations for transactional systems for a given consistency model, it simulates possible cases probabilistically and give a better test coverages than current state of the art benchmark setups to find bugs within few attempts. We run tests on some popular benchmarks including OLTPBench to show it outperforms other existing tools.
+\item Chapter~\ref{chap:conclusion} concludes and discusses directions for future work.
 \end{itemize}
 
-At the end we conclude at chapter \ref{chap:conclusion} and discuss future works in section \ref{sec:global-future-work}.
+%At the end we conclude at chapter \ref{chap:conclusion} and discuss future works in section \ref{sec:global-future-work}.
