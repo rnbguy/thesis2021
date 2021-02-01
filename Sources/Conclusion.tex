@@ -8,7 +8,7 @@ Then, we move on to transactional systems with reads and writes. We explore diff
 
 Having these two previous results, we explore if we can use our characterizations to test distributed applications built on top of some distributed systems. Usually these tests are done on real databases relying on artificial network manipulation. Since these systems are optimized for corner cases, it is very very hard to find the bugs due to corner cases. So these unit tests do not give good coverage. We presented \tool{}, which models different weak consistency levels using our characterizations. \tool{} simulates a consistency keeping track of a global history and making uniform choices which satisfies the characterization axioms. This drastically improves the test coverage, and we imperically show \tool{} were very quick to violate invariants in popular OLTP benchmarks.
 
-\subsection{Future Work}
+\section{Future Work}
 
 The general problem of checking admissible problems for Flags, Set still remains open. We provide a sound algorithm which runs in polynomial-time.
 
