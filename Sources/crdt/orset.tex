@@ -73,11 +73,11 @@ The following theorem states the correctness of the algorithm.
 
 \end{theorem}
 
-When the number of replicas and elements are fixed, the number of read-from maps is polynomial in the size of the history — recall that the number of operations associated by a read-from map to a replica and set element is bounded by the number of replicas. Combined with the number of prefix maps being polynomial when the number of replicas is fixed, we obtain the following result.
+When the number of replicas and elements are fixed, the number of read-from maps is polynomial in the size of the history — recall that the number of operations associated by a read-from map to a replica and set element is bounded by the number of replicas. Since the possible number of prefix-map and read-from map is polynomial when the number of replicas and elements are fixed, the algorithm \ref{orsetcrdtalgo:main} terminates after exploring polynomially many states. Since the each step of the recursion happens in polynomial time, the algorithm always run in polynomial time in the size of the history when the number of replicas and elements are fixed. 
 
 % Theorem~\ref{thm:ptime:sets} in Section~\ref{sec:ptime:sets} follows from this result, so long as the number of replicas and set/flag elements are fixed.
 
-We present a history of a replicated flag in figure \ref{correction:fig2} which will not be explored by this algorithm. The argument is very similar as the one for replicated counter (figure \ref{correction:fig1}).
+To show incompleteness of the algorithm \ref{orsetcrdtalgo:main}, we present a history of a replicated Add-Wins Set in figure \ref{correction:fig2} which will not be explored by this algorithm. The argument is very similar as the one for replicated counter (figure \ref{correction:fig1}).
 
 % \vspace{-.5mm}
 % \begin{theorem}

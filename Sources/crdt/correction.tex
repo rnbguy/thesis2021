@@ -3,33 +3,7 @@ The p-time algorithms for admissibility problem for replicated counter and sets,
 
 \begin{figure}
     \centering
-    \begin{minipage}{\textwidth}
-        \centering
-    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=3cm,semithick, transform shape]
-    
-    \draw (0, 0) -- (5.5, 0);
-    \draw (0, 1.5) -- (5.5, 1.5);
-    
-    \node[label=left:{$r_2$}] at (0, 0) {};
-    \node[label=left:{$r_1$}] at (0, 1.5) {};
-    
-    \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Inc(a)}}](r21) at (.5, 0) {};
-    \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Inc(a)}}](r22) at (1.5, 0) {};
-    \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Read(a) = 2}}](r23) at (3, 0) {};
-    \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Read(a) = 3}}](r24) at (5, 0) {};
-    
-    \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Inc(a)}}](r11) at (.5, 1.5) {};
-    \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Inc(a)}}](r12) at (1.5, 1.5) {};
-    \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Read(a) = 2}}](r13) at (3, 1.5) {};
-    \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Read(a) = 3}}](r14) at (5, 1.5) {};
-    
-    \draw (r11) edge[out=-90,in=90] (4.8, 0);
-    \draw (r21) edge[out=90,in=-90] (4.8, 1.5);
-    
-    \end{tikzpicture}  
-    \caption{An admissible execution of replicated counter which will not be explored by algorithm \ref{countercrdtalgo:main}}
-    \label{correction:fig1}
-    \end{minipage}
+
 
     \begin{minipage}{\textwidth}
         \centering
@@ -41,13 +15,13 @@ The p-time algorithms for admissibility problem for replicated counter and sets,
         \node[label=left:{$r_2$}] at (0, 0) {};
         \node[label=left:{$r_1$}] at (0, 1.5) {};
         
-        \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Enable(a)}}](r21) at (.5, 0) {};
-        \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Read(b) = $\bot$}}](r23) at (2.5, 0) {};
-        \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Read(b) = $\top$}}](r24) at (5, 0) {};
+        \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Insert(a)}}](r21) at (.5, 0) {};
+        \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Contain(b) = $\bot$}}](r23) at (2.5, 0) {};
+        \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Contain(b) = $\top$}}](r24) at (5, 0) {};
         
-        \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Enable(b)}}](r11) at (.5, 1.5) {};
-        \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Read(a) = $\bot$}}](r13) at (2.5, 1.5) {};
-        \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Read(a) = $\top$}}](r14) at (5, 1.5) {};
+        \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Insert(b)}}](r11) at (.5, 1.5) {};
+        \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Contain(a) = $\bot$}}](r13) at (2.5, 1.5) {};
+        \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Contain(a) = $\top$}}](r14) at (5, 1.5) {};
         
         \draw (r11) edge[out=-90,in=90] (4.8, 0);
         \draw (r21) edge[out=90,in=-90] (4.8, 1.5);
@@ -58,10 +32,10 @@ The p-time algorithms for admissibility problem for replicated counter and sets,
     \end{minipage}
     \end{figure}
 
-Consider the history of a replicated counter given in figure \ref{correction:fig1}. This execution will not be explored by the algorithm \ref{countercrdtalgo:main}. This history has only one possible execution, presented in the figure. $[\mathrm{Inc}(a)]_{r_1}$ must be propagate after $[\mathrm{Read}(a) = 2]_{r_2}$ and before $[\mathrm{Read}(a) = 3]_{r_2}$. To simulate that, the algorithm must reach a prefix map which had $[\mathrm{Inc}(a)]_{r_1}$ and $[\mathrm{Read}(a) = 2]_{r_2}$ as the $\ro$-maximal operations from each replica. But the same argument holds when $[\mathrm{Inc}(a)]_{r_2}$ needs to propagate after $[\mathrm{Read}(a) = 2]_{r_1}$ and before $[\mathrm{Read}(a) = 3]_{r_1}$. So the algorithm must reach another prefix map which had $[\mathrm{Inc}(a)]_{r_2}$ and $[\mathrm{Read}(a) = 2]_{r_1}$ as the $\ro$-maximal operations from each replica.
+Consider the history of a replicated counter given in figure \ref{correction:fig1}. This execution will not be explored by the algorithm \ref{countercrdtalgo:main}. This history has only one possible execution, presented in the figure. $[\mathrm{Inc}(a)]_{r_1}$ must be propagate after $[\mathrm{Contain}(a) = 2]_{r_2}$ and before $[\mathrm{Contain}(a) = 3]_{r_2}$. To simulate that, the algorithm must reach a prefix map which had $[\mathrm{Inc}(a)]_{r_1}$ and $[\mathrm{Contain}(a) = 2]_{r_2}$ as the $\ro$-maximal operations from each replica. But the same argument holds when $[\mathrm{Inc}(a)]_{r_2}$ needs to propagate after $[\mathrm{Contain}(a) = 2]_{r_1}$ and before $[\mathrm{Contain}(a) = 3]_{r_1}$. So the algorithm must reach another prefix map which had $[\mathrm{Inc}(a)]_{r_2}$ and $[\mathrm{Contain}(a) = 2]_{r_1}$ as the $\ro$-maximal operations from each replica.
 
-Now the algorithm always extends the maintained prefix map \ie when successful, the valid extensions of the empty prefix map are related by inclusion. But these two prefix-maps are not \emph{related} by inclusion. So no valid extensions of prefix map will see both of them together, and the algorithm will return unsuccessfully because $\mathrm{Read}(a) = 3$ will be unsuccessful. We present a similar history for sets, flags or registers, and argue the same.
+Now the algorithm always extends the maintained prefix map \ie when successful, the valid extensions of the empty prefix map are related by inclusion. But these two prefix-maps are not \emph{related} by inclusion. So no valid extensions of prefix map will see both of them together, and the algorithm will return unsuccessfully because $\mathrm{Contain}(a) = 3$ will be unsuccessful. We present a similar history for sets, flags or registers, and argue the same.
 
-We realized, to construct $\hb$ incrementally, we need to propagate the partial $\hb$ at future operations arbitrarily at each replica. Naively, this requires maintaining a prefix map at each \textrm{Read} operation. Although the number of possible prefix map is polynomially bound for a bounded number of replicas, maintaining $n$ prefix maps at each \textrm{Read} where $n$ is in the order of the size of the history, creates exponentially many possible states to explore.
+We realized, to construct $\hb$ incrementally, we need to propagate the partial $\hb$ at future operations arbitrarily at each replica. Naively, this requires maintaining a prefix map at each \textrm{Contain} operation. Although the number of possible prefix map is polynomially bound for a bounded number of replicas, maintaining $n$ prefix maps at each \textrm{Contain} where $n$ is in the order of the size of the history, creates exponentially many possible states to explore.
 
 We could not find any solution to our mistake. The complexity of the admissibility problem for Counters with a bounded number of replica stays open.

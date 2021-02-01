@@ -34,7 +34,7 @@ $\mathsf{checkCounter}(\hist,\emptyset,\emptyset)$ returns $\mathit{false}$ if t
 \vspace{-2mm}
 \end{theorem}
 
-When the number of replicas is fixed, the number of prefix maps becomes polynomial in the size of the history. This follows from the fact that prefixes are uniquely defined by their $\ro$-maximal operations, whose number is fixed.
+When the number of replicas is fixed, the number of prefix maps becomes polynomial in the size of the history. This follows from the fact that prefixes are uniquely defined by their $\ro$-maximal operations, whose number is fixed. Since the possible number of prefix-map is polynomial when the number of replicas is fixed, the algorithm \ref{countercrdtalgo:main} terminates after exploring polynomially many states. Since the each step of the recursion happens in polynomial time, the algorithm always run in polynomial time in the size of the history when the number of replicas is fixed. 
 
 % \vspace{-2mm}
 % \begin{corollary}
@@ -44,7 +44,7 @@ When the number of replicas is fixed, the number of prefix maps becomes polynomi
 % \vspace{-2mm}
 % \end{corollary}
 
-Now we present a history of a replicated counter in figure \ref{correction:fig1}. This execution will not be explored by the algorithm \ref{countercrdtalgo:main}. This history has only one possible execution, presented in the figure. $[\mathrm{Inc}(a)]_{r_1}$ must be propagate after $[\mathrm{Read}(a) = 2]_{r_2}$ and before $[\mathrm{Read}(a) = 3]_{r_2}$. To simulate that, the algorithm must reach a prefix map which had $[\mathrm{Inc}(a)]_{r_1}$ and $[\mathrm{Read}(a) = 2]_{r_2}$ as the $\ro$-maximal operations from each replica. But the same argument holds when $[\mathrm{Inc}(a)]_{r_2}$ needs to propagate after $[\mathrm{Read}(a) = 2]_{r_1}$ and before $[\mathrm{Read}(a) = 3]_{r_1}$. So the algorithm must reach another prefix map which had $[\mathrm{Inc}(a)]_{r_2}$ and $[\mathrm{Read}(a) = 2]_{r_1}$ as the $\ro$-maximal operations from each replica. 
+Now we present a history of a replicated counter in figure \ref{correction:fig1}. This execution will not be explored by algorithm \ref{countercrdtalgo:main}. This history has only one possible execution, presented in the figure. $[\mathrm{Inc}(a)]_{r_1}$ must be propagate after $[\mathrm{Read}(a) = 2]_{r_2}$ and before $[\mathrm{Read}(a) = 3]_{r_2}$. To simulate this propagation, the algorithm must reach a prefix map which had $[\mathrm{Inc}(a)]_{r_1}$ and $[\mathrm{Read}(a) = 2]_{r_2}$ as the $\ro$-maximal operations from each replica. Symmetrically, the same argument holds when $[\mathrm{Inc}(a)]_{r_2}$ needs to propagate after $[\mathrm{Read}(a) = 2]_{r_1}$ and before $[\mathrm{Read}(a) = 3]_{r_1}$. So the algorithm must reach another prefix map which had $[\mathrm{Inc}(a)]_{r_2}$ and $[\mathrm{Read}(a) = 2]_{r_1}$ as the $\ro$-maximal operations from each replica. 
 
 
 \begin{figure}
@@ -87,25 +87,25 @@ Now we present a history of a replicated counter in figure \ref{correction:fig1}
       \node[label=left:{$r_2$}] at (0, 0) {};
       \node[label=left:{$r_1$}] at (0, 1.5) {};
       
-      \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Enable(a)}}](r21) at (.5, 0) {};
-      \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Read(b) = $\bot$}}](r23) at (2.5, 0) {};
-      \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Read(b) = $\top$}}](r24) at (5, 0) {};
+      \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Add(a)}}](r21) at (.5, 0) {};
+      \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Contain(b) = $\bot$}}](r23) at (2.5, 0) {};
+      \node[draw,circle,fill=black,scale=0.3,label=below:{\texttt{Contain(b) = $\top$}}](r24) at (5, 0) {};
       
-      \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Enable(b)}}](r11) at (.5, 1.5) {};
-      \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Read(a) = $\bot$}}](r13) at (2.5, 1.5) {};
-      \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Read(a) = $\top$}}](r14) at (5, 1.5) {};
+      \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Add(b)}}](r11) at (.5, 1.5) {};
+      \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Contain(a) = $\bot$}}](r13) at (2.5, 1.5) {};
+      \node[draw,circle,fill=black,scale=0.3,label=above:{\texttt{Contain(a) = $\top$}}](r14) at (5, 1.5) {};
       
       \draw (r11) edge[out=-90,in=90] (4.8, 0);
       \draw (r21) edge[out=90,in=-90] (4.8, 1.5);
       
       \end{tikzpicture}  
-      \caption{An admissible execution of replicated flags which will not be explored by algorithm proposed in subsection \ref{sec:ptime:sets}}
+      \caption{An admissible execution of replicated Add-Wins set which will not be explored by algorithm proposed in subsection \ref{sec:ptime:sets}}
       \label{correction:fig2}
   \end{minipage}
   \end{figure}
 
-Now the algorithm always extends the maintained prefix map \ie when successful, the valid extensions of the empty prefix map are related by inclusion. But these two prefix-maps are not \emph{related} by inclusion. So no valid extensions of prefix map will see both of them together, and the algorithm will return unsuccessfully because $\mathrm{Read}(a) = 3$ will be unsuccessful. This shows our presented algorithm is not complete.
+Now the algorithm always extends the maintained prefix map \ie when successful, the sequence of valid extensions from the empty prefix map are always related by inclusion. But these two prefix-maps are not \emph{related} by inclusion. So no sequence of extensions of empty prefix map will see both of them together, and the algorithm will return unsuccessfully because at least one of the $\mathrm{Read}(a) = 3$ from one replica will be unsuccessful. This shows our presented algorithm is not complete.
 
-We realized, to construct $\hb$ incrementally, we need to propagate the partial $\hb$ at future operations arbitrarily at each replica. Naively, this requires maintaining a prefix map at each \textrm{Read} operation. Although the number of possible prefix map is polynomially bound for a bounded number of replicas, maintaining $n$ prefix maps at each \textrm{Read} where $n$ is in the order of the size of the history, creates exponentially many possible states to explore.
+We realized, to construct $\hb$ incrementally, we need to propagate the partial $\hb$ at future operations arbitrarily at each replica. Naively, this requires maintaining a prefix map at each \textrm{Read} operations which is not included in current prefix map. Although the number of possible prefix map is polynomially bound for a history from a bounded number of replicas, maintaining $n$ prefix maps at each \textrm{Read} where $n$ is in the order of the size of the history, creates exponentially many possible states to explore. So the asymptotic complexity of checking history of replicated Counters with bounded number of replicas remains unknown.
 
 % For instance, given the history in Figure~\ref{ser_algo_example:1}, the set of transactions $\{\op_0,\op_1,\op_2\}$ is a prefix with boundary $\{\op_1,\op_2\}$ (the latter is an antichain of the session order).
