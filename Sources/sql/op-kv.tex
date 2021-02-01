@@ -1,6 +1,6 @@
 %!TEX root = ../../Thesis.tex
 
-\section{Operational Semantics for $\KVProgs$}
+\section{Operational Semantics for \texorpdfstring{$\KVProgs$}{𝓟ₖᵥ}}
 \label{sec:op-kv}
 
 We define a small-step operational semantics for Key-Value store programs, which is parametrized by a consistency model $I$. Transactions are executed \emph{serially} one after another, and the values returned by $\rdo$ operations are decided using the axiomatic definition of $I$. The semantics maintains a history of previously executed operations, and the value returned by a $\rdo$ is chosen non-deterministically as long as extending the current history with the corresponding write-read dependency satisfies the axioms of $I$. 
