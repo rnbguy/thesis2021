@@ -1,0 +1,28 @@
+%!TEX root = ../Thesis.tex
+
+\begin{center}
+  \textsc{Résumé}
+\end{center}
+%
+\noindent
+%
+
+% \vfill
+
+\emph{Internet} est devenu une commodité dans la vie d'aujourd'hui. Grâce aux nouvelles technologies de télécommunication de pointe, il devient de plus en plus rapide et bon marché. De l'appel par Internet à De plus, avec l'actualité de Covid-19, de nombreux pays, bureaux et universités ont opté pour un environnement de mise en ligne. Naturellement, les systèmes et applications distribués gagnent également en importance dans l'industrie du monde réel.
+
+Bien que les systèmes distribués aient été étudiés dans le passé, on assiste à une récente montée en puissance des bases de données distribuées et des applications spécialisées dans différents aspects de la configuration distribuée. En raison de cette spécialisation, l'implémentation de ces systèmes devient très compliquée et sujette aux erreurs. Pourtant, tester tous ces différents systèmes avec leurs critères correspondants devient un défi.
+
+Dans ce travail, nous explorons les moyens automatisés pour tester ces systèmes distribués et aider les développeurs à ne pas introduire de bogues lors du développement d'applications distribuées et du choix d'un magasin de données sous-jacent. Dans cette thèse, nous explorons les problèmes de test concernant les \emph{conflict-free replicated data types} (CRDTs) et les systèmes transactionnels correspondant à différents modèles de consistance faible ou niveau d'isolation.
+
+Les CRDTs comme les compteurs, les registres, les drapeaux et les ensembles fournissent une haute disponibilité et une tolérance de partition. Ils utilisent des mécanismes non triviaux pour résoudre les effets des mises à jour concurrentes des données répliquées. Naturellement, ces objets affaiblissent leurs garanties de cohérence pour atteindre la disponibilité et la tolérance de partition, et diverses notions de \emph{weak consistency} capturent ces garanties.
+
+Les transactions simplifient la programmation concurrente en permettant des calculs sur des données partagées qui sont isolés des autres calculs concurrents et résistent aux défaillances. Les bases de données modernes fournissent différents modèles de cohérence ou niveaux d'isolation pour les transactions correspondant à différents compromis entre cohérence et disponibilité.
+
+Cette thèse étudie la faisabilité de la vérification de la conformité des systèmes CRDT et transactionnels pour les modèles de cohérence correspondants. Dans les deux cas, pour capturer les garanties avec précision et faciliter le raisonnement symbolique, nous proposons de nouvelles caractérisations logiques. En développant de nouvelles réductions à partir de problèmes de satisfiabilité propositionnelle, et de nouveaux algorithmes de vérification de la cohérence, nous découvrons des résultats positifs et négatifs. Nous démontrons également que la tractabilité pour les cas difficiles peut être rachetée si un certain paramètre est limité, généralement le nombre de sessions ou de répliques dans le réseau.
+
+Enfin, nous présentons \tool{}, un système de stockage fictif en mémoire permettant de tester les applications basées sur des datastores distribués. En maintenant un journal des opérations passées et en utilisant les caractérisations formelles précédentes, il calcule toutes les valeurs de retour cohérentes possibles pour chaque opération \textrm{Read} au moment de l'exécution. \tool{} renvoie ensuite une valeur choisie uniformément dans cet ensemble. \tool{} supporte une interface clé-valeur ainsi que les requêtes SQL sous plusieurs modèles de cohérence. Nous montrons que \tool{} fournit une bonne couverture des comportements faibles possibles, qui est complète à la limite. Nous testons une variété d'applications pour les assertions qui échouent seulement sous une isolation faible. \tool{} peut violer chacune de ces assertions en un petit nombre de tentatives.
+
+En conclusion, nous développons de nouveaux cadres pour le test automatique d'un ensemble de systèmes distribués. Nous fournissons des algorithmes pour effectuer des tests automatisés sur ces systèmes et étudions leur efficacité. Ce travail fournit un cadre et une direction pour les travaux futurs dans un domaine distribué similaire. 
+
+\textbf{Mots-clés:} Système distribué, Stockage distribué, Base de données, Système transactionnel, Application distribuée, Tests
