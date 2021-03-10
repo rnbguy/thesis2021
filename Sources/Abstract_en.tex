@@ -69,7 +69,7 @@
 
 Although distributed systems are studied in the past, there is a recent surge of distributed datastores and applications specializing in different aspects of distributed settings. Because of these specializations, these implementations are often complicated, error-prone, and very different from each other. Testing all of these different systems with their corresponding criteria poses a big challenge.
 
-In this thesis, we explore the automated means to test these distributed systems and help the developers to not introduce bugs when developing a distributed applications and choosing the best underlying data store for it. We study the testing problems concerning \emph{conflict-free replicated data types} (CRDTs) and \emph{transactional systems} corresponding to various weak consistency models or isolation level.
+In this thesis, we explore the automated means to test these distributed systems and help the developers not introduce bugs when developing distributed applications and choosing the best underlying data store for it. We study the testing problems concerning \emph{conflict-free replicated data types} (CRDTs) and \emph{transactional systems} corresponding to various weak consistency models or isolation levels.
 
 CRDTs like counters, flags, sets, registers, and arrays provide high availability and partition tolerance. They utilize nontrivial mechanisms to resolve the effects of concurrent updates to replicated data. Naturally, these objects weaken their consistency guarantees to achieve availability and partition-tolerance, and various notions of \emph{weak consistency} capture those guarantees.
 
@@ -79,6 +79,6 @@ This dissertation studies the tractability of checking conformance of CRDT and t
 
 Lastly, we present \tool{}, an in-memory mock storage system for testing applications based on distributed datastores. Maintaining a log of past operations and using the previous formal characterizations, it computes all possible consistent return values for at each \textrm{Read} operation at runtime. \tool{} then returns a uniformly chosen value from this set. \tool{} supports a Key-Value interface as well as SQL queries under multiple consistency models. We show that \tool{} provides good coverage of possible weak behaviors, which is complete in the limit. We test a variety of applications for assertions that fail only under weak isolation. \tool{} can violate each of those assertions in a small number of attempts.
 
-In conclusion, we develop novel frameworks for automated testing of a set of distributed systems. We provide algorithms to do automated testing on these systems and study their efficiencies. This work provides a framework and direction for future works in similar distributed domain. 
+In conclusion, we develop novel frameworks for automated testing of a set of distributed systems. We provide algorithms to do automated testing on these systems and study their efficiencies. This work provides a framework and direction for future works in similar distributed domains. 
 
-\textbf{Keywords:} Distributed system, Distributed storage, Database, Transactional system, Distributed application, Testing
+\textbf{Keywords:} Distributed system, Replicated storage, Distributed storage, Database, Transactional system, Distributed application, Isolation Level, Weak consistency, Random testing, Unit testing, Test coverage, Complexity
