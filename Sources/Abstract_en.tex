@@ -65,20 +65,55 @@
 
 % \vfill
 
-\emph{Internet} became a commodity in today's life. With new cutting-edge telecommunication technologies access to the Internet continues to become cheaper and faster. Naturally, the distributed solutions are becoming more and more widespread to real-world problems. 
+As \internet{} grows to be cheaper and faster, distributed software systems and applications are becoming more and more ubiquitous.
+Today they are the backbone of a large number of online services like banking, e-commerce, social networking, \etc{}
+As the popularity of these softwares increases, it is very important that they ensure strong levels of reliability and security.
 
-Although distributed systems are studied in the past, there is a recent surge of distributed datastores and applications specializing in different aspects of distributed settings. Because of these specializations, these implementations are often complicated, error-prone, and very different from each other. Testing all of these different systems with their corresponding criteria poses a big challenge.
+%\emph{Internet} became a commodity in today's life. With new cutting-edge telecommunication technologies access to the Internet continues to become cheaper and faster. Naturally, the distributed solutions are becoming more and more widespread to real-world problems. 
 
-In this thesis, we explore the automated means to test these distributed systems and help the developers not introduce bugs when developing distributed applications and choosing the best underlying data store for it. We study the testing problems concerning \emph{conflict-free replicated data types} (CRDTs) and \emph{transactional systems} corresponding to various weak consistency models or isolation levels.
+%% How does it work.
+Modern distributed software is centered around using large-scale storage systems for storing and retrieving data. 
+To ensure persistence and availability of data in the presence of failures, these systems maintain data
+in multiple copies that are stored on different nodes in the network. Then, for performance reasons, these copies
+are allowed to (temporarily) diverge, an instance of the so-called \emph{weak-consistency}, 
+which makes the semantics of concurrent accesses to data quite complex.
 
-CRDTs like counters, flags, sets, registers, and arrays provide high availability and partition tolerance. They utilize nontrivial mechanisms to resolve the effects of concurrent updates to replicated data. Naturally, these objects weaken their consistency guarantees to achieve availability and partition-tolerance, and various notions of \emph{weak consistency} capture those guarantees.
+Over the recent years, many solutions for implementing \emph{weakly-consistent} storage systems have been proposed. 
+These implementations are most often very complex and error-prone.
+%Such systems allow different nodes to store different versions of data in favor of scalability, thereby violating notions of strong consistency (all nodes store the same data at all times) that could be maintained using the pessimistic approaches mentioned above. 
+%%Weak notions of consistency have been shown to be sufficient for implementing many practical online services.
+%%
+%% throw away strong consistent guarantees of the global data in favour of a scalable system.
+%%This is almost always alright. Because in most cases, the distributed applications do not really require strong guarantees over the data.
+%%
+The specific levels of weak consistency they ensure are most often described only informally, which makes it difficult to reason about them.
+Moreover, in many cases, there are significant discrepancies between the guarantees claimed in their documentation and the guarantees that they really provide.
 
-Transactions simplify concurrent programming by enabling computations on shared data that are isolated from other concurrent computations and resilient to failures. Modern databases provide different consistency models or isolation levels for transactions corresponding to different tradeoffs between consistency and availability.
+%But these implementations are often not correctly reasoned.
+%%% examples of real world problems
+%Many cases the guaranteed weak consistencies are explained in words and not formalized, which makes it difficult to reason about them.
+%Also, often these systems promise a weak consistency on paper, but implements something else in practice.
+%So it is very crucial, these systems are tested thoroughly against the consistency needs of an application.
 
-This dissertation studies the tractability of checking conformance of CRDT and transactional systems for corresponding consistency models. In both cases, to capture guarantees precisely, and facilitate symbolic reasoning, we propose novel logical characterizations. By developing novel reductions from propositional satisfiability problems, and novel consistency-checking algorithms, we discover both positive and negative results. We also demonstrate that tractability for hard cases can be redeemed if some parameter is bounded, usually the number of sessions or replicas in the network.
+The objective of this dissertation is to propose algorithmic techniques for \emph{automated testing} of weakly-consistent distributed systems against \emph{formal specifications}. We focus on an important class of distributed data types, called \emph{Conflict-Free Replicated Data Types} (\emph{CRDT}s for short), that include many variations like registers, flags, sets, arrays, etc., and on \emph{Transactional Systems (Databases)}, which enable computations on shared data that are isolated from other concurrent computations and resilient to failures. We introduce formal specifications for such systems and investigate the asymptotic complexity of checking whether a given execution conforms to such specifications. We also 
+%This dissertation is an effort to give solutions to these problems. We first study \emph{Conflict Free Replicated Data Type} or \emph{CRDT}. CRDTs are popular data types like sets, flags, registers, but replicated and maintained at multiple nodes. Then we move on to \emph{Transactional Systems} which allows to perform a set of operations isolated from other sets of operations. In both cases we reason about their consistency guarantees and provide algorithms to test their histories against the promised weak-consistency. Lastly, we 
+study the problem of testing applications that run on top of weakly-consistent transactional systems, introducing an mock in-memory storage system that simulates the behaviors of such systems according to their formal specifications.
 
-Lastly, we present \tool{}, an in-memory mock storage system for testing applications based on distributed datastores. Maintaining a log of past operations and using the previous formal characterizations, it computes all possible consistent return values for at each \textrm{Read} operation at runtime. \tool{} then returns a uniformly chosen value from this set. \tool{} supports a Key-Value interface as well as SQL queries under multiple consistency models. We show that \tool{} provides good coverage of possible weak behaviors, which is complete in the limit. We test a variety of applications for assertions that fail only under weak isolation. \tool{} can violate each of those assertions in a small number of attempts.
+%Although distributed systems are studied in the past, there is a recent surge of distributed datastores and applications specializing in different aspects of distributed settings. Because of these specializations, these implementations are often complicated, error-prone, and very different from each other. Testing all of these different systems with their corresponding criteria poses a big challenge.
+%
+%In this thesis, we explore the automated means to test these distributed systems and help the developers not introduce bugs when developing distributed applications and choosing the best underlying data store for it. We study the testing problems concerning \emph{conflict-free replicated data types} (CRDTs) and \emph{transactional systems} corresponding to various weak consistency models or isolation levels.
+%
+%CRDTs like counters, flags, sets, registers, and arrays provide high availability and partition tolerance. They utilize nontrivial mechanisms to resolve the effects of concurrent updates to replicated data. Naturally, these objects weaken their consistency guarantees to achieve availability and partition-tolerance, and various notions of \emph{weak consistency} capture those guarantees.
+%
+%Transactions simplify concurrent programming by enabling computations on shared data that are isolated from other concurrent computations and resilient to failures. Modern databases provide different consistency models or isolation levels for transactions corresponding to different tradeoffs between consistency and availability.
+%
+%This dissertation studies the tractability of checking conformance of CRDT and transactional systems for corresponding consistency models. In both cases, to capture guarantees precisely, and facilitate symbolic reasoning, we propose novel logical characterizations. By developing novel reductions from propositional satisfiability problems, and novel consistency-checking algorithms, we discover both positive and negative results. We also demonstrate that tractability for hard cases can be redeemed if some parameter is bounded, usually the number of sessions or replicas in the network.
+%
+%Lastly, we present \tool{}, an in-memory mock storage system for testing applications based on distributed datastores. Maintaining a log of past operations and using the previous formal characterizations, it computes all possible consistent return values for at each \textrm{Read} operation at runtime. \tool{} then returns a uniformly chosen value from this set. \tool{} supports a Key-Value interface as well as SQL queries under multiple consistency models. We show that \tool{} provides good coverage of possible weak behaviors, which is complete in the limit. We test a variety of applications for assertions that fail only under weak isolation. \tool{} can violate each of those assertions in a small number of attempts.
+%
+%In conclusion, we develop novel frameworks for automated testing of a set of distributed systems. We provide algorithms to do automated testing on these systems and study their efficiencies. This work provides a framework and direction for future works in similar distributed domains. 
 
-In conclusion, we develop novel frameworks for automated testing of a set of distributed systems. We provide algorithms to do automated testing on these systems and study their efficiencies. This work provides a framework and direction for future works in similar distributed domains. 
-
-\textbf{Keywords:} Distributed system, Replicated storage, Distributed storage, Database, Transactional system, Distributed application, Isolation Level, Weak consistency, Random testing, Unit testing, Test coverage, Complexity
+\medskip
+\noindent
+\textbf{Keywords:} Formal Methods, Concurrency, Distributed Systems, Databases, Automated Testing, Weak Consistency, Replicated Data Types, Transactions, Isolation Levels, Complexity
+%Replicated storage, Distributed storage, Database, Transactional system, Distributed application, Isolation Level, Weak consistency, Random testing, Unit testing, Test coverage, Complexity
